@@ -76,7 +76,7 @@ mod dialogue_box;
 use dialogue_box::DialogueBox;
 
 mod button;
-use button::MenuButton;
+use button::ButtonDependent;
 
 mod menu;
 use menu::Menu;
@@ -86,6 +86,10 @@ use traits::Drawable;
 
 mod colors;
 use colors::*;
+
+mod text_view;
+use text_view::{TextViewDependent,TextView};
+
 
 pub enum Game{
     Current,
@@ -169,16 +173,18 @@ fn main(){
 
         // Диалоговое окно
         let mut dialogue_box=DialogueBox::new(dialogue_box_texture,dialogue_box_glyphs,&dialogues[0]);
-        
 
         // Главное меню
         let head=Game_name.to_string();
-
         let menu_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-    
         let menu_buttons_text=["Играть","Выход"];
-    
-        let mut menu=Menu::new(head,[100f64,50f64],&menu_buttons_text,menu_glyphs);
+        let rect=[
+            0f64,
+            0f64,
+            Settings.window_size[0],
+            0f64, // Не важна в меню, если идёт выравнивание по вершней границе меню
+        ];
+        let mut menu=Menu::new(head,rect,60,[120f64,60f64],&menu_buttons_text,menu_glyphs);
 
         //-------------------------------//
 
@@ -311,32 +317,30 @@ fn main(){
 }
 
 pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
-    
+        // Загрузка шрифта
+        let texture_settings=TextureSettings::new();
+        let menu_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
 
+        // Создание заднего фона
         let background_size=[250f64,400f64];
         let background=Rectangle::new(Pause_menu_background);
         let background_rect=unsafe{[
-            
             (Settings.window_size[0]-background_size[0])/2f64,
             (Settings.window_size[1]-background_size[1])/2f64,
             background_size[0],
             background_size[1]
         ]};
-
-        let buttons_size=[100f64,50f64];
-        let mut rect=unsafe{[
-            (Settings.window_size[0]-buttons_size[0])/2f64,
-            (Settings.window_size[1]-buttons_size[1])/2f64,
-            buttons_size[0],
-            buttons_size[1]
-        ]};
-        let texture_settings=TextureSettings::new();
-        let continue_button_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        let mut continue_button=button::Button::new(rect,"Продолжить".to_string(),continue_button_glyphs);
-
-        rect[1]+=buttons_size[1]+10f64;
-        let close_button_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        let mut close_button=button::Button::new(rect,"Выйти".to_string(),close_button_glyphs);
+        
+        // Создание меню
+        let head="Пауза".to_string();
+        let buttons_texts=&["Продолжить","Выйти"];
+        let head_rect=[
+            background_rect[0],
+            background_rect[1],
+            background_rect[2],
+            0f64, // Не важна при выравнивании по верхней границе меню
+        ];
+        let mut menu=Menu::new(head,head_rect,40,[150f64,70f64],buttons_texts,menu_glyphs);
 
         // Цикл обработки
         while let Some(e)=events.next(window){
@@ -353,10 +357,8 @@ pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics
             // Рендеринг
             if let Some(r)=e.render_args(){
                 gl.draw(r.viewport(),|c,g|{
-                    //g.clear_color(Pause_menu_background);
                     background.draw(background_rect,&c.draw_state,c.transform,g);
-                    continue_button.draw(&c.draw_state,c.transform,g);
-                    close_button.draw(&c.draw_state,c.transform,g);
+                    menu.draw(&c.draw_state,c.transform,g);
                 });
             }
 
@@ -373,11 +375,13 @@ pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics
                     Button::Mouse(key)=>{
                         match key{
                             MouseButton::Left=>{
-                                if continue_button.clicked(){
-                                    return Game::ContinueGamePlay
-                                }
-                                if close_button.clicked(){
-                                    return Game::Exit
+                                if let Some(button_id)=menu.clicked(){
+                                    match button_id{
+                                        0=>return Game::ContinueGamePlay, // Кнопка продолжить
+                                        1=>return Game::Exit, // Кнопка выхода
+                                        _=>{}
+                                    }
+                                    
                                 }
                             }
                             _=>{}

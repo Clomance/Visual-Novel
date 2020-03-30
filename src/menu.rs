@@ -4,28 +4,34 @@ use crate::*;
 const button_margin:f64=10f64;
 
 pub struct Menu<'a>{
-    head:String,
+    head:TextViewDependent,
     x1:f64,
     y1:f64,
     x2:f64,
     y2:f64,
-    buttons:Vec<MenuButton>,
+    buttons:Vec<ButtonDependent>,
     glyphs:GlyphCache<'a>
 }
 
 impl<'a> Menu<'a>{
-    pub fn new(head:String,buttons_size:[f64;2],menu_buttons_text:&[&str],glyphs:GlyphCache<'a>)->Menu<'a>{
+    pub fn new(head:String,mut text_rect:[f64;4],font_size:u32,
+            buttons_size:[f64;2],menu_buttons_text:&[&str],mut glyphs:GlyphCache<'a>)->Menu<'a>{
+
+        
+        let button_font_size=20;
         let len=menu_buttons_text.len();
         let mut menu_buttons=Vec::with_capacity(len);
 
         let lenf64=len as f64;
         let menu_len=buttons_size[1]*lenf64+button_margin*(lenf64-1f64);
 
-
         let x1=unsafe{(Settings.window_size[0]-buttons_size[0])/2f64};
         let y1=unsafe{
             (Settings.window_size[1]-menu_len)/2f64
         };
+        
+        text_rect[3]=y1;
+        let head=TextViewDependent::new(text_rect,head,font_size,&mut glyphs);
 
         let mut rect=[
             x1,
@@ -34,7 +40,7 @@ impl<'a> Menu<'a>{
             buttons_size[1]
         ];
         for text in menu_buttons_text{
-            let button=MenuButton::new(rect,text.to_string());
+            let button=ButtonDependent::new(rect,text.to_string(),button_font_size,&mut glyphs);
             menu_buttons.push(button);
             rect[1]+=buttons_size[1]+button_margin;
         }
@@ -67,6 +73,8 @@ impl<'a> Menu<'a>{
     }
 
     pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
+        self.head.draw(draw_state,transform,g,&mut self.glyphs);
+
         for button in &mut self.buttons{
             button.draw(draw_state,transform,g,&mut self.glyphs);
         }
