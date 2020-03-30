@@ -1,0 +1,106 @@
+use crate::*;
+
+pub struct Dialogue{
+    names_cache:Vec<String>,
+    dialogs:Vec<String>,
+    names:Vec<usize>
+}
+
+impl Dialogue{
+    pub fn new<P:AsRef<Path>+Debug+Clone>(path:P)->Dialogue{
+        let mut dialog_file=OpenOptions::new().read(true).open(path.clone()).unwrap();
+
+        let mut names_cache=Vec::<String>::with_capacity(5);
+        let mut dialogs=Vec::<String>::with_capacity(50);
+        let mut names=Vec::<usize>::with_capacity(50);
+        // Таблица с краткими именами (short_names,ptr to names_cache)
+        let mut names_table=(Vec::new(),Vec::new());
+
+        let mut input=String::with_capacity(512);
+        dialog_file.read_to_string(&mut input).unwrap();
+
+        let mut line_number=0usize;
+        let mut lines=input.lines();
+
+        while let Some(line)=lines.next(){
+            line_number+=1;
+            let line=line.trim();
+            // Проверка на начало заголовка
+            if line=="{"{
+                names_table=read_head(&mut names_cache,&mut lines,&mut line_number,path.clone());
+                continue
+            }
+            // Проверка форматирования
+            let split_line:Vec<&str>=line.splitn(2,"-").collect();
+            let len=split_line.len();
+            if len==0{
+                //
+            }
+            if len!=2{
+                panic!("LoadingDialogError: path {:?} line {}",path,line_number);
+            }
+            // Перевод в строку
+            let short_name=split_line[0].trim();
+            let dialog=split_line[1].trim().to_string();
+            // Поиск имени
+            let index=search_short_name(short_name,&names_table.0,line_number,path.clone());
+            let names_cache_index=names_table.1[index];
+            // Сохранение
+            names.push(names_cache_index);
+            dialogs.push(dialog);
+        }
+
+        Self{
+            names_cache:names_cache,
+            dialogs:dialogs,
+            names:names
+        }
+    }
+    pub fn len(&self)->usize{
+        self.dialogs.len()
+    }
+    // Получение текущей реплики - (имя,реплика)
+    pub fn get_line(&self,step:usize)->(&str,&str){
+        (&self.names_cache[self.names[step]],&self.dialogs[step])
+    }
+}
+
+fn read_head<P:AsRef<Path>+Debug>(names_cache:&mut Vec<String>,lines:&mut Lines,line_number:&mut usize,path:P)->(Vec<String>,Vec<usize>){
+    let mut len=names_cache.len();
+    let mut names=Vec::new();
+    let mut short_names=Vec::new();
+    
+    for line in lines{
+        //println!("{}",line);
+        
+        *line_number+=1;
+        // Проверка на завершение заголовка
+        let line=line.trim();
+        if line=="}"{
+            return (short_names,names)
+        }
+        // Проверка формата
+        let split_line:Vec<&str>=line.split("=").collect();
+        if split_line.len()!=2{
+            panic!("LoadingDialogError: path {:?} line {}",path,line_number);
+        }
+        // Переавод в строку
+        let name=split_line[0].trim().to_string();
+        let short_name=split_line[1].trim().to_string();
+        // Сохранение
+        names_cache.push(name);
+        short_names.push(short_name);
+        names.push(len);
+        len+=1;
+    }
+    panic!("LoadingDialogError: no head closure, path {:?}",path);
+}
+
+fn search_short_name<P:AsRef<Path>+Debug>(short_name:&str,short_names:&Vec<String>,line:usize,path:P)->usize{
+    for (c,name) in short_names.iter().enumerate(){
+        if short_name==name{
+            return c
+        }
+    }
+    panic!("LoadingDialogError: No such short name, path {:?} line {}",path,line);
+}

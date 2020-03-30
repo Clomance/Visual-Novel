@@ -1,0 +1,6 @@
+fullscreen=false
+window_width=1280
+window_height=720
+characters=3
+pages=3
+new_game=true
