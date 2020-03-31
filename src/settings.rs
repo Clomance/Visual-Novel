@@ -7,6 +7,7 @@ pub struct GameSettings{
     pub fullscreen:bool,
     pub characters_len:usize,
     pub pages:usize,
+    pub page_wallpapers:usize,
     pub new_game:bool,
 }
 
@@ -18,6 +19,7 @@ impl GameSettings{
             fullscreen:false,
             characters_len:0,
             pages:0,
+            page_wallpapers:0,
             new_game:true,
         }
     }
@@ -57,6 +59,9 @@ impl GameSettings{
                 }
                 "pages"=>{
                     self.pages=split_line[1].parse::<usize>().unwrap();
+                }
+                "page_wallpapers"=>{
+                    self.page_wallpapers=split_line[1].parse::<usize>().unwrap();
                 }
                 "characters"=>{
                     self.characters_len=split_line[1].parse::<usize>().unwrap();

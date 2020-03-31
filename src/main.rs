@@ -132,14 +132,16 @@ fn main(){
         
         let main_menu_wallpaper_texture=Texture::from_path("images/wallpapers/main_menu_wallpaper.jpg",&texture_settings).unwrap();
 
-        for i in 0..Settings.pages{
+        for i in 0..Settings.page_wallpapers{
             // Загрузка обоев
-            let mut path=format!("images/wallpapers/wallpaper{}.jpg",i);
+            let path=format!("images/wallpapers/wallpaper{}.jpg",i);
             let wallpaper_texture=Texture::from_path(path,&texture_settings).unwrap();
             wallpaper_textures.push(wallpaper_texture);
+        }
 
+        for i in 0..Settings.pages{
             // Загрузка диалогов
-            path=format!("text/dialogue{}.txt",i);
+            let path=format!("text/dialogue{}.txt",i);
             let dialogue=Dialogue::new(path);
             dialogues.push(dialogue);
         }
