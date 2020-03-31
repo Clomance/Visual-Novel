@@ -1,6 +1,6 @@
 [package]
 name = "game"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Clone"]
 edition = "2018"
 
@@ -14,3 +14,8 @@ pistoncore-glutin_window = "0.63.0"
 [lib]
 name="lib"
 path="lib/lib.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+debug = false

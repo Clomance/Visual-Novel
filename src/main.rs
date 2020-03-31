@@ -1,15 +1,9 @@
-#![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use,unused_imports)]
-//#![windows_subsystem = "windows"] // Отключение консоли
-
-extern crate piston;
-extern crate opengl_graphics;
-extern crate graphics;
-extern crate glutin_window;
+#![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use)]
+//#![windows_subsystem="windows"] // Отключение консоли
 
 use glutin_window::GlutinWindow;
 
 use opengl_graphics::{
-    Filter,
     GlGraphics,
     GlyphCache,
     OpenGL,
@@ -19,16 +13,12 @@ use opengl_graphics::{
 
 use piston::{
     WindowSettings,
-    Window,
     event_loop::{EventLoop,EventSettings,Events},
     input::{
         Button,
-        ButtonState,
         Key,
         MouseButton
     },
-    ButtonEvent,
-    UpdateEvent,
     ReleaseEvent,
     RenderEvent,
     ResizeEvent,
@@ -133,16 +123,16 @@ fn main(){
 
         let texture_settings=TextureSettings::new();
 
-        let mut wallpaper_textures:Vec<Texture>=Vec::with_capacity(Settings.pages_len);
-        //let mut current_characters:Vec<&mut Character>=Vec::with_capacity(Settings.pages_len);
-        let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages_len);
+        let mut characters:Vec<Character>=Vec::with_capacity(Settings.characters_len);
 
-        let mut characters:Vec<Character>=Vec::with_capacity(2);
+        let mut wallpaper_textures:Vec<Texture>=Vec::with_capacity(Settings.pages);
+        //let mut current_characters:Vec<&mut Character>=Vec::with_capacity(Settings.pages_len);
+        let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages);
 
         
-        let main_menu_wallpaper_texture=Texture::from_path("images/main_menu_wallpaper.jpg",&texture_settings).unwrap();
+        let main_menu_wallpaper_texture=Texture::from_path("images/wallpapers/main_menu_wallpaper.jpg",&texture_settings).unwrap();
 
-        for i in 0..Settings.pages_len{
+        for i in 0..Settings.pages{
             // Загрузка обоев
             let mut path=format!("images/wallpapers/wallpaper{}.jpg",i);
             let wallpaper_texture=Texture::from_path(path,&texture_settings).unwrap();
@@ -163,7 +153,8 @@ fn main(){
         let dialogue_box_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let dialogue_box_texture=Texture::from_path("images/dialogue_box.png",&texture_settings).unwrap();
 
-        let mut page_table=PageTable::new(&wallpaper_textures,&dialogues);
+        // Загрузка таблицы страниц
+        let mut page_table=PageTable::new(&characters,&wallpaper_textures,&dialogues);
 
         // Создание элементов интерфейса //
         //                               //
@@ -257,7 +248,7 @@ fn main(){
                 if let Some(r)=e.render_args(){
                     gl.draw(r.viewport(),|c,g|{
                         wallpaper.draw(&c.draw_state,c.transform,g);
-                        characters[0].draw(&c.draw_state,c.transform,g);
+                        page_table.currents_character().draw(&c.draw_state,c.transform,g);
                         dialogue_box.draw(&c.draw_state,c.transform,g);
                     });
                 }

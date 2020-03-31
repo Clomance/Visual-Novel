@@ -6,7 +6,7 @@ pub struct GameSettings{
     pub window_size:[f64;2],
     pub fullscreen:bool,
     pub characters_len:usize,
-    pub pages_len:usize,
+    pub pages:usize,
     pub new_game:bool,
 }
 
@@ -17,7 +17,7 @@ impl GameSettings{
             window_size:default_window_size,
             fullscreen:false,
             characters_len:0,
-            pages_len:0,
+            pages:0,
             new_game:true,
         }
     }
@@ -56,7 +56,7 @@ impl GameSettings{
                     self.window_size[1]=split_line[1].parse::<f64>().unwrap();
                 }
                 "pages"=>{
-                    self.pages_len=split_line[1].parse::<usize>().unwrap();
+                    self.pages=split_line[1].parse::<usize>().unwrap();
                 }
                 "characters"=>{
                     self.characters_len=split_line[1].parse::<usize>().unwrap();

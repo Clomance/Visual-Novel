@@ -1,7 +1,5 @@
 use crate::*;
 
-use std::path::Path;
-
 pub struct Character{
     image:Image,
     texture:Texture
