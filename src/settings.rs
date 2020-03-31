@@ -1,9 +1,12 @@
 use crate::*;
 
-const default_window_size:[f64;2]=[1280f64,720f64];
+const default_window_size:Size=Size{
+    width:1280f64,
+    height:720f64
+};
 
 pub struct GameSettings{
-    pub window_size:[f64;2],
+    pub window_size:Size,
     pub fullscreen:bool,
     pub characters_len:usize,
     pub pages:usize,
@@ -52,10 +55,10 @@ impl GameSettings{
                     }
                 }
                 "window_width"=>{
-                    self.window_size[0]=split_line[1].parse::<f64>().unwrap();
+                    self.window_size.width=split_line[1].parse::<f64>().unwrap();
                 }
                 "window_height"=>{
-                    self.window_size[1]=split_line[1].parse::<f64>().unwrap();
+                    self.window_size.height=split_line[1].parse::<f64>().unwrap();
                 }
                 "pages"=>{
                     self.pages=split_line[1].parse::<usize>().unwrap();

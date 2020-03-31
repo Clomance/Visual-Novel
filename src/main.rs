@@ -12,6 +12,8 @@ use opengl_graphics::{
 };
 
 use piston::{
+    Window,
+    Size,
     WindowSettings,
     event_loop::{EventLoop,EventSettings,Events},
     input::{
@@ -41,12 +43,10 @@ use graphics::{
 use std::{
     fmt::Debug,
     path::Path,
-    fs::{OpenOptions,File},
+    fs::OpenOptions,
     io::Read,
     str::Lines,
 };
-
-use lib::SyncRawPtr;
 
 mod Settings;
 
@@ -62,28 +62,17 @@ use character::Character;
 mod dialogue;
 use dialogue::Dialogue;
 
-mod dialogue_box;
-use dialogue_box::DialogueBox;
-
-mod button;
-use button::ButtonDependent;
-
-mod menu;
-use menu::Menu;
-
-mod traits;
-use traits::Drawable;
+mod user_interface;
+use user_interface::*;
 
 mod colors;
 use colors::*;
-
-mod text_view;
-use text_view::{TextViewDependent,TextView};
 
 
 pub enum Game{
     Current,
     MainMenu,
+    Settings,
     NewGamePlay,
     ContinueGamePlay,
     Pause,
@@ -114,6 +103,8 @@ fn main(){
             .build().expect("Could not create window");
 
         let mut gl=GlGraphics::new(opengl);
+
+        Settings.window_size=window.size();
 
         let mut events=Events::new(EventSettings::new().lazy(false).ups(60));
         //-----------------------------------------//
@@ -170,14 +161,18 @@ fn main(){
         // Главное меню
         let head=Game_name.to_string();
         let menu_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        let menu_buttons_text=["Играть","Выход"];
-        let rect=[
-            0f64,
-            0f64,
-            Settings.window_size[0],
-            0f64, // Не важна в меню, если идёт выравнивание по вершней границе меню
-        ];
-        let mut menu=Menu::new(head,rect,60,[120f64,60f64],&menu_buttons_text,menu_glyphs);
+
+        let head_view_settings=TextViewSettings::new()
+                .rect([0f64,0f64,100f64,80f64])
+                .text(head)
+                .font_size(40)
+                .text_color(Head_main_menu);
+
+        let menu_settings=MenuSettings::new()
+                .head_text_settings(head_view_settings)
+                .buttons_text(vec!["Играть".to_string(),"Выход".to_string()]);
+
+        let mut menu=Menu::new(menu_settings,menu_glyphs);
 
         //-------------------------------//
 
@@ -272,6 +267,7 @@ fn main(){
                                     }
                                 }
                                 Key::Escape=>{
+                                    // Пауза
                                     match pause_menu(&mut events,&mut window,&mut gl){
                                         Game::Exit=>break 'game,
                                         _=>{}
@@ -309,31 +305,38 @@ fn main(){
     }
 }
 
+#[inline]
 pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
+
+        // Создание заднего фона
+    let background_size=[300f64,450f64];
+    let background=Rectangle::new(Pause_menu_background);
+    let background_rect=unsafe{[
+        (Settings.window_size.width-background_size[0])/2f64,
+        (Settings.window_size.height-background_size[1])/2f64,
+        background_size[0],
+        background_size[1]
+    ]};
+
+        
         // Загрузка шрифта
         let texture_settings=TextureSettings::new();
         let menu_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-
-        // Создание заднего фона
-        let background_size=[250f64,400f64];
-        let background=Rectangle::new(Pause_menu_background);
-        let background_rect=unsafe{[
-            (Settings.window_size[0]-background_size[0])/2f64,
-            (Settings.window_size[1]-background_size[1])/2f64,
-            background_size[0],
-            background_size[1]
-        ]};
         
         // Создание меню
         let head="Пауза".to_string();
-        let buttons_texts=&["Продолжить","Выйти"];
-        let head_rect=[
-            background_rect[0],
-            background_rect[1],
-            background_rect[2],
-            0f64, // Не важна при выравнивании по верхней границе меню
-        ];
-        let mut menu=Menu::new(head,head_rect,40,[150f64,70f64],buttons_texts,menu_glyphs);
+        let head_view_settings=TextViewSettings::new()
+                .rect([0f64,0f64,100f64,80f64])
+                .text(head)
+                .font_size(40)
+                .text_color(Head_main_menu);
+
+    let menu_settings=MenuSettings::new()
+            .buttons_size([180f64,60f64])
+            .head_text_settings(head_view_settings)
+            .buttons_text(vec!["Продолжить".to_string(),"Выход".to_string()]);
+
+    let mut menu=Menu::new(menu_settings,menu_glyphs);
 
         // Цикл обработки
         while let Some(e)=events.next(window){

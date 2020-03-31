@@ -22,25 +22,25 @@ pub struct DialogueBox<'a,'b>{
 }
 
 impl<'a,'b> DialogueBox<'a,'b>{
-    pub fn new(texture:Texture,glyph:GlyphCache<'a>,dialog:&'b Dialogue)->DialogueBox<'a,'b>{
+    pub fn new(texture:Texture,glyph:GlyphCache<'a>,dialogue:&'b Dialogue)->DialogueBox<'a,'b>{
         unsafe{
             let text=Text::new_color(WHITE,font_size);
             let image=Image::new().rect([
                 0f64,
-                Settings.window_size[1]-dialog_height,
-                Settings.window_size[0],
+                Settings.window_size.height-dialog_height,
+                Settings.window_size.width,
                 dialog_height
             ]);
 
             Self{
-                dialog:dialog ,
+                dialog:dialogue,
                 step:0usize,
                 x1:0f64,
-                y1:Settings.window_size[1]-dialog_height,
-                x2:Settings.window_size[0],
-                y2:Settings.window_size[1],
+                y1:Settings.window_size.height-dialog_height,
+                x2:Settings.window_size.width,
+                y2:Settings.window_size.height,
                 text:text,
-                text_position:[text_position_x,Settings.window_size[1]-dialog_height/2f64],
+                text_position:[text_position_x,Settings.window_size.height-dialog_height/2f64],
                 image:image,
                 texture:texture,
                 glyphs:glyph

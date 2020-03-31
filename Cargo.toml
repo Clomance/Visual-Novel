@@ -1,7 +1,7 @@
 [package]
-name = "game"
-version = "0.2.0"
-authors = ["Clone"]
+name = "Visual_Novel"
+version = "0.2.1"
+authors = ["Clomance"]
 edition = "2018"
 
 [dependencies]
@@ -10,12 +10,11 @@ piston2d-opengl_graphics = "0.72.0"
 piston2d-graphics = "0.36.0"
 pistoncore-glutin_window = "0.63.0"
 
-
-[lib]
-name="lib"
-path="lib/lib.rs"
+[profile.dev]
+opt-level = 0
+debug = false
 
 [profile.release]
 opt-level = 3
-lto = true
+lto = false
 debug = false
