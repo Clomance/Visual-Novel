@@ -8,7 +8,7 @@ pub struct Wallpaper<'a>{
 impl<'a> Wallpaper<'a>{
     pub fn new(texture:&'a Texture)->Wallpaper<'a>{
         unsafe{
-            let image=Image::new().rect([
+            let image=Image::new_color([1.0;4]).rect([
                 0.0,
                 0.0,
                 Settings.window_size.width,
@@ -23,6 +23,10 @@ impl<'a> Wallpaper<'a>{
 
     pub fn set_texture(&mut self,texture:&'a Texture){
         self.texture=texture;
+    }
+
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.image.color.as_mut().unwrap()[3]=alpha;
     }
 
     // pub fn fit_screen(&mut self){

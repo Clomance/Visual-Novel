@@ -10,6 +10,6 @@
 }
 2 - {
     wallpaper = 2
-    character = 2
+    character = 0
     dialogue = 2
 }

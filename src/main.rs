@@ -13,6 +13,7 @@ use opengl_graphics::{
 
 use piston::{
     Window,
+    AdvancedWindow,
     Size,
     WindowSettings,
     event_loop::{EventLoop,EventSettings,Events},
@@ -29,6 +30,7 @@ use piston::{
 };
 
 use graphics::{
+    line::Line,
     character::CharacterCache,
     text::Text,
     types::Color,
@@ -44,11 +46,14 @@ use std::{
     fmt::Debug,
     path::Path,
     fs::OpenOptions,
-    io::Read,
+    io::{Read,Write},
     str::Lines,
 };
 
-mod Settings;
+mod game_settings;
+
+mod pages;
+use pages::*;
 
 mod page_table;
 use page_table::PageTable;
@@ -71,6 +76,7 @@ use colors::*;
 
 pub enum Game{
     Current,
+    Back,
     MainMenu,
     Settings,
     NewGamePlay,
@@ -81,7 +87,7 @@ pub enum Game{
 
 const Game_name:&str="Visual Novel by Clomance";
 
-pub static mut Settings:Settings::GameSettings=Settings::GameSettings::new();
+pub static mut Settings:game_settings::GameSettings=game_settings::GameSettings::new();
 
 pub static mut mouse_position:[f64;2]=[0f64;2];
 
@@ -97,48 +103,47 @@ fn main(){
         let mut window:GlutinWindow=WindowSettings::new(Game_name,Settings.window_size)
                 .exit_on_esc(false)
                 .vsync(true)
-                .fullscreen(Settings.fullscreen)
+                .fullscreen(true)
                 .graphics_api(opengl)
                 .resizable(false)
             .build().expect("Could not create window");
 
         let mut gl=GlGraphics::new(opengl);
 
-        Settings.window_size=window.size();
-
         let mut events=Events::new(EventSettings::new().lazy(false).ups(60));
+
         //-----------------------------------------//
+        // Получение размеров экрана и заполнение его окном игры
+        let size=glutin::event_loop::EventLoop::new().primary_monitor().size();
+        Settings.window_size.width=size.width as f64;
+        Settings.window_size.height=size.height as f64;
+        window.set_size(Settings.window_size);
 
         // Загрузка ресурсов //
         //                   //
 
         let texture_settings=TextureSettings::new();
 
-        let mut characters:Vec<Character>=Vec::with_capacity(Settings.characters_len);
+        let mut characters:Vec<Character>=Vec::with_capacity(Settings.characters_len); // Массив персонажей
+        let mut wallpaper_textures:Vec<Texture>=Vec::with_capacity(Settings.pages); // Массив обоев для игры
+        let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages); // Массив диалогов
 
-        let mut wallpaper_textures:Vec<Texture>=Vec::with_capacity(Settings.pages);
-        //let mut current_characters:Vec<&mut Character>=Vec::with_capacity(Settings.pages_len);
-        let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages);
-
-        
-        let main_menu_wallpaper_texture=Texture::from_path("images/wallpapers/main_menu_wallpaper.jpg",&texture_settings).unwrap();
-
+        // Загрузка обоев
         for i in 0..Settings.page_wallpapers{
-            // Загрузка обоев
             let path=format!("images/wallpapers/wallpaper{}.jpg",i);
             let wallpaper_texture=Texture::from_path(path,&texture_settings).unwrap();
             wallpaper_textures.push(wallpaper_texture);
         }
 
+        // Загрузка диалогов
         for i in 0..Settings.pages{
-            // Загрузка диалогов
             let path=format!("text/dialogue{}.txt",i);
             let dialogue=Dialogue::new(path);
             dialogues.push(dialogue);
         }
 
+        // Загрузка персонажей
         for i in 0..Settings.characters_len{
-            // Загрузка персонажей
             let path=format!("images/characters/character{}.png",i);
             characters.push(Character::new(path,&texture_settings));
         }
@@ -146,89 +151,64 @@ fn main(){
         let dialogue_box_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let dialogue_box_texture=Texture::from_path("images/dialogue_box.png",&texture_settings).unwrap();
 
-        // Загрузка таблицы страниц
+        // Загрузка таблицы страниц игры
         let mut page_table=PageTable::new(&characters,&wallpaper_textures,&dialogues);
 
         // Создание элементов интерфейса //
         //                               //
 
         // Обои
-        let mut wallpaper=Wallpaper::new(page_table.current_wallpaper());
+        let main_menu_wallpaper_texture=Texture::from_path("images/wallpapers/main_menu_wallpaper.jpg",&texture_settings).unwrap();
+        let mut wallpaper=Wallpaper::new(&main_menu_wallpaper_texture);
 
         // Диалоговое окно
         let mut dialogue_box=DialogueBox::new(dialogue_box_texture,dialogue_box_glyphs,&dialogues[0]);
 
-        // Главное меню
-        let head=Game_name.to_string();
-        let menu_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-
-        let head_view_settings=TextViewSettings::new()
-                .rect([0f64,0f64,100f64,80f64])
-                .text(head)
-                .font_size(40)
-                .text_color(Head_main_menu);
-
-        let menu_settings=MenuSettings::new()
-                .head_text_settings(head_view_settings)
-                .buttons_text(vec!["Играть".to_string(),"Выход".to_string()]);
-
-        let mut menu=Menu::new(menu_settings,menu_glyphs);
 
         //-------------------------------//
 
+        let smooth=1f32/32f32; // 1 к количеству кадров перехода
+        let mut alpha;
+
         // Полный цикл игры
         'game:loop{
-            //       Цикл главного меню      //
-            // Начало загрузки главного меню //
-            //                               //
+            // Устрановка обоев главного меню
             wallpaper.set_texture(&main_menu_wallpaper_texture);
+            // Цикл главного меню
+            match main_menu(&mut wallpaper,&mut events,&mut window,&mut gl){
+                Game::NewGamePlay=>{
+                    page_table.set_page(0);
+                    dialogue_box.set_dialogue(page_table.current_dialogue());
+                }
+                Game::Exit=>break 'game,
+                _=>{}
+            };
 
-            //                    //
-            // Цикл главного меню //
-            //                    //
-            'main_menu:while let Some(e)=events.next(&mut window){
+            wallpaper.set_texture(page_table.current_wallpaper());
+            alpha=0f32;
+
+            'smooth:while let Some(e)=events.next(&mut window){
                 // Закрытие игры
                 if let Some(_close)=e.close_args(){
                     break 'game
                 }
-                // Движение мыши
-                if let Some(mouse)=e.mouse_cursor_args(){
-                    mouse_position=mouse;
-                }
                 // Рендеринг
                 if let Some(r)=e.render_args(){
                     gl.draw(r.viewport(),|c,g|{
+                        wallpaper.set_alpha_channel(alpha);
                         wallpaper.draw(&c.draw_state,c.transform,g);
-                        menu.draw(&c.draw_state,c.transform,g);
+                        
+                        dialogue_box.set_alpha_channel(alpha);
+                        dialogue_box.draw(&c.draw_state,c.transform,g);
+
+                        alpha+=smooth;
                     });
-                }
-                // 
-                if let Some(button)=e.release_args(){
-                    match button{
-                        Button::Mouse(key)=>{
-                            match key{
-                                MouseButton::Left=>{
-                                    if let Some(button_id)=menu.clicked(){
-                                        match button_id{
-                                            0=>break 'main_menu, // Кнопка начала игрового процесса
-                                            1=>break 'game, // Кнопка закрытия игры
-                                            _=>{}
-                                        }
-                                    }
-                                }
-                                _=>{}
-                            }
-                        }
-                        _=>{}
+                    if alpha>=1.0{
+                        break 'smooth
                     }
                 }
             }
-            //        Конец главного меню        //
-            // Начало загрузки игрового процесса //
-            //                                   //
-            wallpaper.set_texture(page_table.current_wallpaper());
 
-            //                    //
             // Цикл игровой части //
             //                    //
             'gameplay:while let Some(e)=events.next(&mut window){
@@ -249,7 +229,7 @@ fn main(){
                         dialogue_box.draw(&c.draw_state,c.transform,g);
                     });
                 }
-        
+
                 // 
                 if let Some(button)=e.release_args(){
                     match button{
@@ -269,6 +249,7 @@ fn main(){
                                 Key::Escape=>{
                                     // Пауза
                                     match pause_menu(&mut events,&mut window,&mut gl){
+                                        Game::MainMenu=>break 'gameplay,
                                         Game::Exit=>break 'game,
                                         _=>{}
                                     }
@@ -302,93 +283,14 @@ fn main(){
             // Конец полного цикла игры
         }
         // Конец программы
+        Settings.save();
     }
 }
 
-#[inline]
-pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
 
-        // Создание заднего фона
-    let background_size=[300f64,450f64];
-    let background=Rectangle::new(Pause_menu_background);
-    let background_rect=unsafe{[
-        (Settings.window_size.width-background_size[0])/2f64,
-        (Settings.window_size.height-background_size[1])/2f64,
-        background_size[0],
-        background_size[1]
-    ]};
 
-        
-        // Загрузка шрифта
-        let texture_settings=TextureSettings::new();
-        let menu_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        
-        // Создание меню
-        let head="Пауза".to_string();
-        let head_view_settings=TextViewSettings::new()
-                .rect([0f64,0f64,100f64,80f64])
-                .text(head)
-                .font_size(40)
-                .text_color(Head_main_menu);
 
-    let menu_settings=MenuSettings::new()
-            .buttons_size([180f64,60f64])
-            .head_text_settings(head_view_settings)
-            .buttons_text(vec!["Продолжить".to_string(),"Выход".to_string()]);
 
-    let mut menu=Menu::new(menu_settings,menu_glyphs);
-
-        // Цикл обработки
-        while let Some(e)=events.next(window){
-            // Закрытие игры
-            if let Some(_close)=e.close_args(){
-                return Game::Exit
-            }
-            // Движение мыши
-            if let Some(mouse)=e.mouse_cursor_args(){
-                unsafe{
-                    mouse_position=mouse;
-                }
-            }
-            // Рендеринг
-            if let Some(r)=e.render_args(){
-                gl.draw(r.viewport(),|c,g|{
-                    background.draw(background_rect,&c.draw_state,c.transform,g);
-                    menu.draw(&c.draw_state,c.transform,g);
-                });
-            }
-
-            if let Some(button)=e.release_args(){
-                match button{
-                    Button::Keyboard(key)=>{
-                        match key{
-                            Key::Escape=>{
-                                return Game::ContinueGamePlay
-                            }
-                            _=>{}
-                        }
-                    }
-                    Button::Mouse(key)=>{
-                        match key{
-                            MouseButton::Left=>{
-                                if let Some(button_id)=menu.clicked(){
-                                    match button_id{
-                                        0=>return Game::ContinueGamePlay, // Кнопка продолжить
-                                        1=>return Game::Exit, // Кнопка выхода
-                                        _=>{}
-                                    }
-                                    
-                                }
-                            }
-                            _=>{}
-                        }
-                    }
-                    _=>{}
-                }
-            }
-        }
-        return Game::Exit
-}
 
     // Logo
     // let half_size=100f64;

@@ -50,6 +50,10 @@ impl<'a,'b,'c> PageTable<'a,'b,'c>{
         table
     }
 
+    pub fn set_page(&mut self,page:usize){
+        self.page=page;
+    }
+
     pub fn next_page(&mut self)->bool{
         if self.page+1<self.wallpapers.len(){
             self.page+=1;

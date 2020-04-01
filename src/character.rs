@@ -7,7 +7,7 @@ pub struct Character{
 
 impl Character{
     pub fn new<P:AsRef<Path>>(image_path:P,texture_settings:&TextureSettings)->Character{
-        let image=Image::new();
+        let image=Image::new_color([1.0;4]);
         let texture=Texture::from_path(image_path,texture_settings).unwrap();
         Self{
             image:image,

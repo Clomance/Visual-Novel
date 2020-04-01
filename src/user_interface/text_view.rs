@@ -15,6 +15,10 @@ impl<'a> TextView<'a>{
         }
     }
     
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.text_view_base.set_alpha_channel(alpha)
+    }
+
     pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
         self.text_view_base.draw(draw_state,transform,g,&mut self.glyphs);
     }
@@ -46,6 +50,14 @@ impl TextViewDependent{
             text:settings.text
         }
     }
+
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.text_base.color[3]=alpha;
+    }
+
+    // pub fn get_text_color_mut(&mut self)->&mut Color{
+    //     &mut self.text_base.color
+    // }
 
     pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics,glyphs:&mut GlyphCache){
         let x=self.x1;

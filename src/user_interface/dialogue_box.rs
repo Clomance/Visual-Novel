@@ -25,7 +25,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
     pub fn new(texture:Texture,glyph:GlyphCache<'a>,dialogue:&'b Dialogue)->DialogueBox<'a,'b>{
         unsafe{
             let text=Text::new_color(WHITE,font_size);
-            let image=Image::new().rect([
+            let image=Image::new_color([1.0;4]).rect([
                 0f64,
                 Settings.window_size.height-dialog_height,
                 Settings.window_size.width,
@@ -53,6 +53,10 @@ impl<'a,'b> DialogueBox<'a,'b>{
         self.step=0usize;
     }
 
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.image.color.as_mut().unwrap()[3]=alpha;
+        self.text.color[3]=alpha;
+    }
     // pub fn set_text_color(&mut self,color:Color){
     //     self.text.color=color;
     // }

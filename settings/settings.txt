@@ -1,7 +1,5 @@
-fullscreen = false
-window_width = 1024
-window_height = 720
-characters=3
-pages=3
-page_wallpapers=3
-new_game=true
+
+pages = 3
+page_wallpapers = 3
+characters = 1
+new_game = true

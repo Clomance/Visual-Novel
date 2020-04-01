@@ -60,6 +60,14 @@ impl<'a> Menu<'a>{
         }
     }
 
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.head.set_alpha_channel(alpha);
+        
+        for button in &mut self.buttons{
+            button.set_alpha_channel(alpha);
+        }
+    }
+
     pub fn clicked(&mut self)->Option<usize>{
         for (c,button) in self.buttons.iter_mut().enumerate(){
             if button.clicked(){

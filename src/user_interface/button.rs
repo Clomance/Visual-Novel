@@ -6,12 +6,12 @@ pub struct Button<'a>{
 }
 
 impl<'a> Button<'a>{
-    // pub fn new(rect:[f64;4],text:String,font_size:u32,mut glyphs:GlyphCache<'a>)->Button<'a>{
-    //     Self{
-    //         button_base:ButtonDependent::new(rect,text,font_size,&mut glyphs),
-    //         glyphs:glyphs,
-    //     }
-    // }
+    pub fn new(settings:ButtonSettings,mut glyphs:GlyphCache<'a>)->Button<'a>{
+        Self{
+            button_base:ButtonDependent::new(settings,&mut glyphs),
+            glyphs:glyphs,
+        }
+    }
 
     // pub fn set_rect(&mut self,rect:[f64;4]){
     //     let x2=rect[0]+rect[2];
@@ -27,6 +27,14 @@ impl<'a> Button<'a>{
 
     // pub fn set_text(&mut self,text:String){
     //     self.buton_base.text=text;
+    // }
+
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.button_base.set_alpha_channel(alpha);
+    }
+
+    // pub fn get_background_color_mut(&mut self)->&mut Color{
+    //     &mut self.button_base.rectanlge.color
     // }
 
     pub fn clicked(&mut self)->bool{
@@ -73,6 +81,14 @@ impl ButtonDependent{
         }
     }
 
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.text.set_alpha_channel(alpha);
+    }
+
+    // pub fn get_background_color_mut(&mut self)->&mut Color{
+    //     &mut self.rectanlge.color
+    // }
+
     pub fn clicked(&mut self)->bool{
         let x=unsafe{mouse_position[0]};
         let y=unsafe{mouse_position[1]};
@@ -81,8 +97,7 @@ impl ButtonDependent{
     }
     pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics,glyphs:&mut GlyphCache){
         let rect_pos=[self.x1,self.y1,self.width,self.height];
-        let rect=Rectangle::new(Light_blue);
-        rect.draw(rect_pos,draw_state,transform,g);
+        self.rectanlge.draw(rect_pos,draw_state,transform,g);
 
         self.text.draw(draw_state,transform,g,glyphs);
     }
@@ -101,7 +116,7 @@ impl ButtonSettings{
     pub fn new()->ButtonSettings{
         Self{
             rect:[0f64;4],
-            background_color:Gray,
+            background_color:Light_blue,
             text:String::new(),
             font_size:20,
             text_color:BLACK,
@@ -131,5 +146,110 @@ impl ButtonSettings{
     pub fn text_color(mut self,color:Color)->ButtonSettings{
         self.text_color=color;
         self
+    }
+}
+
+// Второе название JmyakButton - предложил Тимур Шайхинуров
+// Кнопка, в которую вписывается крестик при нажатии
+pub struct CheckButton{
+    button_base:ButtonBase,
+    tick_color:Color,
+    ticked:bool
+}
+
+impl CheckButton{
+    pub fn new(rect:[f64;4],background_color:Color,ticked:bool)->CheckButton{
+        Self{
+            button_base:ButtonBase::new(rect,background_color),
+            tick_color:Red,
+            ticked:ticked
+        }
+    }
+
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.set_alpha_channel(alpha)
+    }
+
+    pub fn clicked(&mut self)->bool{
+        if self.button_base.released(){
+            self.ticked=!self.ticked;
+            true
+        }
+        else{
+            false
+        }
+    }
+
+    pub fn draw(&self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
+        self.button_base.draw(draw_state,transform,g);
+        if self.ticked{
+            let line=Line::new(self.tick_color,1f64);
+            
+            line.draw([
+                self.button_base.x1,
+                self.button_base.y1,
+                self.button_base.x2,
+                self.button_base.y2
+                ],draw_state,transform,g);
+                
+            line.draw([
+                self.button_base.x1,
+                self.button_base.y2,
+                self.button_base.x2,
+                self.button_base.y1
+                ],draw_state,transform,g)
+        }
+    }
+}
+
+struct ButtonBase{
+    x1:f64,
+    y1:f64,
+    x2:f64,
+    y2:f64,
+    width:f64,
+    height:f64,
+    rectangle:Rectangle,
+}
+
+impl ButtonBase{
+    #[inline]
+    pub fn new(rect:[f64;4],color:Color)->ButtonBase{
+        Self{
+            x1:rect[0],
+            y1:rect[1],
+            x2:rect[0]+rect[2],
+            y2:rect[1]+rect[3],
+            width:rect[2],
+            height:rect[3],
+            rectangle:Rectangle::new(color),
+        }
+    }
+
+    #[inline] // Установка альфа-канала
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.rectangle.color[3]=alpha;
+    }
+
+    #[inline] // Проверка нажатия на кнопку и локальные действия
+    pub fn pressed(&self)->bool{
+        let x=unsafe{mouse_position[0]};
+        let y=unsafe{mouse_position[1]};
+
+        self.x1<x && self.x2>x && self.y1<y && self.y2>y
+    }
+
+    #[inline] // Проверка отпущеная ли кнопка
+    pub fn released(&self)->bool{
+        let x=unsafe{mouse_position[0]};
+        let y=unsafe{mouse_position[1]};
+
+        self.x1<x && self.x2>x && self.y1<y && self.y2>y
+    }
+
+    #[inline]
+    pub fn draw(&self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
+        let rect_pos=[self.x1,self.y1,self.width,self.height];
+        self.rectangle.draw(rect_pos,draw_state,transform,g);
     }
 }

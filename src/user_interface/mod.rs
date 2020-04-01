@@ -9,10 +9,7 @@ mod dialogue_box;
 pub use dialogue_box::DialogueBox;
 
 mod button;
-pub use button::{
-    ButtonDependent,
-    ButtonSettings,
-};
+pub use button::*;
 
 mod menu;
 pub use menu::{
