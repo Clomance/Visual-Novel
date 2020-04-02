@@ -7,12 +7,16 @@ pub struct Dialogue{
 }
 
 impl Dialogue{
-    pub fn new<P:AsRef<Path>+Debug+Clone>(path:P)->Dialogue{
+    pub fn new<P:AsRef<Path>+Debug+Clone>(path:P,user_name:&str)->Dialogue{
         let mut dialogue_file=OpenOptions::new().read(true).open(path.clone()).unwrap();
 
         let mut names_cache=Vec::<String>::with_capacity(5);
         let mut dialogues=Vec::<String>::with_capacity(50);
         let mut names=Vec::<usize>::with_capacity(50);
+
+        // Для отображения слов игрока
+        names_cache.push("Я".to_string());
+
         // Таблица с краткими именами (short_names,ptr to names_cache)
         let mut names_table=(Vec::new(),Vec::new());
 
@@ -25,6 +29,7 @@ impl Dialogue{
         while let Some(line)=lines.next(){
             line_number+=1;
             let line=line.trim();
+            
             // Проверка на пустоту
             if line.is_empty(){
                 continue
@@ -45,12 +50,19 @@ impl Dialogue{
             }
             // Перевод в строку
             let short_name=split_line[0].trim();
-            let dialogue=split_line[1].trim().to_string();
+            let dialogue=split_line[1].trim().replace("{}",user_name); // Добавление имени игрока
+
             // Поиск имени
-            let index=search_short_name(short_name,&names_table.0,line_number,path.clone());
-            let names_cache_index=names_table.1[index];
-            // Сохранение
-            names.push(names_cache_index);
+            if short_name=="{}"{
+                // Установка имени героя
+                names.push(0);
+            }
+            else{
+                // Поиск имени
+                let index=search_short_name(short_name,&names_table.0,line_number,path.clone());
+                let names_cache_index=names_table.1[index];
+                names.push(names_cache_index);
+            }
             dialogues.push(dialogue);
         }
 
@@ -60,6 +72,7 @@ impl Dialogue{
             names:names
         }
     }
+
     pub fn len(&self)->usize{
         self.dialogues.len()
     }

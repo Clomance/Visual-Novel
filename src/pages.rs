@@ -14,13 +14,23 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
             .rect([0f64,0f64,100f64,80f64])
             .text(head)
             .font_size(40)
-            .text_color(Head_main_menu);
+            .text_color(Head_main_menu_color);
+
+    let mut buttons_text=Vec::with_capacity(4);
+    unsafe{
+        if Settings._continue{
+            buttons_text.push("Продолжить".to_string());
+        }
+    }
+    buttons_text.push("Новая игра".to_string());
+    buttons_text.push("Настройки".to_string());
+    buttons_text.push("Выход".to_string());
 
     // Настройка меню
     let menu_settings=MenuSettings::new()
             .head_text_settings(head_view_settings)
             .buttons_size([180f64,60f64])
-            .buttons_text(vec!["Новая игра".to_string(),"Настройки".to_string(),"Выход".to_string()]);
+            .buttons_text(buttons_text);
 
     // Создание меню
     let mut menu=Menu::new(menu_settings,menu_glyphs);
@@ -80,27 +90,134 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
                         match key{
                             MouseButton::Left=>{
                                 if let Some(button_id)=menu.clicked(){
-                                    match button_id{
-                                        0=>{ // Кнопка начала нового игрового процесса
-                                            return Game::NewGamePlay
-                                        }
-                                        1=>{
-                                            match settings_page(events,window,gl){
-                                                Game::Exit=>return Game::Exit,
-                                                Game::Back=>continue 'main_menu,
+                                    unsafe{
+                                        if Settings._continue{
+                                            match button_id{
+                                                0=>return Game::ContinueGamePlay,
+                                                1=>{ // Кнопка начала нового игрового процесса
+                                                    match enter_user_name(events,window,gl){
+                                                        Game::NewGamePlay=>return Game::NewGamePlay,
+                                                        Game::Exit=>return Game::Exit,
+                                                        _=>{}
+                                                    }
+                                                }
+                                                2=>{
+                                                    match settings_page(events,window,gl){
+                                                        Game::Exit=>return Game::Exit,
+                                                        Game::Back=>continue 'main_menu,
+                                                        _=>{}
+                                                    }
+                                                }
+                                                3=>return Game::Exit, // Кнопка закрытия игры
                                                 _=>{}
                                             }
                                         }
-                                        2=>return Game::Exit, // Кнопка закрытия игры
-                                        _=>{}
+                                        else{
+                                            match button_id{
+                                                0=>{ // Кнопка начала нового игрового процесса
+                                                    match enter_user_name(events,window,gl){
+                                                        Game::NewGamePlay=>return Game::NewGamePlay,
+                                                        Game::Exit=>return Game::Exit,
+                                                        _=>{}
+                                                    }
+                                                }
+                                                1=>{
+                                                    match settings_page(events,window,gl){
+                                                        Game::Exit=>return Game::Exit,
+                                                        Game::Back=>continue 'main_menu,
+                                                        _=>{}
+                                                    }
+                                                }
+                                                2=>return Game::Exit, // Кнопка закрытия игры
+                                                _=>{}
+                                            }
+                                        }
                                     }
                                 }
                             }
                             _=>{}
                         }
                     }
+                    Button::Keyboard(key)=>{
+                        println!("{:?}",key)
+                    }
                     _=>{}
                 }
+            }
+        }
+    }
+    // Конец меню
+}
+
+#[inline]
+pub fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
+    let smooth=1f32/32f32;
+    let mut alpha=0f32;
+
+    // Загрузка шрифта
+    let texture_settings=TextureSettings::new();
+    let mut glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+
+    let settings=TextViewSettings::new()
+            .text("Введите своё имя".to_string())
+            .rect(unsafe{[
+                (window_width)/2f64-150f64,
+                (window_height)/2f64-150f64,
+                300f64,
+                70f64,
+            ]});
+    
+    let mut head=TextView::new(settings,glyphs);
+
+    glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+
+    let settings=EditTextViewSettings::new()
+            .rect(unsafe{[
+                (window_width)/2f64-150f64,
+                (window_height)/2f64-150f64,
+                300f64,
+                150f64,
+            ]})
+            .background_color(Cyan);
+
+    let mut name_input=EditTextView::new(settings,glyphs);
+
+    while let Some(e)=events.next(window){
+        // Закрытие игры
+        if let Some(_close)=e.close_args(){
+            return Game::Exit
+        }
+        // Рендеринг
+        if let Some(r)=e.render_args(){
+            gl.draw(r.viewport(),|c,g|{
+                name_input.draw(&c.draw_state,c.transform,g);
+                head.draw(&c.draw_state,c.transform,g)
+            })
+        }
+        // Получение вводный данных
+        if let Some(text)=e.text_args(){
+            name_input.push_text(&text);
+        }
+        //
+        if let Some(button)=e.release_args(){
+            match button{
+                Button::Keyboard(key)=>{
+                    match key{
+                        Key::Backspace=>name_input.pop_text(), // Удаление
+                        Key::Escape=>{
+                            return Game::Back
+                        }
+                        Key::Return=>unsafe{
+                            let name=name_input.get_text();
+                            if !name.is_empty(){
+                                Settings.user_name=name;
+                                return Game::NewGamePlay
+                            }
+                        }
+                        _=>{}
+                    }
+                }
+                _=>{}
             }
         }
     }
@@ -112,15 +229,15 @@ pub fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraph
     let smooth=1f32/32f32;
     let mut alpha=0f32;
 
-    let width=unsafe{Settings.window_size.width}; // Ширина окна
+    let width=unsafe{window_width}; // Ширина окна
 
     // Создание заднего фона
-    let mut background=Rectangle::new(Settings_page);
+    let mut background=Rectangle::new(Settings_page_color);
     let background_rect=unsafe{[
         0f64,
         0f64,
         width,
-        Settings.window_size.height
+        window_height
     ]};
 
     // Загрузка шрифта
@@ -132,14 +249,14 @@ pub fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraph
     let head_settings=TextViewSettings::new()
             .text("Настройки".to_string())
             .font_size(40)
-            .text_color(WHITE)
-            .rect(unsafe{[0f64,0f64,Settings.window_size.width,80f64]});
+            .text_color(White)
+            .rect(unsafe{[0f64,0f64,window_width,80f64]});
     let mut head=TextView::new(head_settings,head_glyphs);
 
     let button_settings=ButtonSettings::new()
             .rect(unsafe{[
                 40f64,
-                Settings.window_size.height-80f64,
+                window_height-80f64,
                 120f64,
                 60f64
             ]})
@@ -250,10 +367,10 @@ pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics
 
     // Создание заднего фона
     let background_size=[300f64,450f64];
-    let mut background=Rectangle::new(Pause_menu_background);
+    let mut background=Rectangle::new(Pause_menu_background_color);
     let background_rect=unsafe{[
-        (Settings.window_size.width-background_size[0])/2f64,
-        (Settings.window_size.height-background_size[1])/2f64,
+        (window_width-background_size[0])/2f64,
+        (window_height-background_size[1])/2f64,
         background_size[0],
         background_size[1]
     ]};
@@ -269,7 +386,7 @@ pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics
             .rect([0f64,0f64,100f64,80f64])
             .text(head)
             .font_size(40)
-            .text_color(Head_main_menu);
+            .text_color(Head_main_menu_color);
 
     let menu_settings=MenuSettings::new()
             .buttons_size([180f64,60f64])

@@ -11,8 +11,8 @@ impl<'a> Wallpaper<'a>{
             let image=Image::new_color([1.0;4]).rect([
                 0.0,
                 0.0,
-                Settings.window_size.width,
-                Settings.window_size.height
+                window_width,
+                window_height
             ]);
             Self{
                 image,

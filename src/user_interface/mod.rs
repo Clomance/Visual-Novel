@@ -1,9 +1,5 @@
 mod text_view;
-pub use text_view::{
-    TextView,
-    TextViewDependent,
-    TextViewSettings,
-};
+pub use text_view::*;
 
 mod dialogue_box;
 pub use dialogue_box::DialogueBox;

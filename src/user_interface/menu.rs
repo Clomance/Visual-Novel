@@ -98,7 +98,7 @@ pub struct MenuSettings{
 impl MenuSettings{
     pub fn new()->MenuSettings{
         Self{
-            rect:unsafe{[0f64,0f64,Settings.window_size.width,Settings.window_size.height]},
+            rect:unsafe{[0f64,0f64,window_width,window_height]},
             head_text_view_settings:TextViewSettings::new(),
             buttons_size:[100f64,60f64],
             buttons_text:Vec::new(),

@@ -24,23 +24,23 @@ pub struct DialogueBox<'a,'b>{
 impl<'a,'b> DialogueBox<'a,'b>{
     pub fn new(texture:Texture,glyph:GlyphCache<'a>,dialogue:&'b Dialogue)->DialogueBox<'a,'b>{
         unsafe{
-            let text=Text::new_color(WHITE,font_size);
+            let text=Text::new_color(White,font_size);
             let image=Image::new_color([1.0;4]).rect([
                 0f64,
-                Settings.window_size.height-dialog_height,
-                Settings.window_size.width,
+                window_height-dialog_height,
+                window_width,
                 dialog_height
             ]);
 
             Self{
                 dialog:dialogue,
-                step:0usize,
+                step:Settings.saved_dialog,
                 x1:0f64,
-                y1:Settings.window_size.height-dialog_height,
-                x2:Settings.window_size.width,
-                y2:Settings.window_size.height,
+                y1:window_height-dialog_height,
+                x2:window_width,
+                y2:window_height,
                 text:text,
-                text_position:[text_position_x,Settings.window_size.height-dialog_height/2f64],
+                text_position:[text_position_x,window_height-dialog_height/2f64],
                 image:image,
                 texture:texture,
                 glyphs:glyph

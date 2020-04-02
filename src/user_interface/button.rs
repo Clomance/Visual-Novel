@@ -119,7 +119,7 @@ impl ButtonSettings{
             background_color:Light_blue,
             text:String::new(),
             font_size:20,
-            text_color:BLACK,
+            text_color:Black,
         }
     }
 
@@ -167,7 +167,7 @@ impl CheckButton{
     }
 
     pub fn set_alpha_channel(&mut self,alpha:f32){
-        self.set_alpha_channel(alpha)
+        self.button_base.set_alpha_channel(alpha)
     }
 
     pub fn clicked(&mut self)->bool{

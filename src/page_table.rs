@@ -15,7 +15,7 @@ impl<'a,'b,'c> PageTable<'a,'b,'c>{
             wallpapers:Vec::with_capacity(len),
             dialogues:Vec::with_capacity(len),
             characters:Vec::with_capacity(len),
-            page:0
+            page:unsafe{Settings.saved_page},
         };
 
         let mut table_file=OpenOptions::new().read(true).open("settings/page_table.txt").unwrap();

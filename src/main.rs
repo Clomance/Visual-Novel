@@ -1,5 +1,5 @@
-#![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use)]
-//#![windows_subsystem="windows"] // Отключение консоли
+#![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use,dead_code)]
+#![windows_subsystem="windows"] // Отключение консоли
 
 use glutin_window::GlutinWindow;
 
@@ -12,7 +12,6 @@ use opengl_graphics::{
 };
 
 use piston::{
-    Window,
     AdvancedWindow,
     Size,
     WindowSettings,
@@ -24,9 +23,9 @@ use piston::{
     },
     ReleaseEvent,
     RenderEvent,
-    ResizeEvent,
     MouseCursorEvent,
-    CloseEvent
+    CloseEvent,
+    TextEvent
 };
 
 use graphics::{
@@ -86,8 +85,16 @@ pub enum Game{
 }
 
 const Game_name:&str="Visual Novel by Clomance";
+const default_window_size:Size=Size{
+    width:0f64,
+    height:0f64
+};
+
 
 pub static mut Settings:game_settings::GameSettings=game_settings::GameSettings::new();
+
+pub static mut window_height:f64=0f64;
+pub static mut window_width:f64=0f64;
 
 pub static mut mouse_position:[f64;2]=[0f64;2];
 
@@ -96,37 +103,42 @@ fn main(){
         // Загрузка настроек
         Settings.load();
 
-        // Создание окна и загрузка функций OpenGL //
-        //                                         //
+        //                                         \\
+        // Создание окна и загрузка функций OpenGL \\
+        //                                         \\
         let opengl=OpenGL::V3_2;
 
-        let mut window:GlutinWindow=WindowSettings::new(Game_name,Settings.window_size)
+        let mut window:GlutinWindow=WindowSettings::new(Game_name,default_window_size)
                 .exit_on_esc(false)
                 .vsync(true)
                 .fullscreen(true)
                 .graphics_api(opengl)
                 .resizable(false)
+                .controllers(false)
+                .srgb(true)
             .build().expect("Could not create window");
+
+        window.set_capture_cursor(false); // Захват курсора - удаление его с экрана
 
         let mut gl=GlGraphics::new(opengl);
 
         let mut events=Events::new(EventSettings::new().lazy(false).ups(60));
 
-        //-----------------------------------------//
-        // Получение размеров экрана и заполнение его окном игры
-        let size=glutin::event_loop::EventLoop::new().primary_monitor().size();
-        Settings.window_size.width=size.width as f64;
-        Settings.window_size.height=size.height as f64;
-        window.set_size(Settings.window_size);
+        //-----------------------------------------\\
 
-        // Загрузка ресурсов //
-        //                   //
+        let size=glutin::event_loop::EventLoop::new().primary_monitor().size(); //
+        window_width=size.width as f64;                                         // Получение размеров экрана
+        window_height=size.height as f64;                                       // и заполнение его окном игры
+        window.set_size([window_width,window_height]);                          //
 
         let texture_settings=TextureSettings::new();
 
+        // Загрузка ресурсов игры \\
+        //                        \\
+
         let mut characters:Vec<Character>=Vec::with_capacity(Settings.characters_len); // Массив персонажей
         let mut wallpaper_textures:Vec<Texture>=Vec::with_capacity(Settings.pages); // Массив обоев для игры
-        let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages); // Массив диалогов
+        
 
         // Загрузка обоев
         for i in 0..Settings.page_wallpapers{
@@ -135,40 +147,24 @@ fn main(){
             wallpaper_textures.push(wallpaper_texture);
         }
 
-        // Загрузка диалогов
-        for i in 0..Settings.pages{
-            let path=format!("text/dialogue{}.txt",i);
-            let dialogue=Dialogue::new(path);
-            dialogues.push(dialogue);
-        }
-
         // Загрузка персонажей
         for i in 0..Settings.characters_len{
             let path=format!("images/characters/character{}.png",i);
             characters.push(Character::new(path,&texture_settings));
         }
 
-        let dialogue_box_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        let dialogue_box_texture=Texture::from_path("images/dialogue_box.png",&texture_settings).unwrap();
-
-        // Загрузка таблицы страниц игры
-        let mut page_table=PageTable::new(&characters,&wallpaper_textures,&dialogues);
-
         // Создание элементов интерфейса //
         //                               //
-
         // Обои
         let main_menu_wallpaper_texture=Texture::from_path("images/wallpapers/main_menu_wallpaper.jpg",&texture_settings).unwrap();
         let mut wallpaper=Wallpaper::new(&main_menu_wallpaper_texture);
 
-        // Диалоговое окно
-        let mut dialogue_box=DialogueBox::new(dialogue_box_texture,dialogue_box_glyphs,&dialogues[0]);
-
-
         //-------------------------------//
 
+        // Сглаживание
         let smooth=1f32/32f32; // 1 к количеству кадров перехода
         let mut alpha;
+
 
         // Полный цикл игры
         'game:loop{
@@ -176,15 +172,38 @@ fn main(){
             wallpaper.set_texture(&main_menu_wallpaper_texture);
             // Цикл главного меню
             match main_menu(&mut wallpaper,&mut events,&mut window,&mut gl){
+                Game::ContinueGamePlay=>{
+
+                }
                 Game::NewGamePlay=>{
-                    page_table.set_page(0);
-                    dialogue_box.set_dialogue(page_table.current_dialogue());
+                    Settings.saved_page=0;
+                    Settings.saved_dialog=0;
                 }
                 Game::Exit=>break 'game,
                 _=>{}
             };
 
+
+            let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages); // Массив диалогов
+            
+            // Загрузка диалогов
+            for i in 0..Settings.pages{
+                let path=format!("text/dialogue{}.txt",i);
+                let dialogue=Dialogue::new(path,&Settings.user_name);
+                dialogues.push(dialogue);
+            }
+
+            // Загрузка таблицы страниц игры
+            let mut page_table=PageTable::new(&characters,&wallpaper_textures,&dialogues);
+
+            // Установка фона игры
             wallpaper.set_texture(page_table.current_wallpaper());
+
+            // Диалоговое окно
+            let dialogue_box_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+            let dialogue_box_texture=Texture::from_path("images/dialogue_box.png",&texture_settings).unwrap();
+            let mut dialogue_box=DialogueBox::new(dialogue_box_texture,dialogue_box_glyphs,page_table.current_dialogue());
+
             alpha=0f32;
 
             'smooth:while let Some(e)=events.next(&mut window){
