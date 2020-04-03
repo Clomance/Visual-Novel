@@ -15,7 +15,7 @@ impl<'a> EditTextView<'a>{
             rect:rect,
             background:[
                 Rectangle::new(settings.background_color),
-                Rectangle::new_border(settings.border_color,1f64),
+                Rectangle::new_border(settings.border_color,2f64),
             ],
         }
     }
@@ -32,9 +32,15 @@ impl<'a> EditTextView<'a>{
         self.base.pop_text()
     }
 
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.base.set_alpha_channel(alpha);
+        self.background[0].color[3]=alpha;
+        self.background[1].color[3]=alpha;
+    }
+
     pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
-        self.background[0].draw(self.rect,draw_state,transform,g);
         self.background[1].draw(self.rect,draw_state,transform,g);
+        self.background[0].draw(self.rect,draw_state,transform,g);
         self.base.draw(draw_state,transform,g)
     }
 }
@@ -155,6 +161,11 @@ impl EditTextViewSettings{
 
     pub fn background_color(mut self,color:Color)->EditTextViewSettings{
         self.background_color=color;
+        self
+    }
+
+    pub fn border_color(mut self,color:Color)->EditTextViewSettings{
+        self.border_color=color;
         self
     }
 }

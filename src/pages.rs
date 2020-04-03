@@ -151,7 +151,7 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
 
 #[inline]
 pub fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
-    let smooth=1f32/32f32;
+    let smooth=1f32/8f32;
     let mut alpha=0f32;
 
     // Загрузка шрифта
@@ -178,10 +178,34 @@ pub fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGra
                 300f64,
                 150f64,
             ]})
-            .background_color(Cyan);
+            .background_color(Light_blue)
+            .border_color(Blue);
 
     let mut name_input=EditTextView::new(settings,glyphs);
 
+    // Глаживание перехода
+    'smooth:while let Some(e)=events.next(window){
+        // Закрытие игры
+        if let Some(_close)=e.close_args(){
+            return Game::Exit
+        }
+        // Рендеринг
+        if let Some(r)=e.render_args(){
+            gl.draw(r.viewport(),|c,g|{
+                name_input.set_alpha_channel(alpha);
+                name_input.draw(&c.draw_state,c.transform,g);
+
+                head.set_alpha_channel(alpha);
+                head.draw(&c.draw_state,c.transform,g);
+            });
+
+            alpha+=smooth;
+            if alpha>=1.0{
+                break 'smooth
+            }
+        }
+    }
+    // Полная отрисовка
     while let Some(e)=events.next(window){
         // Закрытие игры
         if let Some(_close)=e.close_args(){
@@ -301,7 +325,6 @@ pub fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraph
                 }
 
                 alpha+=smooth;
-                
             });
             if alpha>=1.0{
                 break 'smooth
