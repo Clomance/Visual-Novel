@@ -16,16 +16,13 @@ use piston::{
     Size,
     WindowSettings,
     event_loop::{EventLoop,EventSettings,Events},
-    input::{
-        Button,
-        Key,
-        MouseButton
-    },
+    input::{Button,Key,MouseButton},
     ReleaseEvent,
     RenderEvent,
     MouseCursorEvent,
     CloseEvent,
-    TextEvent
+    TextEvent,
+    Event
 };
 
 use graphics::{
@@ -114,23 +111,19 @@ fn main(){
                 .fullscreen(true)
                 .graphics_api(opengl)
                 .resizable(false)
-                .controllers(false)
-                .srgb(true)
-            .build().expect("Could not create window");
-
-        window.set_capture_cursor(false); // Захват курсора - удаление его с экрана
+                .build().expect("Could not create window"); // Получение окна либо вылет
 
         let mut gl=GlGraphics::new(opengl);
 
         let mut events=Events::new(EventSettings::new().lazy(false).ups(60));
 
         //-----------------------------------------\\
-
-        let size=glutin::event_loop::EventLoop::new().primary_monitor().size(); //
-        window_width=size.width as f64;                                         // Получение размеров экрана
-        window_height=size.height as f64;                                       // и заполнение его окном игры
-        window.set_size([window_width,window_height]);                          //
-
+        {
+            let size=glutin::event_loop::EventLoop::new().primary_monitor().size(); //
+            window_width=size.width as f64;                                         // Получение размеров экрана
+            window_height=size.height as f64;                                       // и заполнение его окном игры
+            window.set_size([window_width,window_height]);                          //
+        }
         let texture_settings=TextureSettings::new();
 
         // Загрузка ресурсов игры \\
@@ -138,7 +131,8 @@ fn main(){
 
         let mut characters:Vec<Character>=Vec::with_capacity(Settings.characters_len); // Массив персонажей
         let mut wallpaper_textures:Vec<Texture>=Vec::with_capacity(Settings.pages); // Массив обоев для игры
-        
+        let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages); // Массив диалогов
+
 
         // Загрузка обоев
         for i in 0..Settings.page_wallpapers{
@@ -157,6 +151,7 @@ fn main(){
         //                               //
         // Обои
         let main_menu_wallpaper_texture=Texture::from_path("images/wallpapers/main_menu_wallpaper.jpg",&texture_settings).unwrap();
+        let ending_wallpaper_texture=Texture::from_path("images/wallpapers/ending_wallpaper.jpg",&texture_settings).unwrap();
         let mut wallpaper=Wallpaper::new(&main_menu_wallpaper_texture);
 
         //-------------------------------//
@@ -164,7 +159,6 @@ fn main(){
         // Сглаживание
         let smooth=1f32/32f32; // 1 к количеству кадров перехода
         let mut alpha;
-
 
         // Полный цикл игры
         'game:loop{
@@ -184,8 +178,10 @@ fn main(){
             };
 
 
-            let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages); // Массив диалогов
             
+
+
+            dialogues.clear();
             // Загрузка диалогов
             for i in 0..Settings.pages{
                 let path=format!("text/dialogue{}.txt",i);
@@ -219,9 +215,9 @@ fn main(){
                         
                         dialogue_box.set_alpha_channel(alpha);
                         dialogue_box.draw(&c.draw_state,c.transform,g);
-
-                        alpha+=smooth;
                     });
+
+                    alpha+=smooth;
                     if alpha>=1.0{
                         break 'smooth
                     }
@@ -235,11 +231,7 @@ fn main(){
                 if let Some(_close)=e.close_args(){
                     break 'game
                 }
-
-                // Движение мыши
-                if let Some(mouse)=e.mouse_cursor_args(){
-                    mouse_position=mouse;
-                }
+                mouse_cursor_movement(&e); // Движение мыши
                 // Рендеринг
                 if let Some(r)=e.render_args(){
                     gl.draw(r.viewport(),|c,g|{
@@ -300,13 +292,39 @@ fn main(){
                 // Конец цикла только игровой части
             }
             // Конец полного цикла игры
+
+
+            // Конечная заставка игры
+            wallpaper.set_texture(&ending_wallpaper_texture);
+
+            'gameplay_ending:while let Some(e)=events.next(&mut window){
+                // Закрытие игры
+                if let Some(_close)=e.close_args(){
+                    break 'game
+                }
+                // Рендеринг
+                if let Some(r)=e.render_args(){
+                    gl.draw(r.viewport(),|c,g|{
+                        wallpaper.draw(&c.draw_state,c.transform,g);
+                    });
+                }
+                if let Some(button)=e.release_args(){
+                    break 'gameplay_ending
+                }
+            }
         }
         // Конец программы
         Settings.save();
     }
 }
 
-
+pub fn mouse_cursor_movement(event:&Event){
+    if let Some(mouse)=event.mouse_cursor_args(){
+        unsafe{
+            mouse_position=mouse;
+        }
+    }
+}
 
 
 

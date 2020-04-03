@@ -70,12 +70,7 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
             if let Some(_close)=e.close_args(){
                 return Game::Exit
             }
-            // Движение мыши
-            if let Some(mouse)=e.mouse_cursor_args(){
-                unsafe{
-                    mouse_position=mouse;
-                }
-            }
+            mouse_cursor_movement(&e); // Движение мыши
             // Рендеринг
             if let Some(r)=e.render_args(){
                 gl.draw(r.viewport(),|c,g|{
@@ -90,47 +85,45 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
                         match key{
                             MouseButton::Left=>{
                                 if let Some(button_id)=menu.clicked(){
-                                    unsafe{
-                                        if Settings._continue{
-                                            match button_id{
-                                                0=>return Game::ContinueGamePlay,
-                                                1=>{ // Кнопка начала нового игрового процесса
-                                                    match enter_user_name(events,window,gl){
-                                                        Game::NewGamePlay=>return Game::NewGamePlay,
-                                                        Game::Exit=>return Game::Exit,
-                                                        _=>{}
-                                                    }
+                                    if unsafe{Settings._continue}{
+                                        match button_id{
+                                            0=>return Game::ContinueGamePlay,
+                                            1=>{ // Кнопка начала нового игрового процесса
+                                                match enter_user_name(events,window,gl){
+                                                    Game::NewGamePlay=>return Game::NewGamePlay,
+                                                    Game::Exit=>return Game::Exit,
+                                                    _=>{}
                                                 }
-                                                2=>{
-                                                    match settings_page(events,window,gl){
-                                                        Game::Exit=>return Game::Exit,
-                                                        Game::Back=>continue 'main_menu,
-                                                        _=>{}
-                                                    }
-                                                }
-                                                3=>return Game::Exit, // Кнопка закрытия игры
-                                                _=>{}
                                             }
+                                            2=>{
+                                                match settings_page(events,window,gl){
+                                                    Game::Exit=>return Game::Exit,
+                                                    Game::Back=>continue 'main_menu,
+                                                    _=>{}
+                                                }
+                                            }
+                                            3=>return Game::Exit, // Кнопка закрытия игры
+                                            _=>{}
                                         }
-                                        else{
-                                            match button_id{
-                                                0=>{ // Кнопка начала нового игрового процесса
-                                                    match enter_user_name(events,window,gl){
-                                                        Game::NewGamePlay=>return Game::NewGamePlay,
-                                                        Game::Exit=>return Game::Exit,
-                                                        _=>{}
-                                                    }
+                                    }
+                                    else{
+                                        match button_id{
+                                            0=>{ // Кнопка начала нового игрового процесса
+                                                match enter_user_name(events,window,gl){
+                                                    Game::NewGamePlay=>return Game::NewGamePlay,
+                                                    Game::Exit=>return Game::Exit,
+                                                    _=>{}
                                                 }
-                                                1=>{
-                                                    match settings_page(events,window,gl){
-                                                        Game::Exit=>return Game::Exit,
-                                                        Game::Back=>continue 'main_menu,
-                                                        _=>{}
-                                                    }
-                                                }
-                                                2=>return Game::Exit, // Кнопка закрытия игры
-                                                _=>{}
                                             }
+                                            1=>{
+                                                match settings_page(events,window,gl){
+                                                    Game::Exit=>return Game::Exit,
+                                                    Game::Back=>continue 'main_menu,
+                                                    _=>{}
+                                                }
+                                            }
+                                            2=>return Game::Exit, // Кнопка закрытия игры
+                                            _=>{}
                                         }
                                     }
                                 }
@@ -138,13 +131,12 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
                             _=>{}
                         }
                     }
-                    Button::Keyboard(key)=>{
-                        println!("{:?}",key)
-                    }
                     _=>{}
                 }
             }
+            // Конец цикла
         }
+        // Конец полного цикла
     }
     // Конец меню
 }
@@ -253,14 +245,12 @@ pub fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraph
     let smooth=1f32/32f32;
     let mut alpha=0f32;
 
-    let width=unsafe{window_width}; // Ширина окна
-
     // Создание заднего фона
     let mut background=Rectangle::new(Settings_page_color);
     let background_rect=unsafe{[
         0f64,
         0f64,
-        width,
+        window_width,
         window_height
     ]};
 
@@ -338,12 +328,7 @@ pub fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraph
         if let Some(_close)=e.close_args(){
             return Game::Exit
         }
-        // Движение мыши
-        if let Some(mouse)=e.mouse_cursor_args(){
-            unsafe{
-                mouse_position=mouse;
-            }
-        }
+        mouse_cursor_movement(&e); // Движение мыши
         // Рендеринг
         if let Some(r)=e.render_args(){
             gl.draw(r.viewport(),|c,g|{
@@ -385,7 +370,7 @@ pub fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraph
 
 #[inline] // Меню паузы во время игры
 pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
-    let smooth=1f32/32f32;
+    let smooth=1f32/8f32;
     let mut alpha=0f32;
 
     // Создание заднего фона
@@ -451,12 +436,7 @@ pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics
         if let Some(_close)=e.close_args(){
             return Game::Exit
         }
-        // Движение мыши
-        if let Some(mouse)=e.mouse_cursor_args(){
-            unsafe{
-                mouse_position=mouse;
-            }
-        }
+        mouse_cursor_movement(&e); // Движение мыши
         // Рендеринг
         if let Some(r)=e.render_args(){
             gl.draw(r.viewport(),|c,g|{
@@ -464,7 +444,7 @@ pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics
                 menu.draw(&c.draw_state,c.transform,g);
             });
         }
-
+        // Нажатие кнопок
         if let Some(button)=e.release_args(){
             match button{
                 Button::Keyboard(key)=>{
