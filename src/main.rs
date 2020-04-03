@@ -170,15 +170,13 @@ fn main(){
 
                 }
                 Game::NewGamePlay=>{
+
                     Settings.saved_page=0;
                     Settings.saved_dialog=0;
                 }
                 Game::Exit=>break 'game,
                 _=>{}
             };
-
-
-            
 
 
             dialogues.clear();
@@ -260,7 +258,7 @@ fn main(){
                                 Key::Escape=>{
                                     // Пауза
                                     match pause_menu(&mut events,&mut window,&mut gl){
-                                        Game::MainMenu=>break 'gameplay,
+                                        Game::MainMenu=>continue 'game,
                                         Game::Exit=>break 'game,
                                         _=>{}
                                     }
@@ -308,7 +306,7 @@ fn main(){
                         wallpaper.draw(&c.draw_state,c.transform,g);
                     });
                 }
-                if let Some(button)=e.release_args(){
+                if let Some(_button)=e.release_args(){
                     break 'gameplay_ending
                 }
             }

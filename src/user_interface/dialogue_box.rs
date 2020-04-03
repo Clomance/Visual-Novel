@@ -1,6 +1,7 @@
 use crate::*;
 
-const dialog_height:f64=300f64;
+const k:f64=3.3f64; // Отношение размера окна игры к диалоговому окну
+
 const font_size:u32=18;
 
 const text_position_x:f64=80f64;
@@ -10,10 +11,7 @@ const name_position_x:f64=20f64;
 pub struct DialogueBox<'a,'b>{
     dialog:&'b Dialogue,
     step:usize,
-    x1:f64,
-    y1:f64,
-    x2:f64,
-    y2:f64,
+    y1:f64, // Граница нижней трети экрана, где находится диалоговое окно
     text:Text,
     text_position:[f64;2],
     image:Image,
@@ -24,23 +22,23 @@ pub struct DialogueBox<'a,'b>{
 impl<'a,'b> DialogueBox<'a,'b>{
     pub fn new(texture:Texture,glyph:GlyphCache<'a>,dialogue:&'b Dialogue)->DialogueBox<'a,'b>{
         unsafe{
+            let height=window_height/k;
+            let y1=window_height-height;
+
             let text=Text::new_color(White,font_size);
             let image=Image::new_color([1.0;4]).rect([
                 0f64,
-                window_height-dialog_height,
+                y1,
                 window_width,
-                dialog_height
+                height
             ]);
 
             Self{
                 dialog:dialogue,
                 step:Settings.saved_dialog,
-                x1:0f64,
-                y1:window_height-dialog_height,
-                x2:window_width,
-                y2:window_height,
+                y1:y1,
                 text:text,
-                text_position:[text_position_x,window_height-dialog_height/2f64],
+                text_position:[text_position_x,window_height-height/2f64],
                 image:image,
                 texture:texture,
                 glyphs:glyph
@@ -57,22 +55,9 @@ impl<'a,'b> DialogueBox<'a,'b>{
         self.image.color.as_mut().unwrap()[3]=alpha;
         self.text.color[3]=alpha;
     }
+
     // pub fn set_text_color(&mut self,color:Color){
     //     self.text.color=color;
-    // }
-
-    // pub fn fit_screen(&mut self){
-    //     let x=unsafe{Settings.window_size[0]};
-    //     let y=unsafe{Settings.window_size[1]};
-
-    //     let rect=self.image.rectangle.as_mut().unwrap();
-    //     self.y1=y-dialog_height;
-    //     self.x2=x;
-    //     self.y2=y;
-
-    //     rect[1]=y-dialog_height;
-    //     rect[2]=x;
-    //     self.text_position=[text_position_x,y-dialog_height/2f64];
     // }
 
     pub fn next(&mut self)->bool{
@@ -87,10 +72,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
 
     pub fn clicked(&self)->bool{
         unsafe{
-            let x=mouse_position[0];
-            let y=mouse_position[1];
-
-            self.x1<x && self.x2>x && self.y1<y && self.y2>y
+            self.y1<mouse_position[1] // Если курсор в нижней трети экрана
         }
     }
 
@@ -103,7 +85,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
             .draw(name,&mut self.glyphs,draw_state,transform.trans(name_position_x,self.y1+30f64),g);
 
         // Реплика
-        let max_x=self.x2-self.text_position[0]*2f64;
+        let max_x=unsafe{window_width-text_position_x*2f64};
         draw_text(&self.text,line,&mut self.glyphs,draw_state,transform.trans(self.text_position[0],self.text_position[1]),g,max_x);
     }
 }
