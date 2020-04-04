@@ -35,7 +35,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
 
             Self{
                 dialog:dialogue,
-                step:Settings.saved_dialog,
+                step:Settings.saved_dialogue,
                 y1:y1,
                 text:text,
                 text_position:[text_position_x,window_height-height/2f64],
@@ -44,6 +44,10 @@ impl<'a,'b> DialogueBox<'a,'b>{
                 glyphs:glyph
             }
         }
+    }
+
+    pub fn current_step(&self)->usize{
+        self.step
     }
 
     pub fn set_dialogue(&mut self,dialog:&'b Dialogue){

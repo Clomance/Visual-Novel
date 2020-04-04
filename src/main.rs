@@ -140,6 +140,8 @@ fn main(){
             let wallpaper_texture=Texture::from_path(path,&texture_settings).unwrap();
             wallpaper_textures.push(wallpaper_texture);
         }
+        let main_menu_wallpaper_texture=Texture::from_path("images/wallpapers/main_menu_wallpaper.jpg",&texture_settings).unwrap();
+        let ending_wallpaper_texture=Texture::from_path("images/wallpapers/ending_wallpaper.jpg",&texture_settings).unwrap();
 
         // Загрузка персонажей
         for i in 0..Settings.characters_len{
@@ -150,8 +152,6 @@ fn main(){
         // Создание элементов интерфейса //
         //                               //
         // Обои
-        let main_menu_wallpaper_texture=Texture::from_path("images/wallpapers/main_menu_wallpaper.jpg",&texture_settings).unwrap();
-        let ending_wallpaper_texture=Texture::from_path("images/wallpapers/ending_wallpaper.jpg",&texture_settings).unwrap();
         let mut wallpaper=Wallpaper::new(&main_menu_wallpaper_texture);
 
         //-------------------------------//
@@ -167,12 +167,12 @@ fn main(){
             // Цикл главного меню
             match main_menu(&mut wallpaper,&mut events,&mut window,&mut gl){
                 Game::ContinueGamePlay=>{
-
+                    //
                 }
                 Game::NewGamePlay=>{
-
+                    Settings._continue=true;
                     Settings.saved_page=0;
-                    Settings.saved_dialog=0;
+                    Settings.saved_dialogue=0;
                 }
                 Game::Exit=>break 'game,
                 _=>{}
@@ -200,6 +200,7 @@ fn main(){
 
             alpha=0f32;
 
+            // Сглаживание перехода
             'smooth:while let Some(e)=events.next(&mut window){
                 // Закрытие игры
                 if let Some(_close)=e.close_args(){
@@ -227,6 +228,7 @@ fn main(){
             'gameplay:while let Some(e)=events.next(&mut window){
                 // Закрытие игры
                 if let Some(_close)=e.close_args(){
+                    Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step());
                     break 'game
                 }
                 mouse_cursor_movement(&e); // Движение мыши
@@ -258,8 +260,14 @@ fn main(){
                                 Key::Escape=>{
                                     // Пауза
                                     match pause_menu(&mut events,&mut window,&mut gl){
-                                        Game::MainMenu=>continue 'game,
-                                        Game::Exit=>break 'game,
+                                        Game::MainMenu=>{ // Возвращение в гланое меню
+                                            Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step());
+                                            continue 'game
+                                        }
+                                        Game::Exit=>{ // Выход из игры
+                                            Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step());
+                                            break 'game
+                                        }
                                         _=>{}
                                     }
                                 }
@@ -291,6 +299,7 @@ fn main(){
             }
             // Конец полного цикла игры
 
+            Settings._continue=false; // Отключение продолжения
 
             // Конечная заставка игры
             wallpaper.set_texture(&ending_wallpaper_texture);
@@ -316,6 +325,7 @@ fn main(){
     }
 }
 
+// Движение курсором мыши
 pub fn mouse_cursor_movement(event:&Event){
     if let Some(mouse)=event.mouse_cursor_args(){
         unsafe{
