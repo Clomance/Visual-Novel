@@ -57,7 +57,7 @@ impl GameSettings{
 
     //
     pub fn save(&mut self){
-        let mut settings_file=OpenOptions::new().write(true).open("settings/settings.txt").unwrap();
+        let mut settings_file=OpenOptions::new().write(true).truncate(true).open("settings/settings.txt").unwrap();
 
         let values=[
             self._continue.to_string(),

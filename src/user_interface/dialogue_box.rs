@@ -2,18 +2,18 @@ use crate::*;
 
 const k:f64=3.3f64; // Отношение размера окна игры к диалоговому окну
 
-const font_size:u32=18;
+const font_size:u32=24;
 
 const text_position_x:f64=80f64;
 
 const name_position_x:f64=20f64;
 
 pub struct DialogueBox<'a,'b>{
-    dialog:&'b Dialogue,
+    dialogue:&'b Dialogue,
     step:usize,
     y1:f64, // Граница нижней трети экрана, где находится диалоговое окно
-    text:Text,
-    text_position:[f64;2],
+    text_base:TextBase,
+    text_y:f64,
     image:Image,
     texture:Texture,
     glyphs:GlyphCache<'a>
@@ -25,7 +25,6 @@ impl<'a,'b> DialogueBox<'a,'b>{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
 
-            let text=Text::new_color(White,font_size);
             let image=Image::new_color([1.0;4]).rect([
                 0f64,
                 y1,
@@ -34,11 +33,11 @@ impl<'a,'b> DialogueBox<'a,'b>{
             ]);
 
             Self{
-                dialog:dialogue,
+                dialogue:dialogue,
                 step:Settings.saved_dialogue,
                 y1:y1,
-                text:text,
-                text_position:[text_position_x,window_height-height/2f64],
+                text_base:TextBase::new_color(font_size,window_width-2f64*text_position_x,White),
+                text_y:window_height-height/2f64,
                 image:image,
                 texture:texture,
                 glyphs:glyph
@@ -50,14 +49,14 @@ impl<'a,'b> DialogueBox<'a,'b>{
         self.step
     }
 
-    pub fn set_dialogue(&mut self,dialog:&'b Dialogue){
-        self.dialog=dialog;
+    pub fn set_dialogue(&mut self,dialogue:&'b Dialogue){
+        self.dialogue=dialogue;
         self.step=0usize;
     }
 
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.image.color.as_mut().unwrap()[3]=alpha;
-        self.text.color[3]=alpha;
+        self.text_base.color[3]=alpha;
     }
 
     // pub fn set_text_color(&mut self,color:Color){
@@ -65,7 +64,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
     // }
 
     pub fn next(&mut self)->bool{
-        if self.step+1<self.dialog.len(){
+        if self.step+1<self.dialogue.len(){
             self.step+=1;
             true
         }
@@ -81,47 +80,14 @@ impl<'a,'b> DialogueBox<'a,'b>{
     }
 
     pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
-        let (name,line)=self.dialog.get_line(self.step);
+        let (name,line)=self.dialogue.get_line(self.step);
         // Основа
         g.image(&self.image,&self.texture,draw_state,transform);
         // Имя
-        self.text
-            .draw(name,&mut self.glyphs,draw_state,transform.trans(name_position_x,self.y1+30f64),g);
 
-        // Реплика
-        let max_x=unsafe{window_width-text_position_x*2f64};
-        draw_text(&self.text,line,&mut self.glyphs,draw_state,transform.trans(self.text_position[0],self.text_position[1]),g,max_x);
-    }
-}
+        self.text_base.draw(name,[name_position_x,self.y1+30f64],draw_state,transform,g,&mut self.glyphs);
 
-fn draw_text(text_base:&Text,text:&str,cache:&mut GlyphCache,
-        draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics,max_x:f64){
 
-    let mut image = Image::new_color(text_base.color);
-    let next_line=text_base.font_size as f64+5f64;
-    let mut x = 0f64;
-    let mut y = 0f64;
-    for ch in text.chars() {
-        let character = cache.character(text_base.font_size, ch).unwrap();
-        let mut ch_x:f64 = x + character.left();
-        let mut ch_y:f64 = y - character.top();
-        if text_base.round {
-            ch_x = ch_x.round();
-            ch_y = ch_y.round();
-        }
-        image = image.src_rect([
-            character.atlas_offset[0], character.atlas_offset[1],
-            character.atlas_size[0], character.atlas_size[1]
-        ]);
-        image.draw(character.texture,
-            draw_state,
-            transform.trans(ch_x, ch_y),
-            g);
-        x += character.advance_width();
-        y += character.advance_height();
-        if x>max_x{
-            x=0f64;
-            y+=next_line;
-        }
+        self.text_base.draw(line,[text_position_x,self.text_y],draw_state,transform,g,&mut self.glyphs);
     }
 }

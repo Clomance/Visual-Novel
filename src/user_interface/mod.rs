@@ -12,3 +12,6 @@ pub use menu::{
     Menu,
     MenuSettings,
 };
+
+mod text_base;
+pub use text_base::TextBase;

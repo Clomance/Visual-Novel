@@ -1,11 +1,11 @@
 0 - {
     wallpaper = 0
-    character = 0
+    character = 1
     dialogue = 0
 }
 1 - {
     wallpaper = 1
-    character = 0
+    character = 2
     dialogue = 1
 }
 2 - {

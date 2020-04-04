@@ -69,7 +69,6 @@ use user_interface::*;
 mod colors;
 use colors::*;
 
-
 pub enum Game{
     Current,
     Back,
