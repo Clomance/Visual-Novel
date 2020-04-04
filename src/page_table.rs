@@ -20,7 +20,7 @@ impl<'a,'b,'c> PageTable<'a,'b,'c>{
 
         let mut table_file=OpenOptions::new().read(true).open("settings/page_table.txt").unwrap();
 
-        let mut table_str=String::new();
+        let mut table_str=String::with_capacity(len*45);
         table_file.read_to_string(&mut table_str).unwrap();
 
 

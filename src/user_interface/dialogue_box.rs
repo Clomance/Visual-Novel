@@ -22,8 +22,8 @@ pub struct DialogueBox<'a,'b>{
 impl<'a,'b> DialogueBox<'a,'b>{
     pub fn new(texture:Texture,glyph:GlyphCache<'a>,dialogue:&'b Dialogue)->DialogueBox<'a,'b>{
         unsafe{
-            let height=window_height/k;
-            let y1=window_height-height;
+            let height=window_height/k; // Высота диалогового окна
+            let y1=window_height-height; // Верхняя граница диалогового окна
 
             let text=Text::new_color(White,font_size);
             let image=Image::new_color([1.0;4]).rect([

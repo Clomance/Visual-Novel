@@ -7,7 +7,7 @@ pub struct GameSettings{
     pub saved_dialogue:usize, // Место в диалоге на котором остановился пользователь (dialogue_box)
     pub pages:usize,
     pub page_wallpapers:usize,
-    pub characters_len:usize,
+    pub characters_len:usize, 
 }
 
 impl GameSettings{
@@ -23,6 +23,7 @@ impl GameSettings{
             characters_len:0,
         }
     }
+    
     //
     pub fn load(&mut self){
         // Открытие файла и загрузка данных
@@ -48,13 +49,15 @@ impl GameSettings{
         self.characters_len=lines.next().unwrap().parse::<usize>().unwrap();
     }
 
+    // Установка позиций для сохранения
     pub fn set_saved_position(&mut self,page:usize,dialogue:usize){
         self.saved_page=page;
         self.saved_dialogue=dialogue;
     }
 
+    //
     pub fn save(&mut self){
-        let mut settings_file=OpenOptions::new().write(true).truncate(true).open("settings/settings.txt").unwrap();
+        let mut settings_file=OpenOptions::new().write(true).open("settings/settings.txt").unwrap();
 
         let values=[
             self._continue.to_string(),
