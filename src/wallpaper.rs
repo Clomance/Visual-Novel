@@ -1,43 +1,30 @@
 use crate::*;
 
-pub struct Wallpaper<'a>{
+pub struct Wallpaper{
     image:Image,
-    texture:&'a Texture,
+    texture:Texture,
+    settings:TextureSettings,
 }
 
-impl<'a> Wallpaper<'a>{
-    pub fn new(texture:&'a Texture)->Wallpaper<'a>{
-        unsafe{
-            let image=Image::new_color([1.0;4]).rect([
-                0.0,
-                0.0,
-                window_width,
-                window_height
-            ]);
-            Self{
-                image,
-                texture:texture,
-            }
+impl Wallpaper{
+    pub fn new(image:&RgbaImage)->Wallpaper{
+        let settings=TextureSettings::new();
+        Self{
+            image:Image::new_color([1.0;4]),
+            texture:Texture::from_image(image,&settings),
+            settings:settings,
         }
     }
 
-    pub fn set_texture(&mut self,texture:&'a Texture){
-        self.texture=texture;
+    pub fn set_image(&mut self,image:&RgbaImage){
+        self.texture.update(image);
     }
 
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.image.color.as_mut().unwrap()[3]=alpha;
     }
 
-    // pub fn fit_screen(&mut self){
-    //     unsafe{
-    //         let rect=self.image.rectangle.as_mut().unwrap();
-    //         rect[2]=Settings.window_size.width;
-    //         rect[3]=Settings.window_size.height;
-    //     }
-    // }
-
-    pub fn draw(&self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
-        g.image(&self.image,self.texture,draw_state,transform);
+    pub fn draw(&self,c:&Context,g:&mut GlGraphics){
+        g.image(&self.image,&self.texture,&c.draw_state,c.transform);
     }
 }

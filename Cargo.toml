@@ -1,6 +1,6 @@
 [package]
 name = "Visual_Novel"
-version = "0.4.5"
+version = "0.4.6"
 authors = ["Clomance"]
 edition = "2018"
 
@@ -10,6 +10,11 @@ piston2d-opengl_graphics = "0.72.0"
 piston2d-graphics = "0.36.0"
 pistoncore-glutin_window = "0.63.0"
 glutin = "0.24.0"
+image = "0.23.2"
+
+[lib]
+name="lib"
+path="lib/lib.rs"
 
 [profile.dev]
 opt-level = 0

@@ -43,7 +43,7 @@ impl TextBase{
                 character.atlas_size[1]
             ]);
 
-            image.draw(character.texture,draw_state,transform.trans(ch_x, ch_y),g);
+            image.draw(character.texture,draw_state,transform.trans(ch_x,ch_y),g);
             position[0]+=character.advance_width();
             position[1]+=character.advance_height();
 

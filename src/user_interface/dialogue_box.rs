@@ -8,8 +8,8 @@ const text_position_x:f64=80f64;
 
 const name_position_x:f64=20f64;
 
-pub struct DialogueBox<'a,'b>{
-    dialogue:&'b Dialogue,
+pub struct DialogueBox<'a>{
+    dialogue:*const Dialogue,
     step:usize,
     y1:f64, // Граница нижней трети экрана, где находится диалоговое окно
     text_base:TextBase,
@@ -19,8 +19,8 @@ pub struct DialogueBox<'a,'b>{
     glyphs:GlyphCache<'a>
 }
 
-impl<'a,'b> DialogueBox<'a,'b>{
-    pub fn new(texture:Texture,glyph:GlyphCache<'a>,dialogue:&'b Dialogue)->DialogueBox<'a,'b>{
+impl<'a> DialogueBox<'a>{
+    pub fn new(texture:Texture,glyph:GlyphCache<'a>)->DialogueBox<'a>{
         unsafe{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
@@ -33,7 +33,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
             ]);
 
             Self{
-                dialogue:dialogue,
+                dialogue:std::ptr::null(),
                 step:Settings.saved_dialogue,
                 y1:y1,
                 text_base:TextBase::new_color(font_size,window_width-2f64*text_position_x,White),
@@ -49,8 +49,8 @@ impl<'a,'b> DialogueBox<'a,'b>{
         self.step
     }
 
-    pub fn set_dialogue(&mut self,dialogue:&'b Dialogue){
-        self.dialogue=dialogue;
+    pub fn set_dialogue(&mut self,dialogue:&Dialogue){
+        self.dialogue=dialogue as *const Dialogue;
         self.step=0usize;
     }
 
@@ -64,7 +64,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
     // }
 
     pub fn next(&mut self)->bool{
-        if self.step+1<self.dialogue.len(){
+        if self.step+1<unsafe{(*self.dialogue).len()}{
             self.step+=1;
             true
         }
@@ -80,11 +80,11 @@ impl<'a,'b> DialogueBox<'a,'b>{
     }
 
     pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
-        let (name,line)=self.dialogue.get_line(self.step);
+        let (name,line)=unsafe{(*self.dialogue).get_line(self.step)};
         // Основа
         g.image(&self.image,&self.texture,draw_state,transform);
-        // Имя
 
+        // Имя
         self.text_base.draw(name,[name_position_x,self.y1+30f64],draw_state,transform,g,&mut self.glyphs);
 
 

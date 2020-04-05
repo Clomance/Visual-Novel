@@ -2,14 +2,14 @@ use crate::*;
 
 // Таблица распределения ресурсов (картинок, диалогов, персонажей) по страницам
 pub struct PageTable<'a,'b,'c>{
-    wallpapers:Vec<&'b Texture>,
+    wallpapers:Vec<&'b RgbaImage>,
     dialogues:Vec<&'c Dialogue>,
     characters:Vec<&'a Character>,
     page:usize
 }
 
 impl<'a,'b,'c> PageTable<'a,'b,'c>{
-    pub fn new(characters:&'a Vec<Character>,wallpapers:&'b Vec<Texture>,dialogues:&'c Vec<Dialogue>)->PageTable<'a,'b,'c>{
+    pub fn new(characters:&'a Vec<Character>,wallpapers:&'b Vec<RgbaImage>,dialogues:&'c Vec<Dialogue>)->PageTable<'a,'b,'c>{
         let mut len=unsafe{Settings.pages};
         let mut table=Self{
             wallpapers:Vec::with_capacity(len),
@@ -68,8 +68,8 @@ impl<'a,'b,'c> PageTable<'a,'b,'c>{
         &self.characters[self.page]
     }
 
-    pub fn current_wallpaper(&self)->&'b Texture{
-        self.wallpapers[self.page]
+    pub fn current_wallpaper(&self)->&'b RgbaImage{
+        &self.wallpapers[self.page]
     }
 
     pub fn current_dialogue(&self)->&'c Dialogue{

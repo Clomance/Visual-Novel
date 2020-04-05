@@ -1,11 +1,10 @@
 use crate::*;
 
 #[inline] // Главное меню
-pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
+pub unsafe fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
     let texture_settings=TextureSettings::new();
     
-    let smooth=1f32/32f32; // Сглаживание переходов - 1 к количеству кадров перехода
-    let mut alpha;
+    smooth=1f32/32f32; // Сглаживание переходов - 1 к количеству кадров перехода
 
     // Настройка заголовка меню
     let head=Game_name.to_string();
@@ -17,10 +16,9 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
             .text_color(Head_main_menu_color);
 
     let mut buttons_text=Vec::with_capacity(4);
-    unsafe{
-        if Settings._continue{
-            buttons_text.push("Продолжить".to_string());
-        }
+
+    if Settings._continue{
+        buttons_text.push("Продолжить".to_string());
     }
     buttons_text.push("Новая игра".to_string());
     buttons_text.push("Настройки".to_string());
@@ -39,26 +37,27 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
     // Цикл главного меню //
     //                    //
     'main_menu:loop{
-        // Плавный переход
-        alpha=0f32;
+
+        alpha_channel=0f32;
 
         'smooth:while let Some(e)=events.next(window){
-            // Закрытие игры
+        // Закрытие игры
             if let Some(_close)=e.close_args(){
                 return Game::Exit
             }
             // Рендеринг
             if let Some(r)=e.render_args(){
                 gl.draw(r.viewport(),|c,g|{
-                    wallpaper.set_alpha_channel(alpha);
-                    wallpaper.draw(&c.draw_state,c.transform,g);
+                    wallpaper.set_alpha_channel(alpha_channel);
+                    wallpaper.draw(&c,g);
                     
-                    menu.set_alpha_channel(alpha);
+                    menu.set_alpha_channel(alpha_channel);
                     menu.draw(&c.draw_state,c.transform,g);
 
-                    alpha+=smooth;
+                    
                 });
-                if alpha>=1.0{
+                alpha_channel+=smooth;
+                if alpha_channel>=1.0{
                     break 'smooth
                 }
             }
@@ -74,7 +73,7 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
             // Рендеринг
             if let Some(r)=e.render_args(){
                 gl.draw(r.viewport(),|c,g|{
-                    wallpaper.draw(&c.draw_state,c.transform,g);
+                    wallpaper.draw(&c,g);
                     menu.draw(&c.draw_state,c.transform,g);
                 });
             }
@@ -85,7 +84,7 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
                         match key{
                             MouseButton::Left=>{
                                 if let Some(button_id)=menu.clicked(){
-                                    if unsafe{Settings._continue}{
+                                    if Settings._continue{
                                         match button_id{
                                             0=>return Game::ContinueGamePlay,
                                             1=>{ // Кнопка начала нового игрового процесса
@@ -142,9 +141,9 @@ pub fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinW
 }
 
 #[inline]
-pub fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
-    let smooth=1f32/8f32;
-    let mut alpha=0f32;
+pub unsafe fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
+    smooth=1f32/8f32;
+    alpha_channel=0f32;
 
     // Загрузка шрифта
     let texture_settings=TextureSettings::new();
@@ -152,24 +151,24 @@ pub fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGra
 
     let settings=TextViewSettings::new()
             .text("Введите своё имя".to_string())
-            .rect(unsafe{[
+            .rect([
                 (window_width)/2f64-150f64,
                 (window_height)/2f64-150f64,
                 300f64,
                 70f64,
-            ]});
+            ]);
     
     let mut head=TextView::new(settings,glyphs);
 
     glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
 
     let settings=EditTextViewSettings::new()
-            .rect(unsafe{[
+            .rect([
                 (window_width)/2f64-150f64,
                 (window_height)/2f64-150f64,
                 300f64,
                 150f64,
-            ]})
+            ])
             .background_color(Light_blue)
             .border_color(Blue);
 
@@ -184,15 +183,14 @@ pub fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGra
         // Рендеринг
         if let Some(r)=e.render_args(){
             gl.draw(r.viewport(),|c,g|{
-                name_input.set_alpha_channel(alpha);
+                name_input.set_alpha_channel(alpha_channel);
                 name_input.draw(&c.draw_state,c.transform,g);
 
-                head.set_alpha_channel(alpha);
+                head.set_alpha_channel(alpha_channel);
                 head.draw(&c.draw_state,c.transform,g);
             });
-
-            alpha+=smooth;
-            if alpha>=1.0{
+            alpha_channel+=smooth;
+            if alpha_channel>=1.0{
                 break 'smooth
             }
         }
@@ -223,7 +221,7 @@ pub fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGra
                         Key::Escape=>{
                             return Game::Back
                         }
-                        Key::Return=>unsafe{
+                        Key::Return=>{
                             let name=name_input.get_text();
                             if !name.is_empty(){
                                 Settings.user_name=name;
@@ -241,18 +239,18 @@ pub fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGra
 }
 
 #[inline] // Страница настроек
-pub fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
-    let smooth=1f32/32f32;
-    let mut alpha=0f32;
+pub unsafe fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
+    smooth=1f32/32f32;
+    alpha_channel=0f32;
 
     // Создание заднего фона
     let mut background=Rectangle::new(Settings_page_color);
-    let background_rect=unsafe{[
+    let background_rect=[
         0f64,
         0f64,
         window_width,
         window_height
-    ]};
+    ];
 
     // Загрузка шрифта
     let texture_settings=TextureSettings::new();
@@ -264,16 +262,16 @@ pub fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraph
             .text("Настройки".to_string())
             .font_size(40)
             .text_color(White)
-            .rect(unsafe{[0f64,0f64,window_width,80f64]});
+            .rect([0f64,0f64,window_width,80f64]);
     let mut head=TextView::new(head_settings,head_glyphs);
 
     let button_settings=ButtonSettings::new()
-            .rect(unsafe{[
+            .rect([
                 40f64,
                 window_height-80f64,
                 120f64,
                 60f64
-            ]})
+            ])
             .text("Назад".to_string());
 
     let mut common_buttons=[
@@ -303,24 +301,23 @@ pub fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraph
         // Рендеринг
         if let Some(r)=e.render_args(){
             gl.draw(r.viewport(),|c,g|{
-                background.color[3]=alpha;
+                background.color[3]=alpha_channel;
                 background.draw(background_rect,&c.draw_state,c.transform,g);
                 
-                head.set_alpha_channel(alpha);
+                head.set_alpha_channel(alpha_channel);
                 head.draw(&c.draw_state,c.transform,g);
 
                 for button in &mut common_buttons{
-                    button.set_alpha_channel(alpha);
+                    button.set_alpha_channel(alpha_channel);
                     button.draw(&c.draw_state,c.transform,g);
                 }
-
-                alpha+=smooth;
             });
-            if alpha>=1.0{
+            alpha_channel+=smooth;
+            if alpha_channel>=1.0{
                 break 'smooth
             }
         }
-    }   
+    }
 
     // Рабочий вид
     while let Some(e)=events.next(window){
@@ -369,19 +366,19 @@ pub fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraph
 }
 
 #[inline] // Меню паузы во время игры
-pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
-    let smooth=1f32/8f32;
-    let mut alpha=0f32;
+pub unsafe fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
+    smooth=1f32/8f32;
+    alpha_channel=0f32;
 
     // Создание заднего фона
     let background_size=[300f64,450f64];
     let mut background=Rectangle::new(Pause_menu_background_color);
-    let background_rect=unsafe{[
+    let background_rect=[
         (window_width-background_size[0])/2f64,
         (window_height-background_size[1])/2f64,
         background_size[0],
         background_size[1]
-    ]};
+    ];
 
 
     // Загрузка шрифта
@@ -416,15 +413,15 @@ pub fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics
         // Рендеринг
         if let Some(r)=e.render_args(){
             gl.draw(r.viewport(),|c,g|{
-                background.color[3]=alpha;
+                background.color[3]=alpha_channel;
                 background.draw(background_rect,&c.draw_state,c.transform,g);
 
-                menu.set_alpha_channel(alpha);
+                menu.set_alpha_channel(alpha_channel);
                 menu.draw(&c.draw_state,c.transform,g);
-
-                alpha+=smooth;
             });
-            if alpha>=1.0{
+            
+            alpha_channel+=smooth;
+            if alpha_channel>=1.0{
                 break 'smooth
             }
         }

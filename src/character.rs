@@ -15,6 +15,10 @@ impl Character{
         }
     }
 
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.image.color.as_mut().unwrap()[3]=alpha;
+    }
+
     // pub fn set_rect(&mut self,rect:[f64;4]){
     //     self.image.rectangle=Some(rect);
     // }

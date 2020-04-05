@@ -1,7 +1,7 @@
-true
-ff
+false
+Girl
+0
+0
+2
 1
-6
-3
-3
-3
+2
