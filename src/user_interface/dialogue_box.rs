@@ -17,7 +17,7 @@ pub struct DialogueBox<'a>{
     step:usize,
     y1:f64, // Граница нижней трети экрана, где находится диалоговое окно
     text_base:TextBase,
-    text_y:f64,
+    name_base:TextBase,
     image:Image,
     texture:Texture,
     glyphs:GlyphCache<'a>
@@ -29,21 +29,24 @@ impl<'a> DialogueBox<'a>{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
 
-            let image=Image::new_color([1.0;4]).rect([
-                0f64,
-                y1,
-                window_width,
-                height
-            ]);
-
             Self{
                 dialogue:std::ptr::null(),
                 line_step:0,
                 step:Settings.saved_dialogue,
                 y1:y1,
-                text_base:TextBase::new_color(font_size,window_width-2f64*text_position_x,White),
-                text_y:window_height-height/2f64,
-                image:image,
+                text_base:TextBase::new_color(font_size,window_width-2f64*text_position_x,White)
+                        .position([text_position_x,window_height-height/2f64]),
+
+                name_base:TextBase::new_color(font_size,window_width-2f64*text_position_x,White)
+                        .position([name_position_x,y1+name_position_y]),
+
+                image:Image::new_color([1.0;4]).rect([
+                    0f64,
+                    y1,
+                    window_width,
+                    height
+                ]),
+                
                 texture:texture,
                 glyphs:glyph
             }
@@ -55,16 +58,9 @@ impl<'a> DialogueBox<'a>{
     }
 
     pub fn set_dialogue(&mut self,dialogue:&Dialogue){
-
         self.dialogue=dialogue as *const Dialogue;
         self.step=0usize;
     }
-
-
-
-    // pub fn set_text_color(&mut self,color:Color){
-    //     self.text.color=color;
-    // }
 
     pub fn next(&mut self)->bool{
         self.line_step=0;
@@ -100,10 +96,10 @@ impl<'a> Drawable for DialogueBox<'a>{
         g.image(&self.image,&self.texture,&c.draw_state,c.transform);
 
         // Имя
-        self.text_base.draw(name,[name_position_x,self.y1+name_position_y],c,g,&mut self.glyphs);
+        self.name_base.draw(name,c,g,&mut self.glyphs);
         
+        // Реплика
         self.line_step+=sign_per_frame;
-
-        self.text_base.draw_slowly(line,[text_position_x,self.text_y],self.line_step,c,g,&mut self.glyphs);
+        self.text_base.draw_slowly(line,self.line_step,c,g,&mut self.glyphs);
     }
 }
