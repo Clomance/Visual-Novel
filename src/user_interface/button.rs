@@ -13,36 +13,18 @@ impl<'a> Button<'a>{
         }
     }
 
-    // pub fn set_rect(&mut self,rect:[f64;4]){
-    //     let x2=rect[0]+rect[2];
-    //     let y2=rect[1]+rect[3];
-
-    //     self.x1=rect[0];
-    //     self.y1=rect[1];
-    //     self.x2=x2;
-    //     self.y2=y2;
-    //     self.width=rect[2];
-    //     self.height=rect[3];
-    // }
-
-    // pub fn set_text(&mut self,text:String){
-    //     self.buton_base.text=text;
-    // }
-
-    pub fn set_alpha_channel(&mut self,alpha:f32){
-        self.button_base.set_alpha_channel(alpha);
-    }
-
-    // pub fn get_background_color_mut(&mut self)->&mut Color{
-    //     &mut self.button_base.rectanlge.color
-    // }
-
     pub fn clicked(&mut self)->bool{
         self.button_base.clicked()
     }
+}
 
-    pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
-        self.button_base.draw(draw_state,transform,g,&mut self.glyphs)
+impl<'a> Drawable for Button<'a>{
+    fn set_alpha_channel(&mut self,alpha:f32){
+        self.button_base.set_alpha_channel(alpha);
+    }
+
+    fn draw(&mut self,context:&Context,g:&mut GlGraphics){
+        self.button_base.draw(&context.draw_state,context.transform,g,&mut self.glyphs)
     }
 }
 
@@ -85,16 +67,13 @@ impl ButtonDependent{
         self.text.set_alpha_channel(alpha);
     }
 
-    // pub fn get_background_color_mut(&mut self)->&mut Color{
-    //     &mut self.rectanlge.color
-    // }
-
     pub fn clicked(&mut self)->bool{
         let x=unsafe{mouse_position[0]};
         let y=unsafe{mouse_position[1]};
 
         self.x1<x && self.x2>x && self.y1<y && self.y2>y
     }
+    
     pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics,glyphs:&mut GlyphCache){
         let rect_pos=[self.x1,self.y1,self.width,self.height];
         self.rectanlge.draw(rect_pos,draw_state,transform,g);

@@ -60,14 +60,6 @@ impl<'a> Menu<'a>{
         }
     }
 
-    pub fn set_alpha_channel(&mut self,alpha:f32){
-        self.head.set_alpha_channel(alpha);
-        
-        for button in &mut self.buttons{
-            button.set_alpha_channel(alpha);
-        }
-    }
-
     pub fn clicked(&mut self)->Option<usize>{
         for (c,button) in self.buttons.iter_mut().enumerate(){
             if button.clicked(){
@@ -76,12 +68,22 @@ impl<'a> Menu<'a>{
         }
         None
     }
+}
 
-    pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
-        self.head.draw(draw_state,transform,g,&mut self.glyphs);
+impl<'a> Drawable for Menu<'a>{
+    fn set_alpha_channel(&mut self,alpha:f32){
+        self.head.set_alpha_channel(alpha);
+        
+        for button in &mut self.buttons{
+            button.set_alpha_channel(alpha);
+        }
+    }
+
+    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
+        self.head.draw(&context.draw_state,context.transform,graphics,&mut self.glyphs);
 
         for button in &mut self.buttons{
-            button.draw(draw_state,transform,g,&mut self.glyphs);
+            button.draw(&context.draw_state,context.transform,graphics,&mut self.glyphs);
         }
     }
 }

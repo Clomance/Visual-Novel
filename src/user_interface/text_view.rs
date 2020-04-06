@@ -1,6 +1,5 @@
 use crate::*;
 
-
 pub struct EditTextView<'a>{
     base:TextView<'a>,
     rect:[f64;4],
@@ -31,21 +30,21 @@ impl<'a> EditTextView<'a>{
     pub fn pop_text(&mut self){
         self.base.pop_text()
     }
+}
 
-    pub fn set_alpha_channel(&mut self,alpha:f32){
+impl<'a> Drawable for EditTextView<'a>{
+    fn set_alpha_channel(&mut self,alpha:f32){
         self.base.set_alpha_channel(alpha);
         self.background[0].color[3]=alpha;
         self.background[1].color[3]=alpha;
     }
 
-    pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
-        self.background[1].draw(self.rect,draw_state,transform,g);
-        self.background[0].draw(self.rect,draw_state,transform,g);
-        self.base.draw(draw_state,transform,g)
+    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
+        self.background[1].draw(self.rect,&context.draw_state,context.transform,graphics);
+        self.background[0].draw(self.rect,&context.draw_state,context.transform,graphics);
+        self.base.draw(context,graphics)
     }
 }
-
-
 
 // Текстовый блок
 pub struct TextView<'a>{
@@ -82,13 +81,15 @@ impl<'a> TextView<'a>{
             self.base.x1+=len/2f64; // Сдвиг
         }
     }
+}
 
-    pub fn set_alpha_channel(&mut self,alpha:f32){
+impl<'a> Drawable for TextView<'a>{
+    fn set_alpha_channel(&mut self,alpha:f32){
         self.base.set_alpha_channel(alpha)
     }
 
-    pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
-        self.base.draw(draw_state,transform,g,&mut self.glyphs);
+    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
+        self.base.draw(&context.draw_state,context.transform,graphics,&mut self.glyphs);
     }
 }
 
@@ -122,10 +123,6 @@ impl TextViewDependent{
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.base.color[3]=alpha;
     }
-
-    // pub fn get_text_color_mut(&mut self)->&mut Color{
-    //     &mut self.text_base.color
-    // }
 
     pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics,glyphs:&mut GlyphCache){
         let x=self.x1;

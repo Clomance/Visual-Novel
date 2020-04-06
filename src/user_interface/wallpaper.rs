@@ -19,12 +19,14 @@ impl Wallpaper{
     pub fn set_image(&mut self,image:&RgbaImage){
         self.texture.update(image);
     }
+}
 
-    pub fn set_alpha_channel(&mut self,alpha:f32){
+impl Drawable for Wallpaper{
+    fn set_alpha_channel(&mut self,alpha:f32){
         self.image.color.as_mut().unwrap()[3]=alpha;
     }
 
-    pub fn draw(&self,c:&Context,g:&mut GlGraphics){
+    fn draw(&mut self,c:&Context,g:&mut GlGraphics){
         g.image(&self.image,&self.texture,&c.draw_state,c.transform);
     }
 }

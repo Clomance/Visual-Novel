@@ -20,7 +20,6 @@ use opengl_graphics::{
 
 use piston::{
     AdvancedWindow,
-    Size,
     WindowSettings,
     event_loop::{EventLoop,EventSettings,Events},
     input::{Button,Key,MouseButton},
@@ -64,9 +63,6 @@ use pages::*;
 mod page_table;
 use page_table::PageTable;
 
-mod wallpaper;
-use wallpaper::Wallpaper;
-
 mod character;
 use character::Character;
 
@@ -78,6 +74,9 @@ use user_interface::*;
 
 mod colors;
 use colors::*;
+
+mod drawable;
+use drawable::Drawable;
 
 pub enum Game{
     Current,
@@ -98,11 +97,6 @@ const main_textures_paths:&[&'static str]=&[
 
 const Game_name:&str="Visual Novel by Clomance";
 
-const default_window_size:Size=Size{
-    width:0f64,
-    height:0f64
-};
-
 pub static mut Settings:game_settings::GameSettings=game_settings::GameSettings::new();
 
 pub static mut window_height:f64=0f64;
@@ -110,22 +104,23 @@ pub static mut window_width:f64=0f64;
 
 pub static mut mouse_position:[f64;2]=[0f64;2];
 
-pub static mut smooth:f32=0f32; // Сглаживание для переходов
+
+pub const default_page_smooth:f32=1f32/32f32; // 1 к количеству кадров перехода
+pub static mut smooth:f32=default_page_smooth; // Сглаживание для переходов
 pub static mut alpha_channel:f32=0f32; // Значение альфа-канала
 
 pub static mut loading:bool=true;
 
 fn main(){
     unsafe{
-        // Загрузка настроек
-        Settings.load();
+        Settings.load(); // Загрузка настроек
 
         //                                         \\
         // Создание окна и загрузка функций OpenGL \\
         //                                         \\
         let opengl=OpenGL::V3_2;
 
-        let mut window:GlutinWindow=WindowSettings::new(Game_name,default_window_size)
+        let mut window:GlutinWindow=WindowSettings::new(Game_name,[0;2])
                 .exit_on_esc(false)
                 .vsync(true)
                 .fullscreen(true)
@@ -138,14 +133,8 @@ fn main(){
 
         let mut events=Events::new(EventSettings::new().lazy(false).ups(60));
 
+        fit_monitor(&mut window); // Заполнение монитора (полноэкранный режим)
         //-----------------------------------------\\
-        {
-            let size=glutin::event_loop::EventLoop::new().primary_monitor().size(); //
-            window_width=size.width as f64;                                         // Получение размеров экрана
-            window_height=size.height as f64;                                       // и заполнение его окном игры
-            window.set_size([window_width,window_height]);                          //
-        }
-
 
         let texture_settings=TextureSettings::new();
 
@@ -153,9 +142,8 @@ fn main(){
         let mut wallpaper_textures:Vec<RgbaImage>=Vec::with_capacity(Settings.pages); // Массив обоев для игры
         let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages); // Массив диалогов
 
-
         let mut wallpaper_textures_ref=SyncRawPtr::new(&mut wallpaper_textures as *mut Vec<RgbaImage>);
-        
+
         let ending_wallpaper;
         let dialogue_box_texture;
         let main_menu_wallpaper;
@@ -170,7 +158,6 @@ fn main(){
             // Доп поток для загрузки данных
             let loading_resources_thread=std::thread::spawn(move||{
                 'loading:loop{
-
                     // Загрузка обоев
                     let mut path;
                     let mut wallpaper_texture;
@@ -208,14 +195,11 @@ fn main(){
             }
             loading_resources_thread.join();
 
-
             // Перенос главный текстур
             ending_wallpaper=main_textures.pop().unwrap();
             dialogue_box_texture=Texture::from_image(&main_textures.pop().unwrap(),&texture_settings);
             main_menu_wallpaper=main_textures.pop().unwrap();
         }
-
-
 
         // Загрузка персонажей
         for i in 0..Settings.characters_len{
@@ -260,7 +244,7 @@ fn main(){
             // Загрузка таблицы страниц игры
             let mut page_table=PageTable::new(&characters,&mut wallpaper_textures,&dialogues);
 
-            smooth=1f32/32f32; // 1 к количеству кадров перехода
+            smooth=default_page_smooth;
 
             'gameplay:loop{
                 alpha_channel=0f32;
@@ -278,11 +262,10 @@ fn main(){
                     // Рендеринг
                     if let Some(r)=e.render_args(){
                         gl.draw(r.viewport(),|c,g|{
-                            wallpaper.set_alpha_channel(alpha_channel);
-                            wallpaper.draw(&c,g);
+                            wallpaper.draw_smooth(alpha_channel,&c,g);
 
                             dialogue_box.set_alpha_channel(alpha_channel);
-                            dialogue_box.draw(&c.draw_state,c.transform,g);
+                            dialogue_box.draw_without_text(&c,g);
                         });
 
                         alpha_channel+=smooth;
@@ -291,6 +274,7 @@ fn main(){
                         }
                     }
                 }
+
 
                 // Цикл страницы
                 'page:while let Some(e)=events.next(&mut window){
@@ -305,7 +289,7 @@ fn main(){
                         gl.draw(r.viewport(),|c,g|{
                             wallpaper.draw(&c,g);
                             page_table.currents_character().draw(&c.draw_state,c.transform,g);
-                            dialogue_box.draw(&c.draw_state,c.transform,g);
+                            dialogue_box.draw(&c,g);
                         });
                     }
 
@@ -371,6 +355,27 @@ fn main(){
             // Конечная заставка игры
             wallpaper.set_image(&ending_wallpaper);
 
+            smooth=default_page_smooth;
+            alpha_channel=0f32;
+
+            'smooth:while let Some(e)=events.next(&mut window){
+                // Закрытие игры
+                if let Some(_close)=e.close_args(){
+                    break 'game
+                }
+                // Рендеринг
+                if let Some(r)=e.render_args(){
+                    gl.draw(r.viewport(),|c,g|{
+                        wallpaper.draw_smooth(alpha_channel,&c,g);
+                    });
+
+                    alpha_channel+=smooth;
+                    if alpha_channel>=1.0{
+                        break 'smooth
+                    }
+                }
+            }
+
             'gameplay_ending:while let Some(e)=events.next(&mut window){
                 // Закрытие игры
                 if let Some(_close)=e.close_args(){
@@ -390,6 +395,13 @@ fn main(){
         // Конец программы
         Settings.save();
     }
+}
+
+pub unsafe fn fit_monitor(window:&mut GlutinWindow){
+    let size=glutin::event_loop::EventLoop::new().primary_monitor().size(); //
+    window_width=size.width as f64;                                         // Получение размеров экрана
+    window_height=size.height as f64;                                       // и заполнение его окном игры
+    window.set_size([window_width,window_height]);                          //
 }
 
 // Движение курсором мыши
@@ -412,61 +424,4 @@ pub fn load_image<P:AsRef<Path>>(path:P)->RgbaImage{
     else{
         image.into_rgba()
     }
-}
-
-
-// Загрузочный экран
-pub unsafe fn loading_screen(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
-    let texture_settings=TextureSettings::new();
-    let half_size=100f64;
-    let logo=Image::new().rect([
-        0f64,
-        0f64,
-        200f64,
-        200f64
-    ]);
-    let logo_texture=Texture::from_path("images/logo.png",&texture_settings).unwrap();
-
-    let (x,y)=(window_width/2f64,window_height/2f64);
-    let mut rotation=0f64;
-
-    'loading:while let Some(e)=events.next(window){
-        if !loading{
-            break 'loading
-        }
-        // Закрытие игры
-        if let Some(_close)=e.close_args(){
-            loading=false;
-            return Game::Exit
-        } 
-        // Рендеринг
-        if let Some(r)=e.render_args(){
-            gl.draw(r.viewport(),|c,g|{
-                g.clear_color(White);
-                logo.draw(&logo_texture,&c.draw_state,c.transform.trans(x,y).rot_rad(rotation).trans(-half_size,-half_size),g);
-            });
-            rotation+=0.1f64;
-        }
-    }
-
-    // Для планого перехода
-    let mut frames=5;
-    while let Some(e)=events.next(window){
-        // Закрытие игры
-        if let Some(_close)=e.close_args(){
-            loading=false;
-            return Game::Exit
-        }
-        if let Some(r)=e.render_args(){
-            gl.draw(r.viewport(),|_c,g|{
-                g.clear_color(White);
-            });
-            frames-=1;
-            if frames==0{
-                break
-            }
-        }
-    }
-
-    return Game::MainMenu
 }

@@ -15,3 +15,6 @@ pub use menu::{
 
 mod text_base;
 pub use text_base::TextBase;
+
+mod wallpaper;
+pub use wallpaper::Wallpaper;

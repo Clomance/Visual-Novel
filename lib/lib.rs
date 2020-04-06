@@ -1,8 +1,8 @@
 use core::convert::*;
-use core::ptr;
 use core::borrow::Borrow;
 use core::ops::Deref;
 
+// Сырой указатель, который можно свободно передавать между потоками
 pub struct SyncRawPtr<T>{
     ptr:*mut T,
 }
