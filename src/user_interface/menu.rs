@@ -80,10 +80,10 @@ impl<'a> Drawable for Menu<'a>{
     }
 
     fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
-        self.head.draw(&context.draw_state,context.transform,graphics,&mut self.glyphs);
+        self.head.draw(&context,graphics,&mut self.glyphs);
 
         for button in &mut self.buttons{
-            button.draw(&context.draw_state,context.transform,graphics,&mut self.glyphs);
+            button.draw(context,graphics,&mut self.glyphs);
         }
     }
 }

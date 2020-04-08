@@ -1,5 +1,5 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use,dead_code)]
-//#![windows_subsystem="windows"] // Отключение консоли
+#![windows_subsystem="windows"] // Отключение консоли
 
 use glutin_window::GlutinWindow;
 
@@ -67,7 +67,7 @@ mod character;
 use character::Character;
 
 mod dialogue;
-use dialogue::Dialogue;
+use dialogue::*;
 
 mod user_interface;
 use user_interface::*;
@@ -96,6 +96,8 @@ const main_textures_paths:&[&'static str]=&[
 ];
 
 const Game_name:&str="Visual Novel by Clomance";
+
+pub const dialogues_font_size:u32=24;
 
 pub static mut Settings:game_settings::GameSettings=game_settings::GameSettings::new();
 
@@ -143,6 +145,7 @@ fn main(){
         let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages); // Массив диалогов
 
         let mut wallpaper_textures_ref=SyncRawPtr::new(&mut wallpaper_textures as *mut Vec<RgbaImage>);
+        let mut dialogues_ref=SyncRawPtr::new(&mut dialogues as *mut Vec<Dialogue>);
 
         let ending_wallpaper;
         let dialogue_box_texture;
@@ -179,6 +182,16 @@ fn main(){
                         }
                         wallpaper_texture=load_image(path);
                         main_textures_ref.as_mut().push(wallpaper_texture);
+                    }
+
+                    // Загрузка диалогов
+                    for i in 0..Settings.pages{
+                        if !loading{
+                            break 'loading
+                        }
+                        let path=format!("text/dialogue{}.txt",i);
+                        let dialogue=Dialogue::new(path);
+                        dialogues_ref.as_mut().push(dialogue);
                     }
 
                     loading=false;
@@ -231,15 +244,6 @@ fn main(){
                 Game::Exit=>break 'game,
                 _=>{}
             };
-
-            dialogues.clear();
-
-            // Загрузка диалогов
-            for i in 0..Settings.pages{
-                let path=format!("text/dialogue{}.txt",i);
-                let dialogue=Dialogue::new(path,&Settings.user_name);
-                dialogues.push(dialogue);
-            }
 
             // Загрузка таблицы страниц игры
             let mut page_table=PageTable::new(&characters,&mut wallpaper_textures,&dialogues);
@@ -412,7 +416,6 @@ pub fn mouse_cursor_movement(event:&Event){
         }
     }
 }
-
 
 // Загрузка изображений
 pub fn load_image<P:AsRef<Path>>(path:P)->RgbaImage{

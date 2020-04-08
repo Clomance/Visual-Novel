@@ -13,8 +13,8 @@ pub use menu::{
     MenuSettings,
 };
 
-mod text_base;
-pub use text_base::TextBase;
+mod text;
+pub use text::*;
 
 mod wallpaper;
 pub use wallpaper::Wallpaper;

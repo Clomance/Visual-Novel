@@ -1,5 +1,33 @@
 use crate::*;
 
+pub struct DialogueFormatted<'a>{
+    names:Vec<&'a str>,
+    dialogues:Vec<TextLines>,
+}
+
+impl<'a> DialogueFormatted<'a>{
+    pub fn empty()->DialogueFormatted<'a>{
+        Self{
+            names:Vec::new(),
+            dialogues:Vec::new(),
+        }
+    }
+    pub fn new(names:Vec<&'a str>,dialogues:Vec<TextLines>)->DialogueFormatted<'a>{
+        Self{
+            names,
+            dialogues
+        }
+    }
+
+    pub fn len(&self)->usize{
+        self.names.len()
+    }
+
+    pub fn get_line(&self,line:usize)->(&str,&TextLines){
+        (&self.names[line],&self.dialogues[line])
+    }
+}
+
 pub struct Dialogue{
     names_cache:Vec<String>,
     dialogues:Vec<String>,
@@ -7,7 +35,7 @@ pub struct Dialogue{
 }
 
 impl Dialogue{
-    pub fn new<P:AsRef<Path>+Debug+Clone>(path:P,user_name:&str)->Dialogue{
+    pub fn new<P:AsRef<Path>+Debug+Clone>(path:P)->Dialogue{
         let mut dialogue_file=OpenOptions::new().read(true).open(path.clone()).unwrap();
 
         let mut names_cache=Vec::<String>::with_capacity(5);
@@ -50,7 +78,7 @@ impl Dialogue{
             }
             // Перевод в строку
             let short_name=split_line[0].trim();
-            let dialogue=split_line[1].trim().replace("{}",user_name); // Добавление имени игрока
+            let dialogue=split_line[1].trim().to_string();
 
             // Поиск имени
             if short_name=="{}"{
@@ -79,6 +107,22 @@ impl Dialogue{
     // Получение текущей реплики - (имя,реплика)
     pub fn get_line(&self,step:usize)->(&str,&str){
         (&self.names_cache[self.names[step]],&self.dialogues[step])
+    }
+
+    pub fn format<'a>(&'a self,user_name:&str,line_length:f64,font_size:u32,glyphs:&mut GlyphCache)->DialogueFormatted{
+        let len=self.names.len();
+        let mut names=Vec::with_capacity(len);
+        let mut dialogues=Vec::with_capacity(len);
+
+        for c in 0..len{
+            let name=self.names_cache[self.names[c]].as_str();
+            names.push(name);
+            let dialogue=self.dialogues[c].replace("{}",user_name);
+            let dialogue=TextLines::new(dialogue,line_length,font_size,glyphs);
+            dialogues.push(dialogue);
+        }
+
+        DialogueFormatted::new(names,dialogues)
     }
 }
 

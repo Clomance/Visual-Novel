@@ -24,6 +24,7 @@ impl<'a> EditTextView<'a>{
     }
 
     pub fn push_text(&mut self,text:&str){
+        //let glyphs=&mut self.base.glyphs;
         self.base.push_text(text)
     }
 
@@ -65,21 +66,11 @@ impl<'a> TextView<'a>{
     }
 
     pub fn push_text(&mut self,text:&str){
-        let mut len=0f64;
-        for ch in text.chars(){
-            let character=self.glyphs.character(self.base.base.font_size,ch).unwrap(); // Поиск нужной буквы
-            len+=character.advance_width(); // Ширина буквы
-        }
-        self.base.text.push_str(text);
-        self.base.x1-=len/2f64; // Сдвиг
+        self.base.push_text(text,&mut self.glyphs)
     }
 
     pub fn pop_text(&mut self){
-        if let Some(ch)=self.base.text.pop(){
-            let character=self.glyphs.character(self.base.base.font_size,ch).unwrap(); // Поиск нужной буквы
-            let len=character.advance_width(); // Ширина буквы
-            self.base.x1+=len/2f64; // Сдвиг
-        }
+        self.base.pop_text(&mut self.glyphs)
     }
 }
 
@@ -89,16 +80,14 @@ impl<'a> Drawable for TextView<'a>{
     }
 
     fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
-        self.base.draw(&context.draw_state,context.transform,graphics,&mut self.glyphs);
+        self.base.draw(context,graphics,&mut self.glyphs);
     }
 }
 
 // Зависимый от шрифта текстовый блок
 pub struct TextViewDependent{
-    pub x1:f64,
-    y1:f64,
-    base:Text,
-    pub text:String,
+    base:TextBase,
+    text:String,
 }
 
 impl TextViewDependent{
@@ -113,10 +102,26 @@ impl TextViewDependent{
         let y1=settings.rect[1]+(settings.rect[3]+settings.font_size as f64)/2f64;
 
         Self{
-            x1:x1,
-            y1:y1,
-            base:Text::new_color(settings.text_color,settings.font_size),
+            base:TextBase::new_color(settings.text_color,settings.font_size).position([x1,y1]),
             text:settings.text
+        }
+    }
+
+    pub fn push_text(&mut self,text:&str,glyphs:&mut GlyphCache){
+        let mut len=0f64;
+        for ch in text.chars(){
+            let character=glyphs.character(self.base.font_size,ch).unwrap(); // Поиск нужной буквы
+            len+=character.advance_width(); // Ширина буквы
+        }
+        self.text.push_str(text);
+        self.base.image.rectangle.as_mut().unwrap()[0]-=len/2f64; // Сдвиг
+    }
+
+    pub fn pop_text(&mut self,glyphs:&mut GlyphCache){
+        if let Some(ch)=self.text.pop(){
+            let character=glyphs.character(self.base.font_size,ch).unwrap(); // Поиск нужной буквы
+            let len=character.advance_width(); // Ширина буквы
+            self.base.image.rectangle.as_mut().unwrap()[0]+=len/2f64; // Сдвиг
         }
     }
 
@@ -124,10 +129,8 @@ impl TextViewDependent{
         self.base.color[3]=alpha;
     }
 
-    pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics,glyphs:&mut GlyphCache){
-        let x=self.x1;
-        let y=self.y1;
-        self.base.draw(&self.text,glyphs,draw_state,transform.trans(x,y),g);
+    pub fn draw(&mut self,context:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache){
+        self.base.draw(&self.text,context,g,glyphs);
     }
 }
 

@@ -24,7 +24,7 @@ impl<'a> Drawable for Button<'a>{
     }
 
     fn draw(&mut self,context:&Context,g:&mut GlGraphics){
-        self.button_base.draw(&context.draw_state,context.transform,g,&mut self.glyphs)
+        self.button_base.draw(context,g,&mut self.glyphs)
     }
 }
 
@@ -74,11 +74,11 @@ impl ButtonDependent{
         self.x1<x && self.x2>x && self.y1<y && self.y2>y
     }
     
-    pub fn draw(&mut self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics,glyphs:&mut GlyphCache){
+    pub fn draw(&mut self,context:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache){
         let rect_pos=[self.x1,self.y1,self.width,self.height];
-        self.rectanlge.draw(rect_pos,draw_state,transform,g);
+        self.rectanlge.draw(rect_pos,&context.draw_state,context.transform,g);
 
-        self.text.draw(draw_state,transform,g,glyphs);
+        self.text.draw(context,g,glyphs);
     }
 }
 
