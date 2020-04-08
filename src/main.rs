@@ -1,5 +1,5 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use,dead_code)]
-#![windows_subsystem="windows"] // Отключение консоли
+//#![windows_subsystem="windows"] // Отключение консоли
 
 use glutin_window::GlutinWindow;
 
@@ -24,6 +24,7 @@ use piston::{
     event_loop::{EventLoop,EventSettings,Events},
     input::{Button,Key,MouseButton},
     ReleaseEvent,
+    PressEvent,
     RenderEvent,
     MouseCursorEvent,
     CloseEvent,

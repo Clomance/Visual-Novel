@@ -84,12 +84,23 @@ pub unsafe fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mu
         if let Some(text)=e.text_args(){
             name_input.push_text(&text);
         }
+
+        if let Some(button)=e.press_args(){
+            match button{
+                Button::Keyboard(key)=>{
+                    match key{
+                        Key::Backspace=>name_input.pop_char(), // Удаление
+                        _=>{}
+                    }
+                }
+                _=>{}
+            }
+        }
         //
         if let Some(button)=e.release_args(){
             match button{
                 Button::Keyboard(key)=>{
                     match key{
-                        Key::Backspace=>name_input.pop_text(), // Удаление
                         Key::Escape=>{
                             return Game::Back
                         }

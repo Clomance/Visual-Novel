@@ -2,6 +2,7 @@ use crate::*;
 
 pub struct EditTextView<'a>{
     base:TextView<'a>,
+    max_line_length:f64,
     rect:[f64;4],
     background:[Rectangle;2], // Первый - Заполненный прямоугольник, второй - его обводка
 }
@@ -11,6 +12,7 @@ impl<'a> EditTextView<'a>{
         let rect=settings.base.rect;
         Self{
             base:TextView::new(settings.base,glyphs),
+            max_line_length:rect[2]-20f64,
             rect:rect,
             background:[
                 Rectangle::new(settings.background_color),
@@ -24,12 +26,35 @@ impl<'a> EditTextView<'a>{
     }
 
     pub fn push_text(&mut self,text:&str){
-        //let glyphs=&mut self.base.glyphs;
-        self.base.push_text(text)
+        let glyphs=&mut self.base.glyphs;
+
+        let mut len=self.base.base.text_length; // Длина
+        let mut dlen=0f64;
+
+        for ch in text.chars(){
+            let character=glyphs.character(self.base.base.base.font_size,ch).unwrap(); // Поиск нужной буквы
+            len+=character.advance_width(); // Ширина буквы
+
+            if len>=self.max_line_length{
+                break
+            }
+
+            dlen+=character.advance_width();
+            self.base.base.text.push(ch);
+        }
+        self.base.base.text_length+=dlen;
+        self.base.base.base.image.rectangle.as_mut().unwrap()[0]-=dlen/2f64; // Сдвиг
     }
 
-    pub fn pop_text(&mut self){
-        self.base.pop_text()
+    pub fn pop_char(&mut self){
+        let glyphs=&mut self.base.glyphs;
+        if let Some(ch)=self.base.base.text.pop(){
+            let character=glyphs.character(self.base.base.base.font_size,ch).unwrap(); // Поиск нужной буквы
+            let len=character.advance_width(); // Ширина буквы
+
+            self.base.base.base.image.rectangle.as_mut().unwrap()[0]+=len/2f64; // Сдвиг
+            self.base.base.text_length-=len; // Уменьшение длины строки
+        }
     }
 }
 
@@ -64,14 +89,6 @@ impl<'a> TextView<'a>{
     pub fn get_text(&self)->String{
         self.base.text.clone()
     }
-
-    pub fn push_text(&mut self,text:&str){
-        self.base.push_text(text,&mut self.glyphs)
-    }
-
-    pub fn pop_text(&mut self){
-        self.base.pop_text(&mut self.glyphs)
-    }
 }
 
 impl<'a> Drawable for TextView<'a>{
@@ -88,10 +105,12 @@ impl<'a> Drawable for TextView<'a>{
 pub struct TextViewDependent{
     base:TextBase,
     text:String,
+    text_length:f64,
 }
 
 impl TextViewDependent{
     pub fn new(settings:TextViewSettings,glyphs:&mut GlyphCache)->TextViewDependent{
+        // Длина текста
         let mut text_len=0f64;
         for ch in settings.text.chars(){
             let character=glyphs.character(settings.font_size,ch).unwrap();
@@ -103,25 +122,8 @@ impl TextViewDependent{
 
         Self{
             base:TextBase::new_color(settings.text_color,settings.font_size).position([x1,y1]),
+            text_length:text_len,
             text:settings.text
-        }
-    }
-
-    pub fn push_text(&mut self,text:&str,glyphs:&mut GlyphCache){
-        let mut len=0f64;
-        for ch in text.chars(){
-            let character=glyphs.character(self.base.font_size,ch).unwrap(); // Поиск нужной буквы
-            len+=character.advance_width(); // Ширина буквы
-        }
-        self.text.push_str(text);
-        self.base.image.rectangle.as_mut().unwrap()[0]-=len/2f64; // Сдвиг
-    }
-
-    pub fn pop_text(&mut self,glyphs:&mut GlyphCache){
-        if let Some(ch)=self.text.pop(){
-            let character=glyphs.character(self.base.font_size,ch).unwrap(); // Поиск нужной буквы
-            let len=character.advance_width(); // Ширина буквы
-            self.base.image.rectangle.as_mut().unwrap()[0]+=len/2f64; // Сдвиг
         }
     }
 
