@@ -1,53 +1,14 @@
-use core::convert::*;
-use core::borrow::Borrow;
-use core::ops::Deref;
+#![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use,dead_code)]
+mod sync_raw_ptr;
+pub use sync_raw_ptr::SyncRawPtr;
 
-// Сырой указатель, который можно свободно передавать между потоками
-pub struct SyncRawPtr<T>{
-    ptr:*mut T,
-}
+mod drawable;
+pub use drawable::Drawable;
 
-impl<T> SyncRawPtr<T>{
-    pub fn new(item:*mut T)->SyncRawPtr<T>{
-        Self{
-            ptr:item,
-        }
-    }
-}
+mod colors;
+pub use colors::*;
 
-
-unsafe impl<T:Send> Send for SyncRawPtr<T>{}    // Типажи для передачи
-unsafe impl<T:Sync> Sync for SyncRawPtr<T>{}    // между потоками
-
-impl<T> AsRef<T> for SyncRawPtr<T>{
-    fn as_ref(&self)->&T{
-        unsafe{
-            &*self.ptr
-        }
-    }
-}
-
-impl<T> AsMut<T> for SyncRawPtr<T>{
-    fn as_mut(&mut self)->&mut T{
-        unsafe{
-            &mut *self.ptr
-        }
-    }
-}
-
-impl<T> Borrow<T> for SyncRawPtr<T>{
-    fn borrow(&self)->&T{
-        unsafe{
-            &*self.ptr
-        }
-    }
-}
-
-impl<T> Deref for SyncRawPtr<T>{
-    type Target=T;
-    fn deref(&self)->&T{
-        unsafe{
-            &*self.ptr
-        }
-    }
+pub fn get_monitor_size()->[f64;2]{
+    let size=glutin::event_loop::EventLoop::new().primary_monitor().size();
+    [size.width as f64,size.height as f64]
 }

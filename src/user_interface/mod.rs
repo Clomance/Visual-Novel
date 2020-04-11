@@ -18,3 +18,9 @@ pub use text::*;
 
 mod wallpaper;
 pub use wallpaper::Wallpaper;
+
+mod mouse_cursor;
+pub use mouse_cursor::*;
+
+mod slider;
+pub use slider::*;

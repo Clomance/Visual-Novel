@@ -4,20 +4,21 @@ pub struct EditTextView<'a>{
     base:TextView<'a>,
     max_line_length:f64,
     rect:[f64;4],
-    background:[Rectangle;2], // Первый - Заполненный прямоугольник, второй - его обводка
+    background:Rectangle,
 }
 
 impl<'a> EditTextView<'a>{
     pub fn new(settings:EditTextViewSettings,glyphs:GlyphCache<'a>)->EditTextView<'a>{
         let rect=settings.base.rect;
+        let border=graphics::rectangle::Border{
+            color:settings.border_color,
+            radius:2f64,
+        };
         Self{
             base:TextView::new(settings.base,glyphs),
             max_line_length:rect[2]-20f64,
             rect:rect,
-            background:[
-                Rectangle::new(settings.background_color),
-                Rectangle::new_border(settings.border_color,2f64),
-            ],
+            background:Rectangle::new(settings.background_color).border(border),
         }
     }
 
@@ -61,13 +62,12 @@ impl<'a> EditTextView<'a>{
 impl<'a> Drawable for EditTextView<'a>{
     fn set_alpha_channel(&mut self,alpha:f32){
         self.base.set_alpha_channel(alpha);
-        self.background[0].color[3]=alpha;
-        self.background[1].color[3]=alpha;
+        self.background.color[3]=alpha;
+        self.background.border.as_mut().unwrap().color[3]=alpha;
     }
 
     fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
-        self.background[1].draw(self.rect,&context.draw_state,context.transform,graphics);
-        self.background[0].draw(self.rect,&context.draw_state,context.transform,graphics);
+        self.background.draw(self.rect,&context.draw_state,context.transform,graphics);
         self.base.draw(context,graphics)
     }
 }
@@ -88,6 +88,10 @@ impl<'a> TextView<'a>{
 
     pub fn get_text(&self)->String{
         self.base.text.clone()
+    }
+
+    pub fn set_text_raw(&mut self,text:String){
+        self.base.text=text;
     }
 }
 

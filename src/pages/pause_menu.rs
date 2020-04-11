@@ -6,13 +6,13 @@ pub unsafe fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlG
     alpha_channel=0f32;
 
     // Создание заднего фона
-    let background_size=[300f64,450f64];
+    //let background_size=[300f64,450f64];
     let mut background=Rectangle::new(Pause_menu_background_color);
     let background_rect=[
-        (window_width-background_size[0])/2f64,
-        (window_height-background_size[1])/2f64,
-        background_size[0],
-        background_size[1]
+        0f64,//(window_width-background_size[0])/2f64,
+        0f64,//(window_height-background_size[1])/2f64,
+        window_width,//background_size[0],
+        window_height,//background_size[1]
     ];
 
 
@@ -50,8 +50,8 @@ pub unsafe fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlG
             gl.draw(r.viewport(),|c,g|{
                 background.color[3]=alpha_channel;
                 background.draw(background_rect,&c.draw_state,c.transform,g);
-
                 menu.draw_smooth(alpha_channel,&c,g);
+                //mouse_cursor.draw(&c,g);
             });
             
             alpha_channel+=smooth;
@@ -67,13 +67,17 @@ pub unsafe fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlG
         if let Some(_close)=e.close_args(){
             return Game::Exit
         }
-        mouse_cursor_movement(&e); // Движение мыши
+        mouse_cursor.movement(&e); // Движение мыши
         // Рендеринг
         if let Some(r)=e.render_args(){
             gl.draw(r.viewport(),|c,g|{
                 background.draw(background_rect,&c.draw_state,c.transform,g);
                 menu.draw(&c,g);
+                mouse_cursor.draw(&c,g);
             });
+        }
+        if Some(Button::Mouse(MouseButton::Left))==e.press_args(){
+            mouse_cursor.pressed();
         }
         // Нажатие кнопок
         if let Some(button)=e.release_args(){
@@ -89,6 +93,8 @@ pub unsafe fn pause_menu(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlG
                 Button::Mouse(key)=>{
                     match key{
                         MouseButton::Left=>{
+                            mouse_cursor.released();
+
                             if let Some(button_id)=menu.clicked(){
                                 match button_id{
                                     0=>return Game::ContinueGamePlay, // Кнопка продолжить

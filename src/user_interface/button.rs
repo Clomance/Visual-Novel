@@ -30,13 +30,7 @@ impl<'a> Drawable for Button<'a>{
 
 // Зависимая от шрифта кнопка (должно быть больше зависимостей)
 pub struct ButtonDependent{
-    x1:f64,
-    y1:f64,
-    x2:f64,
-    y2:f64,
-    width:f64,
-    height:f64,
-    rectanlge:Rectangle,
+    base:ButtonBase,
     text:TextViewDependent, // Зависимый от шрифта текстовый блок
 }
 
@@ -47,38 +41,24 @@ impl ButtonDependent{
                 .text_color(settings.text_color)
                 .text(settings.text)
                 .font_size(settings.font_size);
-
-        let x2=settings.rect[0]+settings.rect[2];
-        let y2=settings.rect[1]+settings.rect[3];
-
         Self{
-            x1:settings.rect[0],
-            y1:settings.rect[1],
-            x2:x2,
-            y2:y2,
-            width:settings.rect[2],
-            height:settings.rect[3],
-            rectanlge:Rectangle::new(settings.background_color),
+            base:ButtonBase::new(settings.rect,settings.background_color),
             text:TextViewDependent::new(text_view_settings,glyphs),
         }
     }
 
     pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.base.set_alpha_channel(alpha);
         self.text.set_alpha_channel(alpha);
     }
 
     pub fn clicked(&mut self)->bool{
-        let x=unsafe{mouse_position[0]};
-        let y=unsafe{mouse_position[1]};
-
-        self.x1<x && self.x2>x && self.y1<y && self.y2>y
+        self.base.released()
     }
     
-    pub fn draw(&mut self,context:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache){
-        let rect_pos=[self.x1,self.y1,self.width,self.height];
-        self.rectanlge.draw(rect_pos,&context.draw_state,context.transform,g);
-
-        self.text.draw(context,g,glyphs);
+    pub fn draw(&mut self,context:&Context,graphics:&mut GlGraphics,glyphs:&mut GlyphCache){
+        self.base.draw(context,graphics);
+        self.text.draw(context,graphics,glyphs);
     }
 }
 
@@ -159,24 +139,34 @@ impl CheckButton{
         }
     }
 
-    pub fn draw(&self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
-        self.button_base.draw(draw_state,transform,g);
+    pub fn draw(&self,context:&Context,g:&mut GlGraphics){
+        self.button_base.draw(context,g);
         if self.ticked{
             let line=Line::new(self.tick_color,1f64);
             
-            line.draw([
-                self.button_base.x1,
-                self.button_base.y1,
-                self.button_base.x2,
-                self.button_base.y2
-                ],draw_state,transform,g);
-                
-            line.draw([
-                self.button_base.x1,
-                self.button_base.y2,
-                self.button_base.x2,
-                self.button_base.y1
-                ],draw_state,transform,g)
+            line.draw(
+                [
+                    self.button_base.x1,
+                    self.button_base.y1,
+                    self.button_base.x2,
+                    self.button_base.y2
+                ],
+                &context.draw_state,
+                context.transform,
+                g
+            );
+
+            line.draw(
+                [
+                    self.button_base.x1,
+                    self.button_base.y2,
+                    self.button_base.x2,
+                    self.button_base.y1
+                ],
+                &context.draw_state,
+                context.transform,
+                g
+            )
         }
     }
 }
@@ -212,23 +202,25 @@ impl ButtonBase{
 
     #[inline] // Проверка нажатия на кнопку и локальные действия
     pub fn pressed(&self)->bool{
-        let x=unsafe{mouse_position[0]};
-        let y=unsafe{mouse_position[1]};
+        let position=unsafe{mouse_cursor.get_position()};
+        let x=position[0];
+        let y=position[1];
 
         self.x1<x && self.x2>x && self.y1<y && self.y2>y
     }
 
     #[inline] // Проверка отпущеная ли кнопка
     pub fn released(&self)->bool{
-        let x=unsafe{mouse_position[0]};
-        let y=unsafe{mouse_position[1]};
+        let position=unsafe{mouse_cursor.get_position()};
+        let x=position[0];
+        let y=position[1];
 
         self.x1<x && self.x2>x && self.y1<y && self.y2>y
     }
 
     #[inline]
-    pub fn draw(&self,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
+    pub fn draw(&self,context:&Context,g:&mut GlGraphics){
         let rect_pos=[self.x1,self.y1,self.width,self.height];
-        self.rectangle.draw(rect_pos,draw_state,transform,g);
+        self.rectangle.draw(rect_pos,&context.draw_state,context.transform,g);
     }
 }

@@ -3,11 +3,11 @@ use crate::*;
 #[inline] // Главное меню
 pub unsafe fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
     let texture_settings=TextureSettings::new();
-    
+
     smooth=1f32/32f32; // Сглаживание переходов - 1 к количеству кадров перехода
 
     // Настройка заголовка меню
-    let head=Game_name.to_string();
+    let head=Settings.game_name.to_string();
     let menu_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
     let head_view_settings=TextViewSettings::new()
             .rect([0f64,0f64,100f64,80f64])
@@ -45,11 +45,13 @@ pub unsafe fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut 
             if let Some(_close)=e.close_args(){
                 return Game::Exit
             }
+            //mouse_cursor.movement_wallpaper(&e,wallpaper); // Движение мыши
             // Рендеринг
             if let Some(r)=e.render_args(){
                 gl.draw(r.viewport(),|c,g|{
                     wallpaper.draw_smooth(alpha_channel,&c,g);
                     menu.draw_smooth(alpha_channel,&c,g);
+                    //mouse_cursor.draw(&c,g);
                 });
                 alpha_channel+=smooth;
                 if alpha_channel>=1.0{
@@ -64,20 +66,26 @@ pub unsafe fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut 
             if let Some(_close)=e.close_args(){
                 return Game::Exit
             }
-            mouse_cursor_movement(&e); // Движение мыши
+            mouse_cursor.movement_wallpaper(&e,wallpaper); // Движение мыши
             //Рендеринг
             if let Some(r)=e.render_args(){
                 gl.draw(r.viewport(),|c,g|{
                     wallpaper.draw(&c,g);
                     menu.draw(&c,g);
+                    mouse_cursor.draw(&c,g);
                 });
             }
             
+            if Some(Button::Mouse(MouseButton::Left))==e.press_args(){
+                mouse_cursor.pressed();
+            }
+
             if let Some(button)=e.release_args(){
                 match button{
                     Button::Mouse(key)=>{
                         match key{
                             MouseButton::Left=>{
+                                mouse_cursor.released();
                                 if let Some(button_id)=menu.clicked(){
                                     if Settings._continue{
                                         match button_id{
@@ -92,9 +100,13 @@ pub unsafe fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut 
                                             2=>{
                                                 match settings_page(events,window,gl){
                                                     Game::Exit=>return Game::Exit,
-                                                    Game::Back=>continue 'main_menu,
+                                                    Game::Back=>{
+                                                        mouse_cursor.movement_wallpaper_saved(wallpaper);
+                                                        continue 'main_menu
+                                                    },
                                                     _=>{}
                                                 }
+                                                
                                             }
                                             3=>return Game::Exit, // Кнопка закрытия игры
                                             _=>{}
@@ -112,7 +124,10 @@ pub unsafe fn main_menu(wallpaper:&mut Wallpaper,events:&mut Events,window:&mut 
                                             1=>{
                                                 match settings_page(events,window,gl){
                                                     Game::Exit=>return Game::Exit,
-                                                    Game::Back=>continue 'main_menu,
+                                                    Game::Back=>{
+                                                        mouse_cursor.movement_wallpaper_saved(wallpaper);
+                                                        continue 'main_menu
+                                                    },
                                                     _=>{}
                                                 }
                                             }

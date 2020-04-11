@@ -1,4 +1,5 @@
-use crate::*;
+use opengl_graphics::GlGraphics;
+use graphics::Context;
 
 pub trait Drawable{
     fn set_alpha_channel(&mut self,alpha:f32);

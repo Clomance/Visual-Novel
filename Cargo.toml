@@ -1,6 +1,6 @@
 [package]
 name = "Visual_Novel"
-version = "0.4.9"
+version = "0.5.0"
 authors = ["Clomance"]
 edition = "2018"
 
@@ -17,10 +17,11 @@ name="lib"
 path="lib/lib.rs"
 
 [profile.dev]
-opt-level = 0
+opt-level = 3
+lto = false
 debug = false
 
 [profile.release]
 opt-level = 3
-lto = false
+lto = true
 debug = false

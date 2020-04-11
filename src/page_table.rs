@@ -23,9 +23,7 @@ impl<'a,'b,'c> PageTable<'a,'b,'c>{
         let mut table_str=String::with_capacity(len*45);
         table_file.read_to_string(&mut table_str).unwrap();
 
-
         let mut lines=table_str.lines(); // Разделение на строки
-
 
         while let Some(line)=lines.next(){
             let line=line.trim();
@@ -110,4 +108,33 @@ fn load_page_settings(lines:&mut Lines)->(usize,usize,usize){
         panic!("LoadingPageTableError: no end of page block")
     }
     (wallpaper.unwrap(),dialogue.unwrap(),character.unwrap())
+}
+
+
+pub struct GameTable<'a,'b>{
+    table:Vec<Page<'a,'b>>
+}
+
+pub struct Page<'a,'b>{
+    wallpaper:&'a Texture,
+    character:&'b Character,
+    pages:Vec<usize>,
+}
+
+pub struct GameTableRaw{
+    table:Vec<PageRaw>
+}
+
+impl GameTableRaw{
+    pub fn new(len:usize)->GameTableRaw{
+        Self{
+            table:Vec::with_capacity(len)
+        }
+    }
+}
+
+pub struct PageRaw{
+    wallpaper:usize, // Номер обоев
+    character:usize, // Номер персонажа
+    pages:Vec<usize>, // Номера возмозможный переходов на другие страницы
 }
