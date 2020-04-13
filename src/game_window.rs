@@ -1,0 +1,420 @@
+use crate::{
+    Settings,
+    openGL,
+};
+
+use glutin::{
+    event::{
+        Event,
+        WindowEvent,
+        MouseButton as GMouseButton,
+        ElementState,
+    },
+    event_loop::{ControlFlow,EventLoop},
+    window::{Window,WindowBuilder,Fullscreen},
+    ContextBuilder,
+    ContextWrapper,
+    PossiblyCurrent,
+    GlRequest
+};
+
+use winit::platform::desktop::EventLoopExtDesktop;
+
+use graphics::Viewport;
+
+use std::collections::VecDeque;
+
+/*
+    EventLoop - минимум четыре шага для моей схемы с мгновенным закрытием цикла обработки событий:
+    1) NewEvent
+    2) MainEventsCleared
+    (RedrawRequested всегда идет после MainEventsCleared)
+    3) RedrawEventsCleared
+    4) LoopDestroyed
+
+
+    Все события обрабатываются и добавляются в очередь внешней обработки (GameWindow.events)
+        для работы с ними вне структуры окна
+*/
+
+pub struct GameWindow{
+    event_loop:EventLoop<()>,
+    context:ContextWrapper<PossiblyCurrent,Window>,
+    width:f64,
+    height:f64,
+    events:VecDeque<GameWindowEvent>,
+}
+
+#[derive(Clone)]
+pub enum GameWindowEvent{
+    None,
+    Update,
+    Draw(Viewport),
+    MouseMovement((f64,f64)),
+
+    KeyboardPressed(KeyboardButton),
+    KeyboardReleased(KeyboardButton),
+
+    MousePressed(MouseButton),
+    MouseReleased(MouseButton),
+
+    CharacterInput(char),
+    Exit,
+}
+
+#[derive(Clone)]
+pub enum MouseButton{
+    Left,
+    Middle,
+    Right,
+}
+
+use GameWindowEvent::*;
+
+impl GameWindow{
+    pub fn new()->GameWindow{
+        let event_loop=EventLoop::new();
+        let monitor=event_loop.primary_monitor();
+        let size=monitor.size();
+        let mut inner=size;
+        inner.width=0;
+        inner.height=0;
+
+        let window_builder=WindowBuilder::new()
+            .with_inner_size(inner) // Чтобы не вылезало не дорисованное окно
+            .with_decorations(false)
+            .with_resizable(false)
+            .with_title(unsafe{&Settings.game_name})
+            .with_fullscreen(Some(Fullscreen::Borderless(monitor)));
+
+        let api=openGL.get_major_minor();
+
+        let builder=ContextBuilder::new()
+            .with_gl(GlRequest::GlThenGles{
+                opengl_version:(api.0 as u8,api.1 as u8),
+                opengles_version:(api.0 as u8,api.1 as u8),
+            })
+            .with_vsync(true)
+            .with_srgb(true);
+
+        let ctx=builder.build_windowed(window_builder,&event_loop).unwrap();
+        let ctx=unsafe{ctx.make_current().unwrap()};
+
+        ctx.window().set_cursor_visible(false);
+
+        gl::load_with(|s|ctx.get_proc_address(s) as *const _);
+
+        Self{
+            event_loop:event_loop,
+            context:ctx,
+            width:size.width as f64,
+            height:size.height as f64,
+            events:VecDeque::with_capacity(6),
+        }
+    }
+
+    pub fn size(&self)->[f64;2]{
+        [self.width,self.height]
+    }
+
+    pub fn context(&self)->&ContextWrapper<PossiblyCurrent,Window>{
+        &self.context
+    }
+
+    pub fn window(&self)->&Window{
+        self.context.window()
+    }
+
+    pub fn next_event(&mut self)->Option<GameWindowEvent>{
+        if self.events.is_empty(){
+            let vec=&mut self.events as *mut VecDeque<GameWindowEvent>;
+
+            let mut next_event=None;
+
+            let width=self.width as u32;
+            let height=self.height as u32;
+
+            let window=self as *mut GameWindow;
+
+            self.event_loop.run_return(|event,_,control_flow|{
+                *control_flow=ControlFlow::Exit;
+
+                next_event=match event{
+                    Event::NewEvents(_)=>{
+                        None // Игнорирование
+                    }
+                    
+                    // События окна
+                    Event::WindowEvent{event,..}=>{
+
+                        match event{
+                            // Закрытие окна
+                            WindowEvent::CloseRequested=>Exit,
+
+                            // Движение мыши (конечное положение)
+                            WindowEvent::CursorMoved{position,..}=>MouseMovement((position.x,position.y)),
+                            
+                            // Обработка действий с кнопками мыши (только стандартные кнопки)
+                            WindowEvent::MouseInput{button,state,..}=>{
+                                if state==ElementState::Pressed{
+                                    match button{
+                                        GMouseButton::Left=>MousePressed(MouseButton::Left),
+                                        GMouseButton::Middle=>MousePressed(MouseButton::Middle),
+                                        GMouseButton::Right=>MousePressed(MouseButton::Right),
+                                        GMouseButton::Other(_)=>None
+                                    }
+                                }
+                                else{
+                                    match button{
+                                        GMouseButton::Left=>MouseReleased(MouseButton::Left),
+                                        GMouseButton::Middle=>MouseReleased(MouseButton::Middle),
+                                        GMouseButton::Right=>MouseReleased(MouseButton::Right),
+                                        GMouseButton::Other(_)=>None
+                                    }
+                                }
+                            }
+
+                            WindowEvent::KeyboardInput{input,..}=>{
+                                let key=if let Some(key)=input.virtual_keycode{
+                                    unsafe{std::mem::transmute(key)}
+                                }
+                                else{
+                                    KeyboardButton::Unknown
+                                };
+                                if input.state==ElementState::Pressed{
+                                    KeyboardReleased(key)
+                                }
+                                else{
+                                    KeyboardPressed(key)
+                                }
+                            }
+
+                            // Получение вводимых букв
+                            WindowEvent::ReceivedCharacter(character)=>{
+                                match character{
+                                    '\u{7f}' | // Delete
+                                    '\u{1b}' | // Escape
+                                    '\u{8}'  | // Backspace
+                                    '\r' | '\n' | '\t'=>None,
+                                    ch=>CharacterInput(ch),
+                                }
+                            }
+
+                            _=>None // Игнорирование остальных событий
+                        }
+                    }
+
+                    // Создание кадра и запрос на его вывод на окно
+                    Event::MainEventsCleared=>{
+                        unsafe{(*window).request_redraw()};
+                        Draw(Viewport{
+                            rect:[0,0,width as i32,height as i32],
+                            draw_size:[width,height],
+                            window_size:[width as f64,height as f64],
+                        })
+                    }
+
+                    // Вывод кадра на окно
+                    Event::RedrawRequested(_)=>{
+                        unsafe{(*window).redraw()};
+                        None // Игнорирование
+                    }
+
+                    // После вывода кадра
+                    Event::RedrawEventsCleared=>{
+                        None // Игнорирование
+                    }
+
+                    // Закрытия цикла обработки событий
+                    Event::LoopDestroyed=>{
+                        None // Игнорирование
+                    }
+
+                    _=>None  // Игнорирование остальных событий
+                };
+
+                unsafe{(*vec).push_back(next_event.clone())}
+            });
+
+            self.events.pop_front()
+        }
+        else{
+            self.events.pop_front()
+        }
+    }
+
+    pub fn request_redraw(&self){
+        self.context.window().request_redraw();
+    }
+
+    pub fn redraw(&self){
+        self.context.swap_buffers().unwrap();
+    }
+}
+
+#[derive(Clone)]
+#[repr(u32)]
+pub enum KeyboardButton{
+    One,
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    Zero,
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
+    Escape,
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    F10,
+    F11,
+    F12,
+    F13,
+    F14,
+    F15,
+    F16,
+    F17,
+    F18,
+    F19,
+    F20,
+    F21,
+    F22,
+    F23,
+    F24,
+    Screenshot,
+    Scroll,
+    Pause,
+    Insert,
+    Home,
+    Delete,
+    End,
+    PageDown,
+    PageUp,
+    Left,
+    Up,
+    Right,
+    Down,
+    Backspace,
+    Enter,
+    Space,
+    Compose,
+    Caret,
+    Numlock,
+    Numpad0,
+    Numpad1,
+    Numpad2,
+    Numpad3,
+    Numpad4,
+    Numpad5,
+    Numpad6,
+    Numpad7,
+    Numpad8,
+    Numpad9,
+    AbntC1,
+    AbntC2,
+    Add,
+    Apostrophe,
+    Apps,
+    At,
+    Ax,
+    Backslash,
+    Calculator,
+    Capital,
+    Colon,
+    Comma,
+    Convert,
+    Decimal,
+    Divide,
+    Equals,
+    Grave,
+    Kana,
+    Kanji,
+    LeftAlt,
+    LeftBracket,
+    LeftControl,
+    LeftShift,
+    LeftWin,
+    Mail,
+    MediaSelect,
+    MediaStop,
+    Minus,
+    Multiply,
+    Mute,
+    MyComputer,
+    NavigateForward,
+    NavigateBackward,
+    NextTrack,
+    NoConvert,
+    NumpadComma,
+    NumpadEnter,
+    NumpadEquals,
+    OEM102,
+    Period,
+    PlayPause,
+    Power,
+    PrevTrack,
+    RightAlt,
+    RightBracket,
+    RightControl,
+    RightShift,
+    RightWin,
+    Semicolon,
+    Slash,
+    Sleep,
+    Stop,
+    Subtract,
+    Sysrq,
+    Tab,
+    Underline,
+    Unlabeled,
+    VolumeDown,
+    VolumeUp,
+    Wake,
+    WebBack,
+    WebFavorites,
+    WebForward,
+    WebHome,
+    WebRefresh,
+    WebSearch,
+    WebStop,
+    Yen,
+    Copy,
+    Paste,
+    Cut,
+    Unknown,
+}

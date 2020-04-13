@@ -26,25 +26,20 @@ impl<'a> EditTextView<'a>{
         self.base.get_text()
     }
 
-    pub fn push_text(&mut self,text:&str){
+    pub fn push_char(&mut self,ch:char){
         let glyphs=&mut self.base.glyphs;
 
-        let mut len=self.base.base.text_length; // Длина
-        let mut dlen=0f64;
+        let character=glyphs.character(self.base.base.base.font_size,ch).unwrap(); // Поиск нужной буквы
 
-        for ch in text.chars(){
-            let character=glyphs.character(self.base.base.base.font_size,ch).unwrap(); // Поиск нужной буквы
-            len+=character.advance_width(); // Ширина буквы
+        let mut len=self.base.base.text_length; // Исходная длина текста
+        let dlen=character.advance_width(); // Ширина буквы
+        len+=dlen; // Длина текста с вписанной буквой
 
-            if len>=self.max_line_length{
-                break
-            }
-
-            dlen+=character.advance_width();
+        if len<self.max_line_length{
             self.base.base.text.push(ch);
+            self.base.base.text_length+=dlen;
+            self.base.base.base.image.rectangle.as_mut().unwrap()[0]-=dlen/2f64; // Сдвиг
         }
-        self.base.base.text_length+=dlen;
-        self.base.base.base.image.rectangle.as_mut().unwrap()[0]-=dlen/2f64; // Сдвиг
     }
 
     pub fn pop_char(&mut self){

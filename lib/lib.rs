@@ -2,13 +2,8 @@
 mod sync_raw_ptr;
 pub use sync_raw_ptr::SyncRawPtr;
 
-mod drawable;
-pub use drawable::Drawable;
+mod traits;
+pub use traits::*;
 
 mod colors;
 pub use colors::*;
-
-pub fn get_monitor_size()->[f64;2]{
-    let size=glutin::event_loop::EventLoop::new().primary_monitor().size();
-    [size.width as f64,size.height as f64]
-}

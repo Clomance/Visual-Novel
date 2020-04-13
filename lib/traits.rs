@@ -1,27 +1,13 @@
+use opengl_graphics::GlGraphics;
+use graphics::Context;
 
-// Движение интерфейса вместе с мышью
-pub trait MouseMovementUI{
-    fn interface_movement(&mut self,movement:[f64;2]);
+pub trait Drawable{
+    fn set_alpha_channel(&mut self,alpha:f32);
 
-    fn mouse_movement_ui(&mut self,event:&Event){
-        if let Some(mut movement)=event.mouse_relative_args(){
-            mouse_cursor.shift(movement);
-            
-            movement=self.get_mouse_movement();
-            movement[0]=-movement[0];
-            movement[1]=-movement[1];
-            self.interface_movement(movement);
-        }
-    }
-}
+    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics);
 
-fn mouse_movement_ui(&mut self,event:&Event){
-    if let Some(mut movement)=event.mouse_relative_args(){
-        mouse_cursor.shift(movement);
-        
-        movement=self.get_mouse_movement();
-        movement[0]=-movement[0];
-        movement[1]=-movement[1];
-        self.interface_movement(movement);
+    fn draw_smooth(&mut self,alpha:f32,context:&Context,graphics:&mut GlGraphics){
+        self.set_alpha_channel(alpha);
+        self.draw(context,graphics);
     }
 }

@@ -28,7 +28,16 @@ impl Wallpaper{
         self.texture.update(image);
     }
 
-    pub fn set_position(&mut self,position:[f64;2]){
+    pub fn move_with_cursor(&mut self,mouse_position:[f64;2]){
+        let r_x=unsafe{window_center[0]-mouse_position[0]};
+
+        let r_y=unsafe{window_center[1]-mouse_position[1]};
+
+        let position=[
+            r_x/wallpaper_movement_scale,
+            r_y/wallpaper_movement_scale
+        ];
+
         let rect=self.image.rectangle.as_mut().unwrap();
         rect[0]=position[0]+self.start_position[0];
         rect[1]=position[1]+self.start_position[1];

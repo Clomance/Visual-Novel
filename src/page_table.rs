@@ -115,6 +115,12 @@ pub struct GameTable<'a,'b>{
     table:Vec<Page<'a,'b>>
 }
 
+impl<'a,'b> GameTable<'a,'b>{
+    // pub fn new(table:GameTableRaw)->GameTable<'a,'b>{
+
+    // }
+}
+
 pub struct Page<'a,'b>{
     wallpaper:&'a Texture,
     character:&'b Character,

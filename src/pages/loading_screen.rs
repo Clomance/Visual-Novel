@@ -1,7 +1,7 @@
 use crate::*;
 
 // Загрузочный экран
-pub unsafe fn loading_screen(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
+pub unsafe fn loading_screen(window:&mut GameWindow,gl:&mut GlGraphics)->Game{
     let texture_settings=TextureSettings::new();
     let half_size=100f64;
     let logo=Image::new().rect([
@@ -15,43 +15,42 @@ pub unsafe fn loading_screen(events:&mut Events,window:&mut GlutinWindow,gl:&mut
     let (x,y)=(window_width/2f64,window_height/2f64);
     let mut rotation=0f64;
 
-    'loading:while let Some(e)=events.next(window){
+    'loading:while let Some(event)=window.next_event(){
         if !loading{
             break 'loading
         }
-        // Закрытие игры
-        if let Some(_close)=e.close_args(){
-            loading=false;
-            return Game::Exit
-        } 
-        // Рендеринг
-        if let Some(r)=e.render_args(){
-            gl.draw(r.viewport(),|c,g|{
-                g.clear_color(White);
-                logo.draw(&logo_texture,&c.draw_state,c.transform.trans(x,y).rot_rad(rotation).trans(-half_size,-half_size),g);
-            });
-            rotation+=0.1f64;
+        match event{
+            GameWindowEvent::Exit=>{loading=false;return Game::Exit} // Закрытие игры
+
+            GameWindowEvent::Draw(viewport)=>{
+                gl.draw(viewport,|c,g|{
+                    g.clear_color(White);
+                    logo.draw(&logo_texture,&c.draw_state,c.transform.trans(x,y).rot_rad(rotation).trans(-half_size,-half_size),g);
+                });
+                rotation+=0.1f64;
+            }
+            _=>{}
         }
     }
 
     // Для планого перехода
     let mut frames=5;
-    while let Some(e)=events.next(window){
-        // Закрытие игры
-        if let Some(_close)=e.close_args(){
-            loading=false;
-            return Game::Exit
-        }
-        if let Some(r)=e.render_args(){
-            gl.draw(r.viewport(),|_c,g|{
-                g.clear_color(White);
-            });
-            frames-=1;
-            if frames==0{
-                break
+    while let Some(event)=window.next_event(){
+        match event{
+            GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+
+            GameWindowEvent::Draw(viewport)=>{
+                gl.draw(viewport,|_context,g|{
+                    g.clear_color(White);
+                });
+                frames-=1;
+                if frames==0{
+                    break
+                }
             }
+            _=>{}
         }
     }
 
-    return Game::MainMenu
+    Game::MainMenu
 }

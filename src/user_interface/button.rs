@@ -202,7 +202,7 @@ impl ButtonBase{
 
     #[inline] // Проверка нажатия на кнопку и локальные действия
     pub fn pressed(&self)->bool{
-        let position=unsafe{mouse_cursor.get_position()};
+        let position=unsafe{mouse_cursor.position()};
         let x=position[0];
         let y=position[1];
 
@@ -211,7 +211,7 @@ impl ButtonBase{
 
     #[inline] // Проверка отпущеная ли кнопка
     pub fn released(&self)->bool{
-        let position=unsafe{mouse_cursor.get_position()};
+        let position=unsafe{mouse_cursor.position()};
         let x=position[0];
         let y=position[1];
 

@@ -1,7 +1,7 @@
 use crate::*;
 
 #[inline] // Страница настроек
-pub unsafe fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
+pub unsafe fn settings_page(window:&mut GameWindow,gl:&mut GlGraphics)->Game{
     smooth=1f32/32f32;
     alpha_channel=0f32;
 
@@ -59,110 +59,94 @@ pub unsafe fn settings_page(events:&mut Events,window:&mut GlutinWindow,gl:&mut 
         user_interface::Button::new(button_settings,button_glyphs)
     ];
     // Плавное открытие
-    'smooth:while let Some(e)=events.next(window){
-        // Закрытие игры
-        if let Some(_close)=e.close_args(){
-            return Game::Exit
-        }
-        //mouse_cursor.movement(&e); // Движение мыши
-        // Нажатие клавишь
-        if let Some(button)=e.release_args(){
-            match button{
-                Button::Keyboard(key)=>{
-                    match key{
-                        Key::Escape=>{
-                            return Game::Back
-                        }
-                        _=>{}
+    'smooth:while let Some(event)=window.next_event(){
+        match event{
+            GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+
+            GameWindowEvent::Draw(viewport)=>{ //Рендеринг
+                gl.draw(viewport,|c,g|{
+                    background.color[3]=alpha_channel;
+                    background.draw(background_rect,&c.draw_state,c.transform,g);
+                    
+                    head.draw_smooth(alpha_channel,&c,g);
+
+                    head_signs_per_sec_slider.draw_smooth(alpha_channel,&c,g);
+                    signs_per_sec_slider.draw_smooth(alpha_channel,&c,g);
+
+                    for button in &mut common_buttons{
+                        button.draw_smooth(alpha_channel,&c,g);
                     }
-                }
-                _=>{}
-            }
-        }
-        // Рендеринг
-        if let Some(r)=e.render_args(){
-            gl.draw(r.viewport(),|c,g|{
-                background.color[3]=alpha_channel;
-                background.draw(background_rect,&c.draw_state,c.transform,g);
-                
-                head.draw_smooth(alpha_channel,&c,g);
+                    //mouse_cursor.draw(&c,g);
+                });
 
-                head_signs_per_sec_slider.draw_smooth(alpha_channel,&c,g);
-                signs_per_sec_slider.draw_smooth(alpha_channel,&c,g);
-
-                for button in &mut common_buttons{
-                    button.draw_smooth(alpha_channel,&c,g);
+                alpha_channel+=smooth;
+                if alpha_channel>=1.0{
+                    break 'smooth
                 }
-                //mouse_cursor.draw(&c,g);
-            });
-            alpha_channel+=smooth;
-            if alpha_channel>=1.0{
-                break 'smooth
             }
+            _=>{}
         }
     }
 
     // Рабочий вид
-    while let Some(e)=events.next(window){
-        // Закрытие игры
-        if let Some(_close)=e.close_args(){
-            return Game::Exit
-        }
+    while let Some(event)=window.next_event(){
+        match event{
+            GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-        if let Some(d)=e.mouse_relative_args(){
-            mouse_cursor.shift(d);// Движение мыши
-            signs_per_sec_slider.grab();
-        }
-        
-        // Рендеринг
-        if let Some(r)=e.render_args(){
-            gl.draw(r.viewport(),|c,g|{
-                background.draw(background_rect,&c.draw_state,c.transform,g);
-                head.draw(&c,g);
-                
-                head_signs_per_sec_slider.draw(&c,g);
-                signs_per_sec_slider.draw(&c,g);
+            GameWindowEvent::MouseMovement((x,y))=>{
+                mouse_cursor.set_position([x,y]);
+                signs_per_sec_slider.grab();
+            }
+            
+            GameWindowEvent::Draw(viewport)=>{ //Рендеринг
+                gl.draw(viewport,|c,g|{
+                    background.draw(background_rect,&c.draw_state,c.transform,g);
+                    head.draw(&c,g);
+                    
+                    head_signs_per_sec_slider.draw(&c,g);
+                    signs_per_sec_slider.draw(&c,g);
 
-                for button in &mut common_buttons{
-                    button.draw(&c,g);
-                }
-                mouse_cursor.draw(&c,g);
-            });
-        }
-    
-        if Some(Button::Mouse(MouseButton::Left))==e.press_args(){
-            mouse_cursor.pressed();
-            signs_per_sec_slider.pressed();
-        }
-
-        if let Some(button)=e.release_args(){
-            match button{
-                Button::Mouse(key)=>{
-                    match key{
-                        MouseButton::Left=>{
-                            mouse_cursor.released();
-
-                            Settings.signs_per_frame=signs_per_sec_slider.released()/60f64;
-
-                            if common_buttons[0].clicked(){ // Кнопка "Назад"
-                                return Game::Back
-                            }
-                        }
-                        _=>{}
+                    for button in &mut common_buttons{
+                        button.draw(&c,g);
                     }
+                    mouse_cursor.draw(&c,g);
+                });
+            }
+        
+            GameWindowEvent::MousePressed(button)=>{
+                match button{
+                    MouseButton::Left=>{
+                        mouse_cursor.pressed();
+                        signs_per_sec_slider.pressed();
+                    },
+                    _=>{}
                 }
-                Button::Keyboard(key)=>{
-                    match key{
-                        Key::Escape=>{
+            }
+
+            GameWindowEvent::MouseReleased(button)=>{
+                match button{
+                    MouseButton::Left=>{
+                        mouse_cursor.released();
+                        Settings.signs_per_frame=signs_per_sec_slider.released()/60f64;
+
+                        if common_buttons[0].clicked(){ // Кнопка "Назад"
                             return Game::Back
                         }
-                        _=>{}
                     }
+                    _=>{}
                 }
-                _=>{}
             }
+
+            GameWindowEvent::KeyboardReleased(button)=>{
+                match button{
+                    KeyboardButton::Escape=>return Game::Back,
+                    _=>{}
+                }
+            }
+
+            _=>{} // Остальные события
         }
     }
-    return Game::Exit
+    Game::Exit
 }
 

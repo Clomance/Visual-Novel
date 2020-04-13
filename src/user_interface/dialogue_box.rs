@@ -89,7 +89,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
 
     pub fn clicked(&mut self)->bool{
         unsafe{
-            self.y1<mouse_cursor.get_position()[1] // Если курсор в нижней трети экрана
+            self.y1<mouse_cursor.position()[1] // Если курсор в нижней трети экрана
         }
     }
 

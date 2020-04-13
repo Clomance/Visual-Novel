@@ -104,7 +104,7 @@ impl Slider{
     }
 
     pub fn pressed(&mut self){
-        let position=unsafe{mouse_cursor.get_position()};
+        let position=unsafe{mouse_cursor.position()};
         let x=position[0];
         let y=position[1];
 

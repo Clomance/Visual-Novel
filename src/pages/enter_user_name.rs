@@ -1,7 +1,7 @@
 use crate::*;
 
 #[inline]
-pub unsafe fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mut GlGraphics)->Game{
+pub unsafe fn enter_user_name(window:&mut GameWindow,gl:&mut GlGraphics)->Game{
     smooth=1f32/8f32;
     alpha_channel=0f32;
 
@@ -35,88 +35,69 @@ pub unsafe fn enter_user_name(events:&mut Events,window:&mut GlutinWindow,gl:&mu
     let mut name_input=EditTextView::new(settings,glyphs);
 
     // Глаживание перехода
-    'smooth:while let Some(e)=events.next(window){
-        // Закрытие игры
-        if let Some(_close)=e.close_args(){
-            return Game::Exit
-        }
-        // Рендеринг
-        if let Some(r)=e.render_args(){
-            gl.draw(r.viewport(),|c,g|{
-                name_input.draw_smooth(alpha_channel,&c,g);
-                head.draw_smooth(alpha_channel,&c,g);
-            });
-            alpha_channel+=smooth;
-            if alpha_channel>=1.0{
-                break 'smooth
-            }
-        }
-        // Закрытие про нажатии Escape
-        if let Some(button)=e.release_args(){
-            match button{
-                Button::Keyboard(key)=>{
-                    match key{
-                        Key::Escape=>{
-                            return Game::Back
-                        }
-                        _=>{}
-                    }
+    'smooth:while let Some(event)=window.next_event(){
+        match event{
+            GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+
+            GameWindowEvent::Draw(viewport)=>{ // Рендеринг
+                gl.draw(viewport,|c,g|{
+                    name_input.draw_smooth(alpha_channel,&c,g);
+                    head.draw_smooth(alpha_channel,&c,g);
+                });
+
+                alpha_channel+=smooth;
+                if alpha_channel>=1.0{
+                    break 'smooth
                 }
-                _=>{}
             }
+
+            GameWindowEvent::KeyboardReleased(button)=>{
+                match button{
+                    KeyboardButton::Escape=>return Game::Back,
+                    _=>{}
+                }
+            }
+            _=>{}
         }
     }
 
     // Полная отрисовка
-    while let Some(e)=events.next(window){
-        // Закрытие игры
-        if let Some(_close)=e.close_args(){
-            return Game::Exit
-        }
-        // Рендеринг
-        if let Some(r)=e.render_args(){
-            gl.draw(r.viewport(),|c,g|{
-                name_input.draw(&c,g);
-                head.draw(&c,g)
-            })
-        }
-        // Получение вводный данных
-        if let Some(text)=e.text_args(){
-            name_input.push_text(&text);
-        }
+    while let Some(event)=window.next_event(){
+        match event{
+            GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+            
+            GameWindowEvent::Draw(viewport)=>{ // Рендеринг
+                gl.draw(viewport,|c,g|{
+                    name_input.draw(&c,g);
+                    head.draw(&c,g)
+                })
+            }
 
-        if let Some(button)=e.press_args(){
-            match button{
-                Button::Keyboard(key)=>{
-                    match key{
-                        Key::Backspace=>name_input.pop_char(), // Удаление
-                        _=>{}
-                    }
+            GameWindowEvent::CharacterInput(character)=>name_input.push_char(character),
+
+            GameWindowEvent::KeyboardPressed(button)=>{
+                match button{
+                    KeyboardButton::Backspace=>name_input.pop_char(), // Удаление
+                    _=>{}
                 }
-                _=>{}
             }
-        }
-        //
-        if let Some(button)=e.release_args(){
-            match button{
-                Button::Keyboard(key)=>{
-                    match key{
-                        Key::Escape=>{
-                            return Game::Back
+
+            GameWindowEvent::KeyboardReleased(button)=>{
+                match button{
+                    KeyboardButton::Escape=>return Game::Back,
+                    
+                    KeyboardButton::Enter=>{
+                        let name=name_input.get_text();
+                        if !name.is_empty(){
+                            Settings.user_name=name;
+                            return Game::NewGamePlay
                         }
-                        Key::Return=>{
-                            let name=name_input.get_text();
-                            if !name.is_empty(){
-                                Settings.user_name=name;
-                                return Game::NewGamePlay
-                            }
-                        }
-                        _=>{}
                     }
+                    _=>{}
                 }
-                _=>{}
             }
+            _=>{}
         }
     }
-    return Game::Exit
+    Game::Exit
 }
