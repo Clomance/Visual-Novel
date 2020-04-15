@@ -47,7 +47,8 @@ use std::collections::VecDeque;
     Все события обрабатываются и добавляются в очередь внешней обработки (GameWindow.events)
         для работы с ними вне структуры окна
 
-    При потере фокуса игра сворачивается, но рендеринг продолжается
+    При потере фокуса игра сворачивается, передача событий внешнему управлению прекращается
+    При получении фокуса игра возвращается в исходное состояние
 */
 
 pub const openGL:OpenGL=OpenGL::V3_2;
@@ -63,6 +64,7 @@ pub struct GameWindow{
     context:ContextWrapper<PossiblyCurrent,Window>,
     graphics:GlGraphics,
     events:VecDeque<GameWindowEvent>,
+    events_handle_fn:fn(&mut Self),
     width:u32,
     height:u32,
 }
@@ -156,6 +158,7 @@ impl GameWindow{
             context:ctx,
             graphics:gl,
             events:VecDeque::with_capacity(6),
+            events_handle_fn:GameWindow::event_listener,
             width:width,
             height:height,
         }
@@ -165,123 +168,12 @@ impl GameWindow{
         self.context.window()
     }
 
+    // Получение событий
     pub fn next_event(&mut self)->Option<GameWindowEvent>{
         if self.events.is_empty(){
-            let vec=&mut self.events as *mut VecDeque<GameWindowEvent>;
-
-            let window=self as *mut GameWindow;
-
-            self.event_loop.run_return(|event,_,control_flow|{
-                *control_flow=ControlFlow::Wait;
-
-                let next_event=match event{
-                    Event::NewEvents(_)=>None, // Игнорирование
-
-                    // События окна
-                    Event::WindowEvent{event,..}=>{
-                        match event{
-                            // Закрытие окна
-                            WindowEvent::CloseRequested=>Exit,
-
-                            // Движение мыши (конечное положение)
-                            WindowEvent::CursorMoved{position,..}=>MouseMovement((position.x,position.y)),
-                            
-                            // Обработка действий с кнопками мыши (только стандартные кнопки)
-                            WindowEvent::MouseInput{button,state,..}=>{
-                                if state==ElementState::Pressed{
-                                    match button{
-                                        GMouseButton::Left=>MousePressed(MouseButton::Left),
-                                        GMouseButton::Middle=>MousePressed(MouseButton::Middle),
-                                        GMouseButton::Right=>MousePressed(MouseButton::Right),
-                                        GMouseButton::Other(_)=>None
-                                    }
-                                }
-                                else{
-                                    match button{
-                                        GMouseButton::Left=>MouseReleased(MouseButton::Left),
-                                        GMouseButton::Middle=>MouseReleased(MouseButton::Middle),
-                                        GMouseButton::Right=>MouseReleased(MouseButton::Right),
-                                        GMouseButton::Other(_)=>None
-                                    }
-                                }
-                            }
-
-                            WindowEvent::KeyboardInput{input,..}=>{
-                                let key=if let Some(key)=input.virtual_keycode{
-                                    unsafe{std::mem::transmute(key)}
-                                }
-                                else{
-                                    KeyboardButton::Unknown
-                                };
-                                if input.state==ElementState::Pressed{
-                                    KeyboardPressed(key)
-                                }
-                                else{
-                                    KeyboardReleased(key)
-                                }
-                            }
-
-                            // Получение вводимых букв
-                            WindowEvent::ReceivedCharacter(character)=>{
-                                match character{
-                                    '\u{7f}' | // Delete
-                                    '\u{1b}' | // Escape
-                                    '\u{8}'  | // Backspace
-                                    '\r' | '\n' | '\t'=>None,
-                                    ch=>CharacterInput(ch),
-                                }
-                            }
-
-                            WindowEvent::Focused(focused)=>{
-                                unsafe{
-                                    println!("hide {}",!focused);
-                                    (*window).set_hide(!focused);
-                                }
-                                None
-                            }
-                            _=>None // Игнорирование остальных событий
-                        }
-                    }
-
-                    // Создание кадра и запрос на его вывод на окно
-                    Event::MainEventsCleared=>{
-                        unsafe{
-                            (*window).request_redraw()
-                        }
-                        None
-                    }
-
-                    Event::Suspended=>{
-                        None
-                    }
-
-                    // Вывод кадра на окно
-                    Event::RedrawRequested(_)=>{
-                        println!("draw");
-                        unsafe{(*window).redraw()};
-                        Draw
-                    }
-
-                    // После вывода кадра
-                    Event::RedrawEventsCleared=>{
-                        *control_flow=ControlFlow::Exit;
-                        None
-                    } // Игнорирование
-
-                    // Закрытия цикла обработки событий
-                    Event::LoopDestroyed=>None, // Игнорирование
-
-                    _=>None  // Игнорирование остальных событий
-                };
-
-                unsafe{(*vec).push_back(next_event)}
-            });
-
-            self.events.pop_front()
+            (self.events_handle_fn)(self); // Вызов функции обработки событий
         }
-        else{
-            self.events.pop_front()
-        }
+        self.events.pop_front()
     }
 
     pub fn draw<F>(&mut self,f:F)
@@ -318,6 +210,143 @@ impl GameWindow{
             y:position[1]
         };
         self.context.window().set_cursor_position(position);
+    }
+}
+
+impl GameWindow{
+    // Обычная функция обработки событий
+    fn event_listener(&mut self){
+        let vec=&mut self.events as *mut VecDeque<GameWindowEvent>;
+
+        let window=self as *mut GameWindow;
+
+        self.event_loop.run_return(|event,_,control_flow|{
+            *control_flow=ControlFlow::Wait;
+
+            let next_event=match event{
+                Event::NewEvents(_)=>None, // Игнорирование
+
+                // События окна
+                Event::WindowEvent{event,..}=>{
+                    match event{
+                        // Закрытие окна
+                        WindowEvent::CloseRequested=>Exit,
+
+                        // Движение мыши (конечное положение)
+                        WindowEvent::CursorMoved{position,..}=>MouseMovement((position.x,position.y)),
+                        
+                        // Обработка действий с кнопками мыши (только стандартные кнопки)
+                        WindowEvent::MouseInput{button,state,..}=>{
+                            if state==ElementState::Pressed{
+                                match button{
+                                    GMouseButton::Left=>MousePressed(MouseButton::Left),
+                                    GMouseButton::Middle=>MousePressed(MouseButton::Middle),
+                                    GMouseButton::Right=>MousePressed(MouseButton::Right),
+                                    GMouseButton::Other(_)=>None
+                                }
+                            }
+                            else{
+                                match button{
+                                    GMouseButton::Left=>MouseReleased(MouseButton::Left),
+                                    GMouseButton::Middle=>MouseReleased(MouseButton::Middle),
+                                    GMouseButton::Right=>MouseReleased(MouseButton::Right),
+                                    GMouseButton::Other(_)=>None
+                                }
+                            }
+                        }
+
+                        WindowEvent::KeyboardInput{input,..}=>{
+                            let key=if let Some(key)=input.virtual_keycode{
+                                unsafe{std::mem::transmute(key)}
+                            }
+                            else{
+                                KeyboardButton::Unknown
+                            };
+                            if input.state==ElementState::Pressed{
+                                KeyboardPressed(key)
+                            }
+                            else{
+                                KeyboardReleased(key)
+                            }
+                        }
+
+                        // Получение вводимых букв
+                        WindowEvent::ReceivedCharacter(character)=>{
+                            match character{
+                                '\u{7f}' | // Delete
+                                '\u{1b}' | // Escape
+                                '\u{8}'  | // Backspace
+                                '\r' | '\n' | '\t'=>None,
+                                ch=>CharacterInput(ch),
+                            }
+                        }
+
+                        WindowEvent::Focused(_)=>unsafe{
+                            (*window).set_hide(true); // Сворацивание окна
+                            (*window).events_handle_fn=GameWindow::wait_until_focused; // Смена фукции обработки событий
+                            GameWindowEvent::Hide(true) // Передача события во внешнее управление
+                        }
+                        _=>None // Игнорирование остальных событий
+                    }
+                }
+
+                // Создание кадра и запрос на его вывод на окно
+                Event::MainEventsCleared=>{
+                    unsafe{
+                        (*window).request_redraw()
+                    }
+                    None
+                }
+
+                Event::Suspended=>{
+                    None
+                }
+
+                // Вывод кадра на окно
+                Event::RedrawRequested(_)=>{
+                    unsafe{(*window).redraw()};
+                    Draw
+                }
+
+                // После вывода кадра
+                Event::RedrawEventsCleared=>{
+                    *control_flow=ControlFlow::Exit;
+                    None
+                } // Игнорирование
+
+                // Закрытия цикла обработки событий
+                Event::LoopDestroyed=>None, // Игнорирование
+
+                _=>None  // Игнорирование остальных событий
+            };
+
+            unsafe{(*vec).push_back(next_event)}
+        });
+    }
+
+    // Функция ожидания получения фокуса - перехватывает управление до получения окном фокуса
+    fn wait_until_focused(&mut self){
+        let vec=&mut self.events as *mut VecDeque<GameWindowEvent>;
+        let window=self as *mut GameWindow;
+
+        self.event_loop.run_return(|event,_,control_flow|{
+            *control_flow=ControlFlow::Wait;
+
+            match event{
+                Event::WindowEvent{event,..}=>{
+                    match event{
+                        WindowEvent::Focused(_)=>unsafe{
+                            (*window).events_handle_fn=GameWindow::event_listener; // Смена фукции обработки событий
+                            (*window).set_hide(false); // Выведение окна на экран
+                            *control_flow=ControlFlow::Exit; // Остановка цикла обработки событий
+                            (*vec).push_back(GameWindowEvent::Hide(false)); // Передача события во внешнее управление
+                        }
+                        _=>{}
+                    }
+                }
+                _=>{}
+            }
+        })
     }
 }
 
