@@ -22,6 +22,14 @@ impl<'a> EditTextView<'a>{
         }
     }
 
+    pub fn clicked(&self)->bool{
+        let position=unsafe{mouse_cursor.position()};
+        let x=position[0];
+        let y=position[1];
+
+        self.rect[0]<x && self.rect[0]+self.rect[2]>x && self.rect[1]<y && self.rect[1]+self.rect[3]>y
+    }
+
     pub fn get_text(&self)->String{
         self.base.get_text()
     }

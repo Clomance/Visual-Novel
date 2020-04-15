@@ -11,7 +11,6 @@ use image::{
 use opengl_graphics::{
     GlGraphics,
     GlyphCache,
-    OpenGL,
     TextureSettings,
     Texture,
 };
@@ -61,6 +60,10 @@ use user_interface::*;
 
 mod game_window;
 use game_window::{
+    window_height,
+    window_width,
+    window_center,
+    mouse_cursor,
     GameWindow,
     GameWindowEvent,
     MouseButton,
@@ -85,20 +88,10 @@ const main_textures_paths:&[&'static str]=&[
     "images/wallpapers/ending_wallpaper.png", // Конечная заставка
 ];
 
-pub const openGL:OpenGL=OpenGL::V3_2;
-
 pub const dialogues_font_size:u32=24;
-
-pub static mut mouse_cursor:MouseCursor=MouseCursor::new();
 
 pub static mut Settings:game_settings::GameSettings=game_settings::GameSettings::new();
 
-pub static mut window_width:f64=0f64;
-pub static mut window_height:f64=0f64;
-
-pub static mut window_center:[f64;2]=[0f64;2];
-
-pub const default_page_smooth:f32=1f32/32f32; // 1 к количеству кадров перехода
 pub static mut smooth:f32=default_page_smooth; // Сглаживание для переходов
 pub static mut alpha_channel:f32=0f32; // Значение альфа-канала
 
@@ -108,22 +101,7 @@ fn main(){
     unsafe{
         Settings.load(); // Загрузка настроек
 
-        //                                         \\
-        // Создание окна и загрузка функций OpenGL \\
-        //                                         \\
-        let mut window:GameWindow=GameWindow::new();
-        {
-            let size=window.size();
-            window_width=size[0];
-            window_height=size[1];
-            window_center=[size[0]/2f64,size[1]/2f64];
-        }
-
-        let mut gl=GlGraphics::new(openGL);
-
-        //-----------------------------------------\\
-
-        mouse_cursor.set_position([window_width/2f64,window_height/2f64]);
+        let mut window:GameWindow=GameWindow::new(); // Создание окна и загрузка функций OpenGL
 
         let texture_settings=TextureSettings::new();
 
@@ -187,7 +165,7 @@ fn main(){
             });
 
             // Экран загрузки
-            match loading_screen(&mut window,&mut gl){
+            match LoadingScreen::new().start(&mut window){
                 Game::Exit=>{
                     loading_resources_thread.join().unwrap();
                     return
@@ -223,11 +201,14 @@ fn main(){
         let dialogue_box_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let mut dialogue_box=DialogueBox::new(dialogue_box_texture,dialogue_box_glyphs);
 
+        window.set_cursor_position(window_center);  // Перенос курсора
+        mouse_cursor.set_position(window_center);   // в центр экрана
+
         // Полный цикл игры
         'game:loop{
             wallpaper.set_image(&main_menu_wallpaper); // Устрановка обоев главного меню
             // Цикл главного меню
-            match MainMenu::new().start(&mut wallpaper,&mut window,&mut gl){
+            match MainMenu::new(&mut wallpaper).start(&mut window){
                 Game::ContinueGamePlay=>{
                     //
                 }
@@ -262,8 +243,8 @@ fn main(){
                             wallpaper.move_with_cursor([x,y]);
                         }
 
-                        GameWindowEvent::Draw(viewport)=>{ //Рендеринг
-                            gl.draw(viewport,|c,g|{
+                        GameWindowEvent::Draw=>{ //Рендеринг
+                            window.draw(|c,g|{
                                 wallpaper.draw_smooth(alpha_channel,&c,g);
 
                                 dialogue_box.set_alpha_channel(alpha_channel);
@@ -293,8 +274,8 @@ fn main(){
                             wallpaper.move_with_cursor([x,y]);
                         }
 
-                        GameWindowEvent::Draw(viewport)=>{ //Рендеринг
-                            gl.draw(viewport,|c,g|{
+                        GameWindowEvent::Draw=>{ //Рендеринг
+                            window.draw(|c,g|{
                                 wallpaper.draw(&c,g);
                                 page_table.currents_character().draw(&c.draw_state,c.transform,g);
                                 dialogue_box.draw(&c,g);
@@ -344,7 +325,7 @@ fn main(){
                                 }
                                 KeyboardButton::Escape=>{
                                     // Пауза
-                                    match pause_menu(&mut window,&mut gl){
+                                    match PauseMenu::new().start(&mut window){
                                         Game::MainMenu=>{ // Возвращение в гланое меню
                                             Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
                                             continue 'game
@@ -378,8 +359,8 @@ fn main(){
                 match event{
                     GameWindowEvent::Exit=>break 'game, // Закрытие игры
 
-                    GameWindowEvent::Draw(viewport)=>{ //Рендеринг
-                        gl.draw(viewport,|c,g|{
+                    GameWindowEvent::Draw=>{ //Рендеринг
+                        window.draw(|c,g|{
                             wallpaper.draw_smooth(alpha_channel,&c,g);
                         });
                         alpha_channel+=smooth;
@@ -395,8 +376,10 @@ fn main(){
                 match event{
                     GameWindowEvent::Exit=>break 'game, // Закрытие игры
 
-                    GameWindowEvent::Draw(viewport)=>{ //Рендеринг
-                        gl.draw(viewport,|c,g|{
+                    GameWindowEvent::MouseMovement((x,y))=>mouse_cursor.set_position([x,y]),
+
+                    GameWindowEvent::Draw=>{ //Рендеринг
+                        window.draw(|c,g|{
                             wallpaper.draw(&c,g);
                         });
                     }

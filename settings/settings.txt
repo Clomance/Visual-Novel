@@ -1,6 +1,6 @@
 Visual Novel by Clomance
-false
-Oscar
+true
+fff
 0
 0
 2

@@ -1,6 +1,13 @@
+#![allow(unused_must_use)]
+
 use crate::{
     Settings,
-    openGL,
+    MouseCursor,
+};
+
+use opengl_graphics::{
+    GlGraphics,
+    OpenGL
 };
 
 use glutin::{
@@ -15,15 +22,19 @@ use glutin::{
     ContextBuilder,
     ContextWrapper,
     PossiblyCurrent,
-    GlRequest
+    GlRequest,
+    dpi::PhysicalPosition,
 };
 
 use winit::platform::desktop::EventLoopExtDesktop;
 
-use graphics::Viewport;
+use graphics::{
+    Viewport,
+    Context,
+    Graphics
+};
 
 use std::collections::VecDeque;
-
 /*
     EventLoop - минимум четыре шага для моей схемы с мгновенным закрытием цикла обработки событий:
     1) NewEvent
@@ -37,19 +48,28 @@ use std::collections::VecDeque;
         для работы с ними вне структуры окна
 */
 
+pub const openGL:OpenGL=OpenGL::V3_2;
+
+pub static mut window_width:f64=0f64;
+pub static mut window_height:f64=0f64;
+pub static mut window_center:[f64;2]=[0f64;2];
+
+pub static mut mouse_cursor:MouseCursor=MouseCursor::new();
+
 pub struct GameWindow{
     event_loop:EventLoop<()>,
     context:ContextWrapper<PossiblyCurrent,Window>,
-    width:f64,
-    height:f64,
+    graphics:GlGraphics,
     events:VecDeque<GameWindowEvent>,
+    width:u32,
+    height:u32,
 }
 
 #[derive(Clone)]
 pub enum GameWindowEvent{
     None,
     Update,
-    Draw(Viewport),
+    Draw,
     MouseMovement((f64,f64)),
 
     KeyboardPressed(KeyboardButton),
@@ -76,6 +96,12 @@ impl GameWindow{
         let event_loop=EventLoop::new();
         let monitor=event_loop.primary_monitor();
         let size=monitor.size();
+
+        unsafe{
+            window_width=size.width as f64;
+            window_height=size.height as f64;
+            window_center=[window_width/2f64,window_height/2f64];
+        }
         let mut inner=size;
         inner.width=0;
         inner.height=0;
@@ -84,6 +110,7 @@ impl GameWindow{
             .with_inner_size(inner) // Чтобы не вылезало не дорисованное окно
             .with_decorations(false)
             .with_resizable(false)
+            .with_always_on_top(false)
             .with_title(unsafe{&Settings.game_name})
             .with_fullscreen(Some(Fullscreen::Borderless(monitor)));
 
@@ -104,21 +131,28 @@ impl GameWindow{
 
         gl::load_with(|s|ctx.get_proc_address(s) as *const _);
 
+        let mut gl=GlGraphics::new(openGL);
+
+        let width=unsafe{window_width as u32};
+        let height=unsafe{window_height as u32};
+        let viewport=Viewport{
+            rect:[0,0,width as i32,height as i32],
+            draw_size:[width,height],
+            window_size:unsafe{[window_width,window_height]},
+        };
+
+        gl.draw(viewport,|_,g|{
+            g.clear_color([1.0;4])
+        });
+
         Self{
             event_loop:event_loop,
             context:ctx,
-            width:size.width as f64,
-            height:size.height as f64,
+            graphics:gl,
             events:VecDeque::with_capacity(6),
+            width:width,
+            height:height,
         }
-    }
-
-    pub fn size(&self)->[f64;2]{
-        [self.width,self.height]
-    }
-
-    pub fn context(&self)->&ContextWrapper<PossiblyCurrent,Window>{
-        &self.context
     }
 
     pub fn window(&self)->&Window{
@@ -129,24 +163,16 @@ impl GameWindow{
         if self.events.is_empty(){
             let vec=&mut self.events as *mut VecDeque<GameWindowEvent>;
 
-            let mut next_event=None;
-
-            let width=self.width as u32;
-            let height=self.height as u32;
-
             let window=self as *mut GameWindow;
 
             self.event_loop.run_return(|event,_,control_flow|{
-                *control_flow=ControlFlow::Exit;
+                *control_flow=ControlFlow::Wait;
 
-                next_event=match event{
-                    Event::NewEvents(_)=>{
-                        None // Игнорирование
-                    }
-                    
+                let next_event=match event{
+                    Event::NewEvents(_)=>None, // Игнорирование
+
                     // События окна
                     Event::WindowEvent{event,..}=>{
-
                         match event{
                             // Закрытие окна
                             WindowEvent::CloseRequested=>Exit,
@@ -182,10 +208,10 @@ impl GameWindow{
                                     KeyboardButton::Unknown
                                 };
                                 if input.state==ElementState::Pressed{
-                                    KeyboardReleased(key)
+                                    KeyboardPressed(key)
                                 }
                                 else{
-                                    KeyboardPressed(key)
+                                    KeyboardReleased(key)
                                 }
                             }
 
@@ -200,40 +226,44 @@ impl GameWindow{
                                 }
                             }
 
+                            WindowEvent::Focused(_focused)=>{
+                                None
+                            }
                             _=>None // Игнорирование остальных событий
                         }
                     }
 
                     // Создание кадра и запрос на его вывод на окно
                     Event::MainEventsCleared=>{
-                        unsafe{(*window).request_redraw()};
-                        Draw(Viewport{
-                            rect:[0,0,width as i32,height as i32],
-                            draw_size:[width,height],
-                            window_size:[width as f64,height as f64],
-                        })
+                        unsafe{
+                            (*window).request_redraw()
+                        }
+                        None
+                    }
+
+                    Event::Suspended=>{
+                        None
                     }
 
                     // Вывод кадра на окно
                     Event::RedrawRequested(_)=>{
                         unsafe{(*window).redraw()};
-                        None // Игнорирование
+                        Draw
                     }
 
                     // После вывода кадра
                     Event::RedrawEventsCleared=>{
-                        None // Игнорирование
-                    }
+                        *control_flow=ControlFlow::Exit;
+                        None
+                    } // Игнорирование
 
                     // Закрытия цикла обработки событий
-                    Event::LoopDestroyed=>{
-                        None // Игнорирование
-                    }
+                    Event::LoopDestroyed=>None, // Игнорирование
 
                     _=>None  // Игнорирование остальных событий
                 };
 
-                unsafe{(*vec).push_back(next_event.clone())}
+                unsafe{(*vec).push_back(next_event)}
             });
 
             self.events.pop_front()
@@ -243,12 +273,36 @@ impl GameWindow{
         }
     }
 
+    pub fn draw<F>(&mut self,f:F)
+            where F: FnOnce(Context,&mut GlGraphics){
+
+        let viewport=Viewport{
+            rect:[0,0,self.width as i32,self.height as i32],
+            draw_size:[self.width,self.height],
+            window_size:unsafe{[window_width,window_height]},
+        };
+
+        let context=self.graphics.draw_begin(viewport);
+
+        f(context,&mut self.graphics);
+
+        self.graphics.draw_end();
+    }
+
     pub fn request_redraw(&self){
         self.context.window().request_redraw();
     }
 
     pub fn redraw(&self){
         self.context.swap_buffers().unwrap();
+    }
+
+    pub fn set_cursor_position(&self,position:[f64;2]){
+        let position=PhysicalPosition{
+            x:position[0],
+            y:position[1]
+        };
+        self.context.window().set_cursor_position(position);
     }
 }
 

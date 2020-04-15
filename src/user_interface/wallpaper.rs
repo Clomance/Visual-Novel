@@ -4,7 +4,6 @@ pub struct Wallpaper{
     start_position:[f64;2],
     image:Image,
     texture:Texture,
-    settings:TextureSettings,
 }
 
 impl Wallpaper{
@@ -14,7 +13,6 @@ impl Wallpaper{
             start_position:[rect[0],rect[1]],
             image:Image::new_color([1.0;4]).rect(rect),
             texture:Texture::from_image(image,&settings),
-            settings:settings,
         }
     }
 
