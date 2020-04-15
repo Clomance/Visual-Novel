@@ -60,9 +60,17 @@ impl<'a> Menu<'a>{
         }
     }
 
+    pub fn pressed(&mut self){
+        for button in &mut self.buttons{
+            if button.pressed(){
+                return
+            }
+        }
+    }
+
     pub fn clicked(&mut self)->Option<usize>{
         for (c,button) in self.buttons.iter_mut().enumerate(){
-            if button.clicked(){
+            if button.released(){
                 return Some(c)
             }
         }

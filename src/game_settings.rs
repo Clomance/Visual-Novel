@@ -30,11 +30,21 @@ impl GameSettings{
     // Загрузка настроек
     pub fn load(&mut self){
         // Открытие файлов и загрузка данных
+
+        // Общие настройки пользоавателя
         let mut settings_file=OpenOptions::new().read(true).open("settings/game_settings").unwrap();
         let mut buffer=[0u8;8];
+
         settings_file.read_exact(&mut buffer).unwrap();
         self.signs_per_frame=f64::from_be_bytes(buffer);
 
+        settings_file.read_exact(&mut buffer).unwrap();
+        self.saved_page=usize::from_be_bytes(buffer);
+
+        settings_file.read_exact(&mut buffer).unwrap();
+        self.saved_dialogue=usize::from_be_bytes(buffer);
+
+        // Редактируемый файл настроек
         settings_file=OpenOptions::new().read(true).open("settings/settings.txt").unwrap();
         let mut settings_str=String::new();
 
@@ -47,10 +57,6 @@ impl GameSettings{
         self._continue=read_line(&mut lines);
 
         self.user_name=read_line(&mut lines);
-
-        self.saved_page=read_line(&mut lines);
-
-        self.saved_dialogue=read_line(&mut lines);
 
         self.pages=read_line(&mut lines);
 
@@ -66,7 +72,14 @@ impl GameSettings{
     // Сохрание настроек
     pub fn save(&mut self){
         let mut settings_file=OpenOptions::new().write(true).truncate(true).open("settings/game_settings").unwrap();
-        let buffer=self.signs_per_frame.to_be_bytes();
+        
+        let mut buffer=self.signs_per_frame.to_be_bytes();
+        settings_file.write_all(&buffer).unwrap();
+
+        buffer=self.saved_page.to_be_bytes();
+        settings_file.write_all(&buffer).unwrap();
+
+        buffer=self.saved_dialogue.to_be_bytes();
         settings_file.write_all(&buffer).unwrap();
 
         settings_file=OpenOptions::new().write(true).truncate(true).open("settings/settings.txt").unwrap();
@@ -75,8 +88,6 @@ impl GameSettings{
             self.game_name.to_string(),
             self._continue.to_string(),
             self.user_name.clone(),
-            self.saved_page.to_string(),
-            self.saved_dialogue.to_string(),
             self.pages.to_string(),
             self.page_wallpapers.to_string(),
             self.characters_len.to_string(),

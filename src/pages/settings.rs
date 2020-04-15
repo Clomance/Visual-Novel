@@ -100,6 +100,7 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                 GameWindowEvent::MousePressed(button)=>{
                     match button{
                         MouseButton::Left=>{
+                            self.back_button.pressed();
                             mouse_cursor.pressed();
                             self.signs_per_sec.pressed();
                         },
@@ -113,7 +114,7 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                             mouse_cursor.released();
                             Settings.signs_per_frame=self.signs_per_sec.released()/60f64;
 
-                            if self.back_button.clicked(){ // Кнопка "Назад"
+                            if self.back_button.released(){ // Кнопка "Назад"
                                 return Game::Back
                             }
                         }

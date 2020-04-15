@@ -10,6 +10,7 @@ pub const Black:Color=[0.0,0.0,0.0,1.0];
 
 pub const Light_blue_1:Color=[0.4,0.5,1.0,1.0];
 pub const Light_blue:Color=[0.3,0.4,1.0,1.0];
+pub const Light_blue_0:Color=[0.2,0.3,1.0,1.0];
 pub const Blue:Color=[0.0,0.0,1.0,1.0]; // Истинный синий, выше - светлее, ниже - темнее
 
 // Другие оттенки синего

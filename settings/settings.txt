@@ -1,8 +1,6 @@
 Visual Novel by Clomance
-true
-fff
-0
-0
+false
+Лера
 2
 1
 2

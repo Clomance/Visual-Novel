@@ -67,6 +67,7 @@ impl<'a> PauseMenu<'a>{
                 GameWindowEvent::MousePressed(button)=>{
                     match button{
                         MouseButton::Left=>{
+                            self.menu.pressed();
                             mouse_cursor.pressed();
                         },
                         _=>{}

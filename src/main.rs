@@ -207,6 +207,7 @@ fn main(){
         // Полный цикл игры
         'game:loop{
             wallpaper.set_image(&main_menu_wallpaper); // Устрановка обоев главного меню
+            wallpaper.move_with_cursor(mouse_cursor.position());
             // Цикл главного меню
             match MainMenu::new(&mut wallpaper).start(&mut window){
                 Game::ContinueGamePlay=>{

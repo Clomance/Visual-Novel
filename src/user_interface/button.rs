@@ -1,30 +1,38 @@
 use crate::*;
 
+const Default_color:Color=Light_blue;
+const dcolor:f32=0.125; // На столько измененяется цвет при нажитии/освобождении
+
 pub struct Button<'a>{
-    button_base:ButtonDependent,
+    base:ButtonDependent,
     glyphs:GlyphCache<'a>
 }
 
 impl<'a> Button<'a>{
     pub fn new(settings:ButtonSettings,mut glyphs:GlyphCache<'a>)->Button<'a>{
         Self{
-            button_base:ButtonDependent::new(settings,&mut glyphs),
+            base:ButtonDependent::new(settings,&mut glyphs),
             glyphs:glyphs,
         }
     }
 
-    pub fn clicked(&mut self)->bool{
-        self.button_base.clicked()
+    pub fn pressed(&mut self)->bool{
+        self.base.pressed()
+    }
+
+    // Проверка находится ли курсор на кнопке и локальные действия
+    pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
+        self.base.released()
     }
 }
 
 impl<'a> Drawable for Button<'a>{
     fn set_alpha_channel(&mut self,alpha:f32){
-        self.button_base.set_alpha_channel(alpha);
+        self.base.set_alpha_channel(alpha);
     }
 
     fn draw(&mut self,context:&Context,g:&mut GlGraphics){
-        self.button_base.draw(context,g,&mut self.glyphs)
+        self.base.draw(context,g,&mut self.glyphs)
     }
 }
 
@@ -52,7 +60,12 @@ impl ButtonDependent{
         self.text.set_alpha_channel(alpha);
     }
 
-    pub fn clicked(&mut self)->bool{
+    pub fn pressed(&mut self)->bool{
+        self.base.pressed()
+    }
+
+    // Проверка находится ли курсор на кнопке и локальные действия
+    pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
         self.base.released()
     }
     
@@ -179,6 +192,7 @@ struct ButtonBase{
     width:f64,
     height:f64,
     rectangle:Rectangle,
+    pressed:bool,
 }
 
 impl ButtonBase{
@@ -192,6 +206,7 @@ impl ButtonBase{
             width:rect[2],
             height:rect[3],
             rectangle:Rectangle::new(color),
+            pressed:false,
         }
     }
 
@@ -200,22 +215,61 @@ impl ButtonBase{
         self.rectangle.color[3]=alpha;
     }
 
-    #[inline] // Проверка нажатия на кнопку и локальные действия
-    pub fn pressed(&self)->bool{
-        let position=unsafe{mouse_cursor.position()};
-        let x=position[0];
-        let y=position[1];
-
-        self.x1<x && self.x2>x && self.y1<y && self.y2>y
+    #[inline]
+    pub fn set_color(&mut self,color:Color){
+        self.rectangle.color=color
     }
 
-    #[inline] // Проверка отпущеная ли кнопка
-    pub fn released(&self)->bool{
+    #[inline]
+    pub fn press_color(&mut self){
+        self.rectangle.color[0]-=0.125;
+        self.rectangle.color[1]-=0.125;
+        self.rectangle.color[2]-=0.125;
+    }
+
+    #[inline]
+    pub fn release_color(&mut self){
+        self.rectangle.color[0]+=0.125;
+        self.rectangle.color[1]+=0.125;
+        self.rectangle.color[2]+=0.125;
+    }
+
+    #[inline] // Проверка нажатия на кнопку и локальные действия
+    pub fn pressed(&mut self)->bool{
         let position=unsafe{mouse_cursor.position()};
         let x=position[0];
         let y=position[1];
 
-        self.x1<x && self.x2>x && self.y1<y && self.y2>y
+        if self.x1<x && self.x2>x && self.y1<y && self.y2>y{
+            self.pressed=true;
+            self.press_color();
+            true
+        }
+        else{
+            false
+        }
+    }
+
+    #[inline] // Проверка находится ли курсор на кнопке и локальные действия
+    pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
+        if self.pressed{
+            self.release_color();
+            self.pressed=false;
+
+            let position=unsafe{mouse_cursor.position()};
+            let x=position[0];
+            let y=position[1];
+
+            if self.x1<x && self.x2>x && self.y1<y && self.y2>y{
+                true
+            }
+            else{
+                false
+            }
+        }
+        else{
+            false
+        }
     }
 
     #[inline]

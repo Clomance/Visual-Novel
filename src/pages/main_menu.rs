@@ -92,7 +92,10 @@ impl<'a,'b> MainMenu<'a,'b>{
 
                     GameWindowEvent::MousePressed(button)=>{
                         match button{
-                            MouseButton::Left=>mouse_cursor.pressed(),
+                            MouseButton::Left=>{
+                                self.menu.pressed();
+                                mouse_cursor.pressed()
+                            }
                             _=>{}
                         }
                     }
