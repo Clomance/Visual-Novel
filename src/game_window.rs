@@ -46,6 +46,8 @@ use std::collections::VecDeque;
 
     Все события обрабатываются и добавляются в очередь внешней обработки (GameWindow.events)
         для работы с ними вне структуры окна
+
+    При потере фокуса игра сворачивается, но рендеринг продолжается
 */
 
 pub const openGL:OpenGL=OpenGL::V3_2;
@@ -70,6 +72,9 @@ pub enum GameWindowEvent{
     None,
     Update,
     Draw,
+
+    Hide(bool),
+
     MouseMovement((f64,f64)),
 
     KeyboardPressed(KeyboardButton),
@@ -229,6 +234,7 @@ impl GameWindow{
 
                             WindowEvent::Focused(focused)=>{
                                 unsafe{
+                                    println!("hide {}",!focused);
                                     (*window).set_hide(!focused);
                                 }
                                 None
@@ -251,6 +257,7 @@ impl GameWindow{
 
                     // Вывод кадра на окно
                     Event::RedrawRequested(_)=>{
+                        println!("draw");
                         unsafe{(*window).redraw()};
                         Draw
                     }
