@@ -95,6 +95,7 @@ impl GameWindow{
     pub fn new()->GameWindow{
         let event_loop=EventLoop::new();
         let monitor=event_loop.primary_monitor();
+
         let size=monitor.size();
 
         unsafe{
@@ -110,7 +111,7 @@ impl GameWindow{
             .with_inner_size(inner) // Чтобы не вылезало не дорисованное окно
             .with_decorations(false)
             .with_resizable(false)
-            .with_always_on_top(false)
+            .with_always_on_top(true)
             .with_title(unsafe{&Settings.game_name})
             .with_fullscreen(Some(Fullscreen::Borderless(monitor)));
 
@@ -226,7 +227,10 @@ impl GameWindow{
                                 }
                             }
 
-                            WindowEvent::Focused(_focused)=>{
+                            WindowEvent::Focused(focused)=>{
+                                unsafe{
+                                    (*window).set_hide(!focused);
+                                }
                                 None
                             }
                             _=>None // Игнорирование остальных событий
@@ -295,6 +299,10 @@ impl GameWindow{
 
     pub fn redraw(&self){
         self.context.swap_buffers().unwrap();
+    }
+
+    pub fn set_hide(&self,hide:bool){
+        self.context.window().set_minimized(hide);
     }
 
     pub fn set_cursor_position(&self,position:[f64;2]){
