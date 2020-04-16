@@ -1,12 +1,7 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,dead_code)]
-#![windows_subsystem="windows"] // Отключение консоли
+//#![windows_subsystem="windows"] // Отключение консоли
 
-use image::{
-    self,
-    DynamicImage,
-    RgbaImage,
-    imageops::FilterType,
-};
+use image::RgbaImage;
 
 use opengl_graphics::{
     GlGraphics,
@@ -130,13 +125,15 @@ fn main(){
                     let mut path;
                     let mut wallpaper_texture;
 
+                    let image_size=[window_width as u32,window_height as u32];
+
                     // Загрузка обоев
                     for i in 0..Settings.page_wallpapers{
                         if !loading{
                             break 'loading
                         }
                         path=format!("images/wallpapers/wallpaper{}.png",i);
-                        wallpaper_texture=load_image(path);
+                        wallpaper_texture=load_image(path,image_size[0],image_size[1]);
                         wallpaper_textures_ref.as_mut().push(wallpaper_texture);
                     }
 
@@ -145,7 +142,7 @@ fn main(){
                         if !loading{
                             break 'loading
                         }
-                        wallpaper_texture=load_image(path);
+                        wallpaper_texture=load_image(path,image_size[0],image_size[1]);
                         main_textures_ref.as_mut().push(wallpaper_texture);
                     }
 
@@ -394,18 +391,5 @@ fn main(){
         }
         // Конец программы
         Settings.save(); // Сохранение настроек игры
-    }
-}
-
-// Загрузка изображений
-pub fn load_image<P:AsRef<Path>>(path:P)->RgbaImage{
-    let mut image=image::open(path).unwrap();
-    
-    image=unsafe{image.resize_exact(window_width as u32,window_height as u32,FilterType::Triangle)};
-    if let DynamicImage::ImageRgba8(image)=image{
-        image
-    }
-    else{
-        image.into_rgba()
     }
 }

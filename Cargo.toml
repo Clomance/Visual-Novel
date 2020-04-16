@@ -1,11 +1,11 @@
 [package]
 name = "Visual_Novel"
-version = "0.6.3"
+version = "0.6.4"
 authors = ["Clomance"]
 edition = "2018"
 
 [dependencies]
-image = "0.23.2"
+image = "0.23.3"
 piston2d-opengl_graphics = "0.72.0"
 piston2d-graphics = "0.36.0"
 winit = "0.22.0"

@@ -1,5 +1,8 @@
 use crate::*;
 
+use std::io::{BufReader,BufRead};
+use std::fs::File;
+
 pub struct DialogueFormatted<'a>{
     names:Vec<&'a str>,
     dialogues:Vec<TextLines>,
@@ -36,45 +39,40 @@ pub struct Dialogue{
 
 impl Dialogue{
     pub fn new<P:AsRef<Path>+Debug+Clone>(path:P)->Dialogue{
-        let mut dialogue_file=OpenOptions::new().read(true).open(path.clone()).unwrap();
+        let dialogue_file=OpenOptions::new().read(true).open(path.clone()).unwrap();
 
         let mut names_cache=Vec::<String>::with_capacity(5);
         let mut dialogues=Vec::<String>::with_capacity(50);
         let mut names=Vec::<usize>::with_capacity(50);
 
-        // Для отображения слов игрока
-        names_cache.push("Я".to_string());
+        names_cache.push("Я".to_string()); // Для отображения слов игрока
+
+        names_cache.push("".to_string()); // Для отображения мыслей игрока
+
+        let mut reader=BufReader::new(dialogue_file);
 
         // Таблица с краткими именами (short_names,ptr to names_cache)
-        let mut names_table=(Vec::new(),Vec::new());
+        let names_table=read_head(&mut names_cache,&mut reader);
 
-        let mut input=String::with_capacity(512);
-        dialogue_file.read_to_string(&mut input).unwrap();
-
-        let mut line_number=0usize;
-        let mut lines=input.lines();
-
-        while let Some(line)=lines.next(){
-            line_number+=1;
-            let line=line.trim();
+        let mut line=String::new();
+        while let Ok(bytes)=reader.read_line(&mut line){
+            if bytes==0{
+                break
+            }
+            let line_str=line.trim();
             
             // Проверка на пустоту
-            if line.is_empty(){
-                continue
-            }
-            // Проверка на начало заголовка
-            if line=="{"{
-                names_table=read_head(&mut names_cache,&mut lines,&mut line_number,path.clone());
+            if line_str.is_empty(){
                 continue
             }
             // Проверка форматирования
-            let split_line:Vec<&str>=line.splitn(2,"-").collect();
+            let split_line:Vec<&str>=line_str.splitn(2,"-").collect();
             let len=split_line.len();
             if len==0{
                 //
             }
             if len!=2{
-                panic!("LoadingDialogueError: path {:?} line {}",path,line_number);
+                panic!();
             }
             // Перевод в строку
             let short_name=split_line[0].trim();
@@ -82,17 +80,21 @@ impl Dialogue{
 
             // Поиск имени
             if short_name=="{}"{
-                // Установка имени героя
-                names.push(0);
+                names.push(0); // Установка имени героя
+            }
+            else if short_name=="_"{
+                names.push(1); // Установка пустого имени
             }
             else{
                 // Поиск имени
-                let index=search_short_name(short_name,&names_table.0,line_number,path.clone());
+                let index=search_short_name(short_name,&names_table.0);
                 let names_cache_index=names_table.1[index];
                 names.push(names_cache_index);
             }
+            line.clear(); // Очистка строки
             dialogues.push(dialogue);
         }
+
 
         Self{
             names_cache:names_cache,
@@ -126,26 +128,49 @@ impl Dialogue{
     }
 }
 
-fn read_head<P:AsRef<Path>+Debug>(names_cache:&mut Vec<String>,lines:&mut Lines,line_number:&mut usize,path:P)->(Vec<String>,Vec<usize>){
+// (краткие имена, индексы имён)
+fn read_head(names_cache:&mut Vec<String>,reader:&mut BufReader<File>)->(Vec<String>,Vec<usize>){
     let mut len=names_cache.len();
     let mut names=Vec::new();
     let mut short_names=Vec::new();
-    
-    for line in lines{
-        //println!("{}",line);
-        
-        *line_number+=1;
+
+    let mut line=String::new();
+
+    // Поиск заголовка
+    while let Ok(bytes)=reader.read_line(&mut line){
+        if bytes==0{
+            break
+        }
+        // Пропуск пустых строк
+        let line_str=line.trim();
+        if line_str.is_empty(){
+            continue
+        }
+        // Проверка начала заголовка
+        if line_str=="{"{
+            break
+        }
+        line.clear()
+    }
+
+    line.clear();
+
+    // Чтение заголовка
+    while let Ok(bytes)=reader.read_line(&mut line){
+        if bytes==0{
+            break
+        }
         // Проверка на завершение заголовка
-        let line=line.trim();
-        if line=="}"{
+        let line_str=line.trim();
+        if line_str=="}"{
             return (short_names,names)
         }
         // Проверка формата
-        let split_line:Vec<&str>=line.split("=").collect();
+        let split_line:Vec<&str>=line_str.split("=").collect();
         if split_line.len()!=2{
-            panic!("DialogueLoadingError: path {:?} line {}",path,line_number);
+            panic!();
         }
-        // Переавод в строку
+        // Перевод в строку
         let name=split_line[0].trim().to_string();
         let short_name=split_line[1].trim().to_string();
         // Сохранение
@@ -153,15 +178,17 @@ fn read_head<P:AsRef<Path>+Debug>(names_cache:&mut Vec<String>,lines:&mut Lines,
         short_names.push(short_name);
         names.push(len);
         len+=1;
+        line.clear()
     }
-    panic!("LoadingDialogueError: no head closure, path {:?}",path);
+
+    (short_names,names)
 }
 
-fn search_short_name<P:AsRef<Path>+Debug>(short_name:&str,short_names:&Vec<String>,line:usize,path:P)->usize{
+fn search_short_name(short_name:&str,short_names:&Vec<String>)->usize{
     for (c,name) in short_names.iter().enumerate(){
         if short_name==name{
             return c
         }
     }
-    panic!("LoadingDialogueError: No such short name, path {:?} line {}",path,line);
+    panic!("search short name");
 }

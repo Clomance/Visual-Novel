@@ -3,6 +3,7 @@
 use crate::{
     Settings,
     MouseCursor,
+    load_window_icon,
 };
 
 use opengl_graphics::{
@@ -102,8 +103,18 @@ impl GameWindow{
     pub fn new()->GameWindow{
         let event_loop=EventLoop::new();
         let monitor=event_loop.primary_monitor();
+        let size;
 
-        let size=monitor.size();
+        let fullscreen=if cfg!(target_os = "linux") {
+            let video_mode=monitor.video_modes().next().unwrap();
+            size=video_mode.size();
+            Fullscreen::Exclusive(video_mode)
+        }
+        else{
+            size=monitor.size();
+            Fullscreen::Borderless(monitor)
+        };
+        
 
         unsafe{
             window_width=size.width as f64;
@@ -114,13 +125,16 @@ impl GameWindow{
         inner.width=0;
         inner.height=0;
 
+        let icon=load_window_icon();
+
         let window_builder=WindowBuilder::new()
             .with_inner_size(inner) // Чтобы не вылезало не дорисованное окно
             .with_decorations(false)
             .with_resizable(false)
             .with_always_on_top(true)
             .with_title(unsafe{&Settings.game_name})
-            .with_fullscreen(Some(Fullscreen::Borderless(monitor)));
+            .with_window_icon(Some(icon))
+            .with_fullscreen(Some(fullscreen));
 
         let api=openGL.get_major_minor();
 
