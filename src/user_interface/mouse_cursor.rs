@@ -1,7 +1,5 @@
 use crate::*;
 
-pub const wallpaper_movement_scale:f64=16f64;
-
 const common_color:Color=[0.2,0.3,0.9,0.8];
 const pressed_color:Color=[0.1,0.2,0.8,0.8];
 

@@ -7,8 +7,6 @@ pub struct GameSettings{
     pub saved_page:usize, // Страница на которой остановился пользователь (page_table)
     pub saved_dialogue:usize, // Место в диалоге на котором остановился пользователь (dialogue_box)
     pub pages:usize,
-    pub page_wallpapers:usize,
-    pub characters_len:usize, // Количество персонажей
     pub signs_per_frame:f64, // Знаков на кадр
 }
 
@@ -22,8 +20,6 @@ impl GameSettings{
             saved_page:0,
             saved_dialogue:0,
             pages:0,
-            page_wallpapers:0,
-            characters_len:0,
             signs_per_frame:0.25f64,
         }
     }
@@ -46,23 +42,13 @@ impl GameSettings{
 
         // Редактируемый файл настроек
         settings_file=OpenOptions::new().read(true).open("settings/settings.txt").unwrap();
-        let mut settings_str=String::new();
+        let mut reader=BufReader::new(settings_file);
 
-        settings_file.read_to_string(&mut settings_str).unwrap();
+        self.game_name=read_line(&mut reader);
 
-        let mut lines=settings_str.lines();
+        self._continue=read_line(&mut reader);
 
-        self.game_name=read_line(&mut lines);
-
-        self._continue=read_line(&mut lines);
-
-        self.user_name=read_line(&mut lines);
-
-        self.pages=read_line(&mut lines);
-
-        self.page_wallpapers=read_line(&mut lines);
-
-        self.characters_len=read_line(&mut lines);
+        self.user_name=read_line(&mut reader);
     }
     // Установка позиций для сохранения
     pub fn set_saved_position(&mut self,page:usize,dialogue:usize){
@@ -88,9 +74,6 @@ impl GameSettings{
             self.game_name.to_string(),
             self._continue.to_string(),
             self.user_name.clone(),
-            self.pages.to_string(),
-            self.page_wallpapers.to_string(),
-            self.characters_len.to_string(),
         ];
 
         for value in &values{
@@ -100,9 +83,11 @@ impl GameSettings{
     }
 }
 // Перевод строки в нужный тип
-pub fn read_line<T:FromStr>(lines:&mut Lines)->T{
-    match lines.next().unwrap().parse::<T>(){
-        Ok(result)=>result,
-        Err(_)=>panic!("LoadingGameSettingsError")
+pub fn read_line<T:FromStr>(reader:&mut BufReader<File>)->T{
+    let mut line=String::new();
+    let _r=reader.read_line(&mut line);
+    match line.trim().parse::<T>(){
+        Ok(t)=>t,
+        Err(_)=>panic!()
     }
 }

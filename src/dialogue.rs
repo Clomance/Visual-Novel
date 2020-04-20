@@ -1,8 +1,5 @@
 use crate::*;
 
-use std::io::{BufReader,BufRead};
-use std::fs::File;
-
 pub struct DialogueFormatted<'a>{
     names:Vec<&'a str>,
     dialogues:Vec<TextLines>,
@@ -68,9 +65,7 @@ impl Dialogue{
             // Проверка форматирования
             let split_line:Vec<&str>=line_str.splitn(2,"-").collect();
             let len=split_line.len();
-            if len==0{
-                //
-            }
+
             if len!=2{
                 panic!();
             }

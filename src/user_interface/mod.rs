@@ -17,7 +17,7 @@ mod text;
 pub use text::*;
 
 mod wallpaper;
-pub use wallpaper::Wallpaper;
+pub use wallpaper::*;
 
 mod mouse_cursor;
 pub use mouse_cursor::*;

@@ -23,7 +23,10 @@ pub struct DialogueBox<'a,'b>{
 }
 
 impl<'a,'b> DialogueBox<'a,'b>{
-    pub fn new(texture:Texture,glyph:GlyphCache<'a>)->DialogueBox<'a,'b>{
+    pub fn new(texture:Texture)->DialogueBox<'a,'b>{
+        let texture_settings=TextureSettings::new();
+        let glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+
         unsafe{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
@@ -48,7 +51,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
                 ]),
                 
                 texture:texture,
-                glyphs:glyph
+                glyphs:glyphs
             }
         }
     }
@@ -57,13 +60,13 @@ impl<'a,'b> DialogueBox<'a,'b>{
         self.dialogue_step
     }
 
+    // Установка нового диалога, шаг обнулён заранее, при переходе к новой странице (next_page)
     pub fn set_dialogue(&mut self,dialogue:&'b Dialogue){
         unsafe{
             let line_length=window_width-2f64*text_position_x;
             self.dialogue=dialogue.format(&Settings.user_name,line_length,self.text_base.font_size,&mut self.glyphs);
         }
         self.chars=0f64;
-        self.dialogue_step=0usize;
         self.whole_text=false;
     }
 
@@ -77,7 +80,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
                 false
             }
             else{
-                
+                self.dialogue_step=0; // Переход к новой странице, обнуление шага
                 true
             }
         }

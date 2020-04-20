@@ -69,7 +69,7 @@ impl<'a,'b> MainMenu<'a,'b>{
         //                    //
         // Цикл главного меню //
         //                    //
-        while self.smooth(window)!=Game::Exit{
+        'main:while self.smooth(window)!=Game::Exit{
 
             // Цикл самого меню
             while let Some(event)=window.next_event(){
@@ -116,15 +116,17 @@ impl<'a,'b> MainMenu<'a,'b>{
                                                 Game::Exit=>return Game::Exit,
                                                 _=>{}
                                             }
-                                            self.wallpaper.move_with_cursor(mouse_cursor.position())
                                         }
 
                                         MenuButtons::Settings=>{
                                             match SettingsPage::new().start(window){
                                                 Game::Exit=>return Game::Exit,
+                                                Game::Back=>{
+                                                    self.wallpaper.move_with_cursor(mouse_cursor.position());
+                                                    continue 'main
+                                                }
                                                 _=>{}
                                             }
-                                            self.wallpaper.move_with_cursor(mouse_cursor.position());
                                         }
 
                                         MenuButtons::Exit=>return Game::Exit, // Кнопка закрытия игры
@@ -155,7 +157,10 @@ impl<'a,'b> MainMenu<'a,'b>{
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::MouseMovement((x,y))=>mouse_cursor.set_position([x,y]),
+                GameWindowEvent::MouseMovement((x,y))=>{
+                    self.wallpaper.move_with_cursor([x,y]);
+                    mouse_cursor.set_position([x,y])
+                }
 
                 GameWindowEvent::Draw=>{
                     window.draw(|c,g|{

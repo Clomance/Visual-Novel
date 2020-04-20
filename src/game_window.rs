@@ -105,30 +105,19 @@ impl GameWindow{
         let monitor=event_loop.primary_monitor();
         let size;
 
-        let fullscreen=if cfg!(target_os = "linux") {
-            let video_mode=monitor.video_modes().next().unwrap();
-            size=video_mode.size();
-            Fullscreen::Exclusive(video_mode)
-        }
-        else{
-            size=monitor.size();
-            Fullscreen::Borderless(monitor)
-        };
-        
+        size=monitor.size();
+        let fullscreen=Fullscreen::Borderless(monitor);
 
         unsafe{
             window_width=size.width as f64;
             window_height=size.height as f64;
             window_center=[window_width/2f64,window_height/2f64];
         }
-        let mut inner=size;
-        inner.width=0;
-        inner.height=0;
 
         let icon=load_window_icon();
 
         let window_builder=WindowBuilder::new()
-            .with_inner_size(inner) // Чтобы не вылезало не дорисованное окно
+            .with_inner_size(size)
             .with_decorations(false)
             .with_resizable(false)
             .with_always_on_top(true)
@@ -309,10 +298,6 @@ impl GameWindow{
                     unsafe{
                         (*window).request_redraw()
                     }
-                    None
-                }
-
-                Event::Suspended=>{
                     None
                 }
 

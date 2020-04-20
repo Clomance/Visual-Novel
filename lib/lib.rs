@@ -11,8 +11,6 @@ pub use traits::*;
 mod colors;
 pub use colors::*;
 
-
-
 use image::{
     self,
     DynamicImage,
@@ -21,7 +19,10 @@ use image::{
     GenericImageView
 };
 
-use std::path::Path;
+use std::{
+    path::Path,
+    fs::{metadata,read_dir},
+};
 
 // Загрузка изображений
 pub fn load_image<P:AsRef<Path>>(path:P,width:u32,height:u32)->RgbaImage{
@@ -43,5 +44,20 @@ pub fn load_window_icon()->Icon{
     let height=image.height();
 
     Icon::from_rgba(vec,width,height).unwrap()
+}
 
+pub fn load_textures<P:AsRef<Path>+Clone>(path:P,width:u32,height:u32)->Vec<RgbaImage>{
+    let meta=metadata(path.clone()).unwrap();
+    let mut textures=Vec::with_capacity(meta.len() as usize);
+    let dir=read_dir(path).unwrap();
+
+    for r in dir{
+        let file=r.unwrap();
+        let _name=file.file_name();
+        let path=file.path();
+        let image=load_image(path,width,height);
+        textures.push(image)
+    }
+
+    textures
 }

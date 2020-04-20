@@ -1,5 +1,7 @@
 use crate::*;
 
+pub const wallpaper_movement_scale:f64=16f64;
+
 pub struct Wallpaper{
     start_position:[f64;2],
     image:Image,
@@ -7,12 +9,23 @@ pub struct Wallpaper{
 }
 
 impl Wallpaper{
-    pub fn new(image:&RgbaImage,rect:[f64;4])->Wallpaper{
-        let settings=TextureSettings::new();
-        Self{
-            start_position:[rect[0],rect[1]],
-            image:Image::new_color([1.0;4]).rect(rect),
-            texture:Texture::from_image(image,&settings),
+    pub fn new(image:&RgbaImage)->Wallpaper{
+        unsafe{
+            let dx=window_width/(wallpaper_movement_scale*2f64);
+            let dy=window_height/(wallpaper_movement_scale*2f64);
+            let rect=[
+                -dx,
+                -dy,
+                window_width+2f64*dx,
+                window_height+2f64*dy,
+            ];
+
+            let settings=TextureSettings::new();
+            Self{
+                start_position:[rect[0],rect[1]],
+                image:Image::new_color([1.0;4]).rect(rect),
+                texture:Texture::from_image(image,&settings),
+            }
         }
     }
 

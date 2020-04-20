@@ -1,6 +1,6 @@
 use core::convert::*;
 use core::borrow::Borrow;
-use core::ops::Deref;
+use core::ops::{Deref,DerefMut};
 
 // Сырой указатель, который можно свободно передавать между потоками
 pub struct SyncRawPtr<T>{
@@ -48,6 +48,14 @@ impl<T> Deref for SyncRawPtr<T>{
     fn deref(&self)->&T{
         unsafe{
             &*self.ptr
+        }
+    }
+}
+
+impl<T> DerefMut for SyncRawPtr<T>{
+    fn deref_mut(&mut self)->&mut T{
+        unsafe{
+            &mut *self.ptr
         }
     }
 }

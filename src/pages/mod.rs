@@ -19,6 +19,6 @@ pub const Main_menu_page_smooth:f32=default_page_smooth; // Сглаживани
 
 pub const Settings_page_smooth:f32=default_page_smooth; // Сглаживание страницы настроек
 
-pub const Enter_user_name_smooth:f32=1f32/4f32; // Сглаживание окна ввода имени
+pub const Enter_user_name_smooth:f32=1f32/8f32; // Сглаживание окна ввода имени
 
 pub const Pause_menu_smooth:f32=default_page_smooth; // Сглаживание страницы паузы

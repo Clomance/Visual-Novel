@@ -17,8 +17,6 @@ use graphics::{
     character::CharacterCache,
     types::Color,
     image::Image,
-    draw_state::DrawState,
-    math::Matrix2d,
     Graphics,
     Transformed,
     rectangle::Rectangle,
@@ -29,9 +27,8 @@ use std::{
     str::FromStr,
     fmt::Debug,
     path::Path,
-    fs::OpenOptions,
-    io::{Read,Write},
-    str::Lines,
+    fs::{File,OpenOptions,metadata,read_dir},
+    io::{Read,Write,BufReader,BufRead},
 };
 
 use lib::*;
@@ -45,7 +42,7 @@ mod page_table;
 use page_table::PageTable;
 
 mod character;
-use character::Character;
+use character::*;
 
 mod dialogue;
 use dialogue::*;
@@ -90,7 +87,17 @@ pub static mut Settings:game_settings::GameSettings=game_settings::GameSettings:
 pub static mut smooth:f32=default_page_smooth; // Сглаживание для переходов
 pub static mut alpha_channel:f32=0f32; // Значение альфа-канала
 
-pub static mut loading:bool=true;
+
+pub static mut loading:bool=true; // Флаг загрузки
+pub struct LoadingFlag; // Флаг загрузки, автоматически сбрасывается при завершении загрузки или вылете
+
+impl Drop for LoadingFlag{
+    fn drop(&mut self){
+        unsafe{
+            loading=false
+        }
+    }
+}
 
 fn main(){
     unsafe{
@@ -100,12 +107,13 @@ fn main(){
 
         let texture_settings=TextureSettings::new();
 
-        let mut characters:Vec<Character>=Vec::with_capacity(Settings.characters_len); // Массив персонажей
-        let mut wallpaper_textures:Vec<RgbaImage>=Vec::with_capacity(Settings.pages); // Массив обоев для игры
-        let mut dialogues:Vec<Dialogue>=Vec::with_capacity(Settings.pages); // Массив диалогов
+        let mut character_textures:Vec<RgbaImage>=Vec::new(); // Массив персонажей
+        let mut wallpaper_textures:Vec<RgbaImage>=Vec::new(); // Массив обоев для игры
+        let mut dialogues:Vec<Dialogue>=Vec::new(); // Массив диалогов
 
-        let mut wallpaper_textures_ref=SyncRawPtr::new(&mut wallpaper_textures as *mut Vec<RgbaImage>); // Ссылка для передачи через доп. поток
-        let mut dialogues_ref=SyncRawPtr::new(&mut dialogues as *mut Vec<Dialogue>); // Ссылка для передачи через доп. поток
+        let mut character_textures_ref=SyncRawPtr::new(&mut character_textures as *mut Vec<RgbaImage>); //
+        let mut wallpaper_textures_ref=SyncRawPtr::new(&mut wallpaper_textures as *mut Vec<RgbaImage>); // Ссылки для передачи через доп. поток
+        let mut dialogues_ref=SyncRawPtr::new(&mut dialogues as *mut Vec<Dialogue>);                    //
 
         let ending_wallpaper;
         let dialogue_box_texture;
@@ -117,59 +125,47 @@ fn main(){
         {
             let mut main_textures:Vec<RgbaImage>=Vec::with_capacity(3); // Главные текстуры (главное меню, диалоговое окно и конечная заставка)
             let mut main_textures_ref=SyncRawPtr::new(&mut main_textures as *mut Vec<RgbaImage>); // Ссылка для передачи через доп. поток
+            
+            let dx=window_width/(wallpaper_movement_scale*2f64);
+            let dy=window_height/(wallpaper_movement_scale*2f64);
+            let wallpaper_size=[
+                (window_width+2f64*dx) as u32,
+                (window_height+2f64*dy) as u32
+            ];
 
-            // Доп. поток для загрузки данных
-            let loading_resources_thread=std::thread::spawn(move||{
+            // Замыкание для допольнительного потока
+            let loading_resources_thread=move||{
                 'loading:loop{
-
-                    let mut path;
-                    let mut wallpaper_texture;
-
-                    let image_size=[window_width as u32,window_height as u32];
+                    let _flag=LoadingFlag; // Флаг загрузки
 
                     // Загрузка обоев
-                    for i in 0..Settings.page_wallpapers{
-                        if !loading{
-                            break 'loading
-                        }
-                        path=format!("images/wallpapers/wallpaper{}.png",i);
-                        wallpaper_texture=load_image(path,image_size[0],image_size[1]);
-                        wallpaper_textures_ref.as_mut().push(wallpaper_texture);
-                    }
+                    
+
+                    *wallpaper_textures_ref=load_textures("images/wallpapers/game",wallpaper_size[0],wallpaper_size[1]);
+                    if !loading{break 'loading}
+                    // Загрузка текстур персонажей
+                    *character_textures_ref=load_textures("images/characters",(2f64*window_height/5f64) as u32,(4f64*window_height/5f64) as u32);
+                    if !loading{break 'loading}
+                    // Загрузка диалогов
+                    *dialogues_ref=load_dialogues();
 
                     // Загрузка главных текстур
                     for path in main_textures_paths{
-                        if !loading{
-                            break 'loading
-                        }
-                        wallpaper_texture=load_image(path,image_size[0],image_size[1]);
+                        if !loading{break 'loading}
+                        let wallpaper_texture=load_image(path,wallpaper_size[0],wallpaper_size[1]);
                         main_textures_ref.as_mut().push(wallpaper_texture);
                     }
-
-                    // Загрузка диалогов
-                    for i in 0..Settings.pages{
-                        if !loading{
-                            break 'loading
-                        }
-                        let path=format!("text/dialogue{}.txt",i);
-                        let dialogue=Dialogue::new(path);
-                        dialogues_ref.as_mut().push(dialogue);
-                    }
-
-                    loading=false;
                     break 'loading
                 }
-            });
+            };
 
             // Экран загрузки
-            match LoadingScreen::new().start(&mut window){
+            match LoadingScreen::new().start(&mut window,loading_resources_thread){
                 Game::Exit=>{
-                    loading_resources_thread.join().unwrap();
                     return
                 },
                 _=>{}
             }
-            loading_resources_thread.join().unwrap();
 
             // Перенос главный текстур
             ending_wallpaper=main_textures.pop().unwrap();
@@ -177,26 +173,11 @@ fn main(){
             main_menu_wallpaper=main_textures.pop().unwrap();
         }
 
-        // Загрузка персонажей
-        for i in 0..Settings.characters_len{
-            let path=format!("images/characters/character{}.png",i);
-            characters.push(Character::new(path,&texture_settings));
-        }
+        let mut wallpaper=Wallpaper::new(&main_menu_wallpaper); // Обои
 
-        let dx=window_width/(wallpaper_movement_scale*2f64);
-        let dy=window_height/(wallpaper_movement_scale*2f64);
-        let wallpaper_rect=[
-            -dx,
-            -dy,
-            window_width+2f64*dx,
-            window_height+2f64*dy,
-        ];
+        let mut characters_view=CharactersView::new(); // "Сцена" для персонажей
 
-        let mut wallpaper=Wallpaper::new(&main_menu_wallpaper,wallpaper_rect); // Обои
-
-        // Диалоговое окно
-        let dialogue_box_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        let mut dialogue_box=DialogueBox::new(dialogue_box_texture,dialogue_box_glyphs);
+        let mut dialogue_box=DialogueBox::new(dialogue_box_texture); // Диалоговое окно
 
         window.set_cursor_position(window_center);  // Перенос курсора
         mouse_cursor.set_position(window_center);   // в центр экрана
@@ -204,6 +185,7 @@ fn main(){
         // Полный цикл игры
         'game:loop{
             wallpaper.set_image(&main_menu_wallpaper); // Устрановка обоев главного меню
+
             wallpaper.move_with_cursor(mouse_cursor.position());
             // Цикл главного меню
             match MainMenu::new(&mut wallpaper).start(&mut window){
@@ -220,12 +202,15 @@ fn main(){
             };
 
             // Загрузка таблицы страниц игры
-            let mut page_table=PageTable::new(&characters,&mut wallpaper_textures,&dialogues);
+            let mut page_table=PageTable::new(&character_textures,&mut wallpaper_textures,&dialogues,Settings.saved_page);
 
             smooth=default_page_smooth;
 
             'gameplay:loop{
                 alpha_channel=0f32;
+
+                characters_view.clear();
+                characters_view.add_character(page_table.current_character(),CharacterLocation::Left);
 
                 wallpaper.set_image(page_table.current_wallpaper()); // Установка текущего фона игры
 
@@ -250,7 +235,7 @@ fn main(){
                             });
 
                             alpha_channel+=smooth;
-                            if alpha_channel>=1.0{
+                            if alpha_channel>1.0{
                                 break 'smooth
                             }
                         }
@@ -275,7 +260,7 @@ fn main(){
                         GameWindowEvent::Draw=>{ //Рендеринг
                             window.draw(|c,g|{
                                 wallpaper.draw(&c,g);
-                                page_table.currents_character().draw(&c.draw_state,c.transform,g);
+                                characters_view.draw(&c,g);
                                 dialogue_box.draw(&c,g);
                                 mouse_cursor.draw(&c,g);
                             });
@@ -328,6 +313,15 @@ fn main(){
                                             Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
                                             continue 'game
                                         }
+                                        Game::Settings=>{
+                                            match SettingsPage::new().start(&mut window){
+                                                Game::Exit=>{
+                                                    Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
+                                                    break 'game
+                                                }
+                                                _=>{}
+                                            }
+                                        }
                                         Game::Exit=>{ // Выход из игры
                                             Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
                                             break 'game
@@ -362,7 +356,7 @@ fn main(){
                             wallpaper.draw_smooth(alpha_channel,&c,g);
                         });
                         alpha_channel+=smooth;
-                        if alpha_channel>=1.0{
+                        if alpha_channel>1.0{
                             break 'smooth_ending
                         }
                     }
@@ -392,4 +386,18 @@ fn main(){
         // Конец программы
         Settings.save(); // Сохранение настроек игры
     }
+}
+
+pub fn load_dialogues()->Vec<Dialogue>{
+    let meta=metadata("text").unwrap();
+    let mut dialogues=Vec::with_capacity(meta.len() as usize);
+    let dir=read_dir("text").unwrap();
+
+    for r in dir{
+        let file=r.unwrap();
+        let path=file.path();
+        let dialogue=Dialogue::new(path);
+        dialogues.push(dialogue);
+    }
+    dialogues
 }

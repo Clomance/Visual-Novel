@@ -1,6 +1,3 @@
 Visual Novel by Clomance
-false
-ааа
-2
-1
-2
+true
+ff

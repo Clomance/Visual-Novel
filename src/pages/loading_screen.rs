@@ -1,5 +1,6 @@
 use crate::*;
 
+
 pub struct LoadingScreen{
     logo_base:Image,
     logo:Texture,
@@ -21,18 +22,29 @@ impl LoadingScreen{
         }
     }
 
-    pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
+    pub unsafe fn start<F,T>(&mut self,window:&mut GameWindow,background:F)->Game
+            where
+                F: FnOnce() -> T,
+                F: Send + 'static,
+                T: Send + 'static{
         let half_size=100f64;
         let (x,y)=(window_width/2f64,window_height/2f64);
         let mut rotation=0f64;
 
+        let thead=std::thread::spawn(background);
+
         'loading:while let Some(event)=window.next_event(){
             if !loading{
+                let _result=thead.join();
                 break 'loading
             }
             match event{
-                GameWindowEvent::Exit=>{loading=false;return Game::Exit} // Закрытие игры
-    
+                GameWindowEvent::Exit=>{ // Закрытие игры
+                    loading=false;
+                    let _result=thead.join();
+                    return Game::Exit
+                }
+
                 GameWindowEvent::Draw=>{
                     window.draw(|c,g|{
                         g.clear_color(White);
@@ -62,7 +74,7 @@ impl LoadingScreen{
                 _=>{}
             }
         }
-    
+
         Game::MainMenu
     }
 }
