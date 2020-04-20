@@ -104,7 +104,7 @@ _ - Сегодня мой первый день в школе.
 
 Обои и задние планы находятся в папке `./images/wallpapers`.
 
-Обои главного меню, конечная заставка игры, иконка окна и лого загрузки здесь же. Пути `./images/wallpapers/main_menu_wallpaper.png`, `./images/wallpapers/ending_wallpaper.png`, `./images/wallpapers/window_icon.png` и `./images/wallpapers/logo.png`соответственно.
+Обои главного меню и конечная заставка игры. Пути `./images/wallpapers/main_menu_wallpaper.png` и `./images/wallpapers/ending_wallpaper.png`соответственно.
 
 Обои для самой игры находятся в папке `./images/wallpapers/game` и должны именоваться следующим образом: `wallpaper[номер заднего плана].png`; все номера идут по порядку, начиная с нуля.
 Пример: `wallpaper0.png`.
@@ -118,4 +118,4 @@ _ - Сегодня мой первый день в школе.
 
 #### Остальное
 
-Путь текстуры для окна с диалогами - `./images/dialog_box.png`, для картинки во время загрузки - `./images/logo.png`.
+Путь текстуры для окна с диалогами - `./images/dialog_box.png`, для картинки во время загрузки - `./images/logo.png` и для иконки окна - `./images/window_icon.png`.
