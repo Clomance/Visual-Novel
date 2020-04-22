@@ -46,9 +46,7 @@ impl<'a> PauseMenu<'a>{
 
     #[inline(always)]
     pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
-
         'page:while self.smooth(window)!=Game::Exit{
-
 
             while let Some(event)=window.next_event(){
                 match event{
@@ -60,7 +58,6 @@ impl<'a> PauseMenu<'a>{
                         window.draw(|c,g|{
                             self.background.draw(self.background_rect,&c.draw_state,c.transform,g);
                             self.menu.draw(&c,g);
-                            mouse_cursor.draw(&c,g);
                         });
                     }
 
@@ -68,7 +65,6 @@ impl<'a> PauseMenu<'a>{
                         match button{
                             MouseButton::Left=>{
                                 self.menu.pressed();
-                                mouse_cursor.pressed();
                             },
                             _=>{}
                         }
@@ -77,7 +73,6 @@ impl<'a> PauseMenu<'a>{
                     GameWindowEvent::MouseReleased(button)=>{
                         match button{
                             MouseButton::Left=>{
-                                mouse_cursor.released();
                                 if let Some(button_id)=self.menu.clicked(){
                                     match button_id{
                                         0=>return Game::ContinueGamePlay, // Кнопка продолжить
@@ -97,14 +92,13 @@ impl<'a> PauseMenu<'a>{
                             _=>{}
                         }
                     }
-        
+
                     GameWindowEvent::KeyboardReleased(button)=>{
                         match button{
                             KeyboardButton::Escape=>return Game::Back,
                             _=>{}
                         }
                     }
-        
                     _=>{}
                 }
             }
@@ -121,14 +115,11 @@ impl<'a> PauseMenu<'a>{
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::MouseMovement((x,y))=>mouse_cursor.set_position([x,y]),
-
                 GameWindowEvent::Draw=>{ // Рендеринг
                     window.draw(|c,g|{
                         self.background.color[3]=alpha_channel;
                         self.background.draw(self.background_rect,&c.draw_state,c.transform,g);
                         self.menu.draw_smooth(alpha_channel,&c,g);
-                        mouse_cursor.draw(&c,g);
                     });
 
                     alpha_channel+=smooth;

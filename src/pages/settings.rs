@@ -78,8 +78,7 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::MouseMovement((x,y))=>{
-                    mouse_cursor.set_position([x,y]);
+                GameWindowEvent::MouseMovement(_)=>{
                     self.signs_per_sec.grab();
                 }
                 
@@ -92,8 +91,6 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                         self.signs_per_sec.draw(&c,g);
                         
                         self.back_button.draw(&c,g);
-
-                        mouse_cursor.draw(&c,g);
                     });
                 }
             
@@ -101,7 +98,6 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                     match button{
                         MouseButton::Left=>{
                             self.back_button.pressed();
-                            mouse_cursor.pressed();
                             self.signs_per_sec.pressed();
                         },
                         _=>{}
@@ -111,7 +107,6 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                 GameWindowEvent::MouseReleased(button)=>{
                     match button{
                         MouseButton::Left=>{
-                            mouse_cursor.released();
                             Settings.signs_per_frame=self.signs_per_sec.released()/60f64;
 
                             if self.back_button.released(){ // Кнопка "Назад"
@@ -146,8 +141,6 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::MouseMovement((x,y))=>mouse_cursor.set_position([x,y]),
-
                 GameWindowEvent::Draw=>{ //Рендеринг
                     window.draw(|c,g|{
                         self.background.color[3]=alpha_channel;
@@ -159,8 +152,6 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                         self.signs_per_sec.draw_smooth(alpha_channel,&c,g);
 
                         self.back_button.draw_smooth(alpha_channel,&c,g);
-
-                        mouse_cursor.draw(&c,g);
                     });
 
                     alpha_channel+=smooth;

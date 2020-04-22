@@ -129,7 +129,7 @@ impl Slider{
     pub fn grab(&mut self){
         if self.grab{
             unsafe{
-                let x=mouse_cursor.current_position[0];
+                let x=mouse_cursor.position()[0];
 
                 if x<self.line_rect[0]{
                     self.circle_rect[0]=self.line_rect[0]-circle_radius;

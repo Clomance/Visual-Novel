@@ -16,6 +16,10 @@ impl<'a> Button<'a>{
         }
     }
 
+    pub fn shift(&mut self,dx:f64,dy:f64){
+        self.base.shift(dx,dy)
+    }
+
     pub fn pressed(&mut self)->bool{
         self.base.pressed()
     }
@@ -53,6 +57,11 @@ impl ButtonDependent{
             base:ButtonBase::new(settings.rect,settings.background_color),
             text:TextViewDependent::new(text_view_settings,glyphs),
         }
+    }
+
+    pub fn shift(&mut self,dx:f64,dy:f64){
+        self.base.shift(dx,dy);
+        self.text.shift(dx,dy)
     }
 
     pub fn set_alpha_channel(&mut self,alpha:f32){
@@ -208,6 +217,14 @@ impl ButtonBase{
             rectangle:Rectangle::new(color),
             pressed:false,
         }
+    }
+
+    #[inline]
+    pub fn shift(&mut self,dx:f64,dy:f64){
+        self.x1+=dx;
+        self.y1+=dy;
+        self.x2+=dx;
+        self.y2+=dy;
     }
 
     #[inline] // Установка альфа-канала

@@ -1,10 +1,19 @@
 #![allow(unused_must_use)]
 
+mod mouse_cursor;
+pub use mouse_cursor::MouseCursor;
+
+mod wallpaper;
+pub use wallpaper::*;
+
+use glutin::window::Icon;
 use crate::{
     Settings,
-    MouseCursor,
-    load_window_icon,
+    Drawable
 };
+
+use image::GenericImageView;
+use image::RgbaImage;
 
 use opengl_graphics::{
     GlGraphics,
@@ -68,6 +77,7 @@ pub struct GameWindow{
     events_handle_fn:fn(&mut Self),
     width:u32,
     height:u32,
+    wallpaper:Wallpaper,
 }
 
 #[derive(Clone)]
@@ -79,6 +89,7 @@ pub enum GameWindowEvent{
     Hide(bool),
 
     MouseMovement((f64,f64)),
+    MouseMovementDelta((f64,f64)),
 
     KeyboardPressed(KeyboardButton),
     KeyboardReleased(KeyboardButton),
@@ -139,6 +150,14 @@ impl GameWindow{
         let ctx=unsafe{ctx.make_current().unwrap()};
 
         ctx.window().set_cursor_visible(false);
+        unsafe{
+            let position=PhysicalPosition{
+                x:window_center[0],
+                y:window_center[1],
+            };
+            ctx.window().set_cursor_position(position);
+            mouse_cursor.set_position([position.x,position.y]);
+        }
 
         gl::load_with(|s|ctx.get_proc_address(s) as *const _);
 
@@ -164,6 +183,7 @@ impl GameWindow{
             events_handle_fn:GameWindow::event_listener,
             width:width,
             height:height,
+            wallpaper:Wallpaper::new(),
         }
     }
 
@@ -177,22 +197,6 @@ impl GameWindow{
             (self.events_handle_fn)(self); // Вызов функции обработки событий
         }
         self.events.pop_front()
-    }
-
-    pub fn draw<F>(&mut self,f:F)
-            where F: FnOnce(Context,&mut GlGraphics){
-
-        let viewport=Viewport{
-            rect:[0,0,self.width as i32,self.height as i32],
-            draw_size:[self.width,self.height],
-            window_size:unsafe{[window_width,window_height]},
-        };
-
-        let context=self.graphics.draw_begin(viewport);
-
-        f(context,&mut self.graphics);
-
-        self.graphics.draw_end();
     }
 
     pub fn request_redraw(&self){
@@ -216,6 +220,7 @@ impl GameWindow{
     }
 }
 
+// Функции обработки событий
 impl GameWindow{
     // Обычная функция обработки событий
     fn event_listener(&mut self){
@@ -236,13 +241,23 @@ impl GameWindow{
                         WindowEvent::CloseRequested=>Exit,
 
                         // Движение мыши (конечное положение)
-                        WindowEvent::CursorMoved{position,..}=>MouseMovement((position.x,position.y)),
+                        WindowEvent::CursorMoved{position,..}=>unsafe{
+                            let last_position=mouse_cursor.position();
+                            let dx=position.x-last_position[0];
+                            let dy=position.y-last_position[1];
+                            mouse_cursor.set_position([position.x,position.y]);
+                            (*window).wallpaper.mouse_shift(dx,dy);
+                            MouseMovementDelta((dx,dy))
+                        }
                         
                         // Обработка действий с кнопками мыши (только стандартные кнопки)
                         WindowEvent::MouseInput{button,state,..}=>{
                             if state==ElementState::Pressed{
                                 match button{
-                                    GMouseButton::Left=>MousePressed(MouseButton::Left),
+                                    GMouseButton::Left=>unsafe{
+                                        mouse_cursor.pressed();
+                                        MousePressed(MouseButton::Left)
+                                    }
                                     GMouseButton::Middle=>MousePressed(MouseButton::Middle),
                                     GMouseButton::Right=>MousePressed(MouseButton::Right),
                                     GMouseButton::Other(_)=>None
@@ -250,7 +265,10 @@ impl GameWindow{
                             }
                             else{
                                 match button{
-                                    GMouseButton::Left=>MouseReleased(MouseButton::Left),
+                                    GMouseButton::Left=>unsafe{
+                                        mouse_cursor.released();
+                                        MouseReleased(MouseButton::Left)
+                                    }
                                     GMouseButton::Middle=>MouseReleased(MouseButton::Middle),
                                     GMouseButton::Right=>MouseReleased(MouseButton::Right),
                                     GMouseButton::Other(_)=>None
@@ -334,11 +352,16 @@ impl GameWindow{
             match event{
                 Event::WindowEvent{event,..}=>{
                     match event{
+                        WindowEvent::CloseRequested=>unsafe{ // Остановка цикла обработки событий,
+                            *control_flow=ControlFlow::Exit;
+                            (*vec).push_back(Exit); // Передача события во внешнее управление
+                        }
+
                         WindowEvent::Focused(_)=>unsafe{
                             (*window).events_handle_fn=GameWindow::event_listener; // Смена фукции обработки событий
                             (*window).set_hide(false); // Выведение окна на экран
                             *control_flow=ControlFlow::Exit; // Остановка цикла обработки событий
-                            (*vec).push_back(GameWindowEvent::Hide(false)); // Передача события во внешнее управление
+                            (*vec).push_back(Hide(false)); // Передача события во внешнее управление
                         }
                         _=>{}
                     }
@@ -346,6 +369,76 @@ impl GameWindow{
                 _=>{}
             }
         })
+    }
+}
+
+impl GameWindow{
+    pub fn draw_wallpaper(&mut self){
+        let viewport=Viewport{
+            rect:[0,0,self.width as i32,self.height as i32],
+            draw_size:[self.width,self.height],
+            window_size:unsafe{[window_width,window_height]},
+        };
+        let context=self.graphics.draw_begin(viewport);
+        self.wallpaper.draw(&context,&mut self.graphics);
+
+        unsafe{
+            mouse_cursor.draw(&context,&mut self.graphics);
+        }
+        
+        self.graphics.draw_end();
+    }
+
+    pub fn draw<F>(&mut self,f:F)
+            where F: FnOnce(&Context,&mut GlGraphics){
+
+        let viewport=Viewport{
+            rect:[0,0,self.width as i32,self.height as i32],
+            draw_size:[self.width,self.height],
+            window_size:unsafe{[window_width,window_height]},
+        };
+
+        let context=self.graphics.draw_begin(viewport);
+
+        f(&context,&mut self.graphics);
+
+        unsafe{
+            mouse_cursor.draw(&context,&mut self.graphics);
+        }
+
+        self.graphics.draw_end();
+    }
+
+    pub fn draw_with_wallpaper<F>(&mut self,f:F)
+            where F: FnOnce(&Context,&mut GlGraphics){
+
+        let viewport=Viewport{
+            rect:[0,0,self.width as i32,self.height as i32],
+            draw_size:[self.width,self.height],
+            window_size:unsafe{[window_width,window_height]},
+        };
+
+        let context=self.graphics.draw_begin(viewport);
+        self.wallpaper.draw(&context,&mut self.graphics);
+
+        f(&context,&mut self.graphics);
+
+        unsafe{
+            mouse_cursor.draw(&context,&mut self.graphics);
+        }
+
+        self.graphics.draw_end();
+    }
+}
+
+// Функции обоев и заднего плана
+impl GameWindow{
+    pub fn set_wallpaper_alpha(&mut self,alpha:f32){
+        self.wallpaper.set_alpha_channel(alpha)
+    }
+
+    pub fn set_wallpaper_image(&mut self,image:&RgbaImage){
+        self.wallpaper.set_image(image)
     }
 }
 
@@ -514,4 +607,13 @@ pub enum KeyboardButton{
     Paste,
     Cut,
     Unknown,
+}
+
+pub fn load_window_icon()->Icon{
+    let image=image::open("./images/window_icon.png").unwrap();
+    let vec=image.to_bytes();
+    let width=image.width();
+    let height=image.height();
+
+    Icon::from_rgba(vec,width,height).unwrap()
 }

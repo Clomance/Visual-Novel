@@ -3,6 +3,8 @@ use crate::*;
 const head_margin:f64=50f64;
 const button_margin:f64=10f64;
 
+const menu_movement_scale:f64=10f64;
+
 pub struct Menu<'a>{
     head:TextViewDependent,
     buttons:Vec<ButtonDependent>,
@@ -12,8 +14,12 @@ pub struct Menu<'a>{
 impl<'a> Menu<'a>{
 
     pub fn new(mut settings:MenuSettings,mut glyphs:GlyphCache<'a>)->Menu<'a>{
-        let x0=settings.rect[0];
-        let y0=settings.rect[1];
+        let r=unsafe{mouse_cursor.center_radius()};
+        let dx=r[0]/menu_movement_scale;
+        let dy=r[1]/menu_movement_scale;
+
+        let x0=settings.rect[0]+dx;
+        let y0=settings.rect[1]+dy;
         let width=settings.rect[2];
         let height=settings.rect[3];
 
@@ -75,6 +81,15 @@ impl<'a> Menu<'a>{
             }
         }
         None
+    }
+
+    pub fn mouse_shift(&mut self,dx:f64,dy:f64){
+        let dx=dx/menu_movement_scale;
+        let dy=dy/menu_movement_scale;
+        self.head.shift(dx,dy);
+        for button in &mut self.buttons{
+            button.shift(dx,dy)
+        }
     }
 }
 

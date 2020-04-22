@@ -134,6 +134,10 @@ impl TextViewDependent{
         }
     }
 
+    pub fn shift(&mut self,dx:f64,dy:f64){
+        self.base.shift(dx,dy)
+    }
+
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.base.color[3]=alpha;
     }

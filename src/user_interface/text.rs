@@ -38,6 +38,12 @@ impl TextBase{
         rect[1]=position[1];
     }
 
+    pub fn shift(&mut self,dx:f64,dy:f64){
+        let rect=self.image.rectangle.as_mut().unwrap();
+        rect[0]+=dx;
+        rect[1]+=dy;
+    }
+
     // pub fn draw_part(&mut self,text:&str,chars:usize,c:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache){
     //     let (x,y)={
     //         let image_rect=self.image.rectangle.as_ref().unwrap();

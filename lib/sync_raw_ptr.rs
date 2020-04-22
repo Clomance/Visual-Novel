@@ -8,6 +8,11 @@ pub struct SyncRawPtr<T>{
 }
 
 impl<T> SyncRawPtr<T>{
+    pub const fn null()->SyncRawPtr<T>{
+        Self{
+            ptr:std::ptr::null_mut(),
+        }
+    }
     pub fn new(item:*mut T)->SyncRawPtr<T>{
         Self{
             ptr:item,

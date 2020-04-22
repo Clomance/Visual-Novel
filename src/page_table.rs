@@ -1,22 +1,22 @@
 use crate::*;
 
 // Таблица распределения ресурсов (картинок, диалогов, персонажей) по страницам
-pub struct PageTable<'a,'b,'c>{
-    wallpapers:Vec<&'b RgbaImage>,
+pub struct PageTable<'a,'c>{
+    wallpapers:Vec<&'a RgbaImage>,
     dialogues:Vec<&'c Dialogue>,
     characters:Vec<&'a RgbaImage>,
     page:usize
 }
 
-impl<'a,'b,'c> PageTable<'a,'b,'c>{
-    pub fn new(characters:&'a Vec<RgbaImage>,wallpapers:&'b Vec<RgbaImage>,dialogues:&'c Vec<Dialogue>,saved_page:usize)->PageTable<'a,'b,'c>{
+impl<'a,'c> PageTable<'a,'c>{
+    pub fn new(textures_:&'a Textures,dialogues:&'c Vec<Dialogue>)->PageTable<'a,'c>{
         let mut len=0;
         let cap=10;
         let mut table=Self{
             wallpapers:Vec::with_capacity(cap),
             dialogues:Vec::with_capacity(cap),
             characters:Vec::with_capacity(cap),
-            page:saved_page,
+            page:unsafe{Settings.saved_page},
         };
 
         let table_file=OpenOptions::new().read(true).open("settings/page_table.txt").unwrap();
@@ -39,9 +39,9 @@ impl<'a,'b,'c> PageTable<'a,'b,'c>{
             if let Some(_)=line_str.find("{"){
                 len+=1;
                 let (wallpaper,dialogue,character)=load_page_settings(&mut reader);
-                table.wallpapers.push(&wallpapers[wallpaper]);
+                table.wallpapers.push(&textures_.wallpaper(wallpaper));
                 table.dialogues.push(&dialogues[dialogue]);
-                table.characters.push(&characters[character]);
+                table.characters.push(&textures_.character(character));
             }
             line.clear();
         }
@@ -71,7 +71,7 @@ impl<'a,'b,'c> PageTable<'a,'b,'c>{
         &self.characters[self.page]
     }
 
-    pub fn current_wallpaper(&self)->&'b RgbaImage{
+    pub fn current_wallpaper(&self)->&'a RgbaImage{
         &self.wallpapers[self.page]
     }
 

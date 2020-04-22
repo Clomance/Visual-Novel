@@ -14,7 +14,8 @@ const pressed_diametr:f64=pressed_radius*2f64;
 
 pub struct MouseCursor{
     radius:f64,
-    pub current_position:[f64;2],
+    position:[f64;2],
+    saved_position:[f64;2],
     rect:[f64;4],
     cursor:Ellipse
 }
@@ -23,7 +24,8 @@ impl MouseCursor{
     pub const fn new()->MouseCursor{
         Self{
             radius:common_radius,
-            current_position:[0f64;2],
+            position:[0f64;2],
+            saved_position:[0f64;2],
             rect:[0f64,0f64,common_diametr,common_diametr],
             cursor:Ellipse{
                 color:common_color,
@@ -34,13 +36,31 @@ impl MouseCursor{
     }
 
     pub fn position(&self)->[f64;2]{
-        self.current_position
+        self.position
     }
 
-    pub fn set_position(&mut self,current_position:[f64;2]){
-        self.current_position=current_position;
-        self.rect[0]=current_position[0]-self.radius;
-        self.rect[1]=current_position[1]-self.radius;
+    pub fn center_radius(&self)->[f64;2]{
+        unsafe{[
+            self.position[0]-window_center[0],
+            self.position[1]-window_center[1]
+        ]}
+    }
+
+    pub fn save_position(&mut self){
+        self.saved_position=self.position;
+    }
+
+    pub fn saved_movement(&self)->(f64,f64){
+        (
+            self.position[0]-self.saved_position[0],
+            self.position[1]-self.saved_position[1]
+        )
+    }
+
+    pub fn set_position(&mut self,position:[f64;2]){
+        self.position=position;
+        self.rect[0]=position[0]-self.radius;
+        self.rect[1]=position[1]-self.radius;
     }
 
     // При нажатии левой кнопки мыши

@@ -16,11 +16,5 @@ pub use menu::{
 mod text;
 pub use text::*;
 
-mod wallpaper;
-pub use wallpaper::*;
-
-mod mouse_cursor;
-pub use mouse_cursor::*;
-
 mod slider;
 pub use slider::*;

@@ -1,6 +1,5 @@
 use crate::*;
 
-
 pub struct LoadingScreen{
     logo_base:Image,
     logo:Texture,
@@ -61,7 +60,7 @@ impl LoadingScreen{
         while let Some(event)=window.next_event(){
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
-    
+
                 GameWindowEvent::Draw=>{
                     window.draw(|_context,g|{
                         g.clear_color(White);

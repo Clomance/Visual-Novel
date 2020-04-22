@@ -23,10 +23,10 @@ pub struct DialogueBox<'a,'b>{
 }
 
 impl<'a,'b> DialogueBox<'a,'b>{
-    pub fn new(texture:Texture)->DialogueBox<'a,'b>{
+    pub fn new(texture:&RgbaImage)->DialogueBox<'a,'b>{
         let texture_settings=TextureSettings::new();
         let glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-
+        let texture=Texture::from_image(texture,&texture_settings);
         unsafe{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
@@ -54,6 +54,10 @@ impl<'a,'b> DialogueBox<'a,'b>{
                 glyphs:glyphs
             }
         }
+    }
+
+    pub fn set_step(&mut self,step:usize){
+        self.dialogue_step=step;
     }
 
     pub fn current_step(&self)->usize{
