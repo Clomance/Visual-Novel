@@ -5,27 +5,46 @@ const circle_diametr:f64=circle_radius*2f64;
 
 const line_radius:f64=5f64;
 
-pub struct SliderViewed<'a>{
-    text_view:TextView<'a>,
-    base:Slider,
+// Полная комплектация слайдера с надписью и выводом значения
+pub struct Slider<'a>{
+    head:TextViewDependent, // Надпись над слайдером
+    value:TextViewDependent, // Значение слева от слайдера
+    glyphs:GlyphCache<'a>,
+    base:SimpleSlider,
 }
 
-impl<'a> SliderViewed<'a>{
-    pub fn new(settings:SliderSettings,glyphs:GlyphCache<'a>)->SliderViewed<'a>{
+impl<'a> Slider<'a>{
+    pub fn new(settings:SliderSettings,mut glyphs:GlyphCache<'a>)->Slider<'a>{
+        let rect=[
+            settings.position[0],
+            settings.position[1]-circle_diametr+5.0,
+            100f64,
+            0f64,
+        ];
+
+        let head_view_settings=TextViewSettings::new()
+                .rect(rect)
+                .text(settings.head.clone())
+                .text_color(settings.head_color);
+
         let rect=[
             settings.position[0]+settings.length,
             settings.position[1]-circle_radius,
             100f64,
             circle_diametr
         ];
-        let view_settings=TextViewSettings::new()
+
+
+        let value_view_settings=TextViewSettings::new()
                 .rect(rect)
                 .text(format!("{:.2}",settings.current_value))
                 .text_color(settings.circle_color);
 
         Self{
-            text_view:TextView::new(view_settings,glyphs),
-            base:Slider::new(settings)
+            head:TextViewDependent::new(head_view_settings,&mut glyphs),
+            value:TextViewDependent::new(value_view_settings,&mut glyphs),
+            glyphs:glyphs,
+            base:SimpleSlider::new(settings),
         }
     }
 
@@ -35,7 +54,7 @@ impl<'a> SliderViewed<'a>{
 
     pub fn released(&mut self)->f64{
         let value=self.base.released();
-        self.text_view.set_text_raw(format!("{:.2}",value));
+        self.value.set_text_raw(format!("{:.2}",value));
         value
     }
 
@@ -56,7 +75,62 @@ impl<'a> Drawable for SliderViewed<'a>{
     }
 }
 
-pub struct Slider{
+
+// Не придумал нормальное название :)
+pub struct SliderViewed<'a>{
+    text_view:TextView<'a>,
+    base:SimpleSlider,
+}
+
+impl<'a> SliderViewed<'a>{
+    pub fn new(settings:SliderSettings,glyphs:GlyphCache<'a>)->SliderViewed<'a>{
+        let rect=[
+            settings.position[0]+settings.length,
+            settings.position[1]-circle_radius,
+            100f64,
+            circle_diametr
+        ];
+        let view_settings=TextViewSettings::new()
+                .rect(rect)
+                .text(format!("{:.2}",settings.current_value))
+                .text_color(settings.circle_color);
+
+        Self{
+            text_view:TextView::new(view_settings,glyphs),
+            base:SimpleSlider::new(settings)
+        }
+    }
+
+    pub fn pressed(&mut self){
+        self.base.pressed();
+    }
+
+    pub fn released(&mut self)->f64{
+        let value=self.base.released();
+        self.text_view.set_text_raw(format!("{:.2}",value));
+        value
+    }
+
+    pub fn grab(&mut self){
+        self.base.grab();
+    }
+}
+
+impl<'a> Drawable for Slider<'a>{
+    fn set_alpha_channel(&mut self,alpha:f32){
+        self.head.set_alpha_channel(alpha);
+        self.value.set_alpha_channel(alpha);
+        self.base.set_alpha_channel(alpha);
+    }
+
+    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
+        self.head.draw(context,graphics,&mut self.glyphs);
+        self.value.draw(context,graphics,&mut self.glyphs);
+        self.base.draw(context,graphics);
+    }
+}
+
+pub struct SimpleSlider{
     min_value:f64,
     step:f64,
     current_value:f64,
@@ -67,8 +141,8 @@ pub struct Slider{
     grab:bool,
 }
 
-impl Slider{
-    pub fn new(settings:SliderSettings)->Slider{
+impl SimpleSlider{
+    pub fn new(settings:SliderSettings)->SimpleSlider{
         let step=(settings.max_value-settings.min_value)/settings.length;
         let current_value_line=(settings.current_value-settings.min_value)/step;
 
@@ -145,7 +219,7 @@ impl Slider{
     }
 }
 
-impl Drawable for Slider{
+impl Drawable for SimpleSlider{
     fn set_alpha_channel(&mut self,alpha:f32){
         self.circle.color[3]=alpha;
         self.line.color[3]=alpha;
@@ -158,6 +232,8 @@ impl Drawable for Slider{
 }
 
 pub struct SliderSettings{
+    head:String,
+    head_color:Color,
     min_value:f64,
     max_value:f64,
     current_value:f64,
@@ -170,6 +246,8 @@ pub struct SliderSettings{
 impl SliderSettings{
     pub fn new()->SliderSettings{
         Self{
+            head:String::new(),
+            head_color:White,
             min_value:0f64,
             max_value:0f64,
             current_value:0f64,
@@ -178,6 +256,11 @@ impl SliderSettings{
             circle_color:Red,
             line_color:Red,
         }
+    }
+
+    pub fn head<S:ToString>(mut self,head:S)->SliderSettings{
+        self.head=head.to_string();
+        self
     }
 
     pub fn min_value(mut self,value:f64)->SliderSettings{

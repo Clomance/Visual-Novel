@@ -4,8 +4,8 @@ const page_smooth:f32=Settings_page_smooth;
 
 pub struct SettingsPage<'a,'b,'c,'d>{
     head:TextView<'a>,
-    head_signs_per_sec:TextView<'d>,
-    signs_per_sec:SliderViewed<'b>,
+    signs_per_sec:Slider<'b>,
+    volume:Slider<'d>,
     back_button:Button<'c>,
     background:Rectangle,
     background_rect:[f64;4],
@@ -18,7 +18,7 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
         let texture_settings=TextureSettings::new();
 
         let head_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        let mut head_settings=TextViewSettings::new()
+        let head_settings=TextViewSettings::new()
                 .text("Настройки".to_string())
                 .font_size(40)
                 .text_color(White)
@@ -26,20 +26,25 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
         let head=TextView::new(head_settings.clone(),head_glyphs);
 
 
-        head_settings=head_settings.font_size(20)
-                .text("Количество символов в секунду".to_string())
-                .rect([
-                    window_center[0],100f64,250f64,20f64
-                ]);
-
-        let head_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let signs_per_sec_slider_sets=SliderSettings::new()
+                .head("Количество символов в секунду")
                 .position([window_center[0],160f64])
                 .length(250f64)
                 .min_value(15f64)
                 .max_value(120f64)
                 .current_value(Settings.signs_per_frame*60f64);
         let slider_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+
+
+        let volume_settings=SliderSettings::new()
+                .head("Громкость")
+                .position([window_center[0],250f64])
+                .length(250f64)
+                .min_value(0f64)
+                .max_value(100f64)
+                .current_value(Settings.volume*100f64);
+        let volume_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let volume=Slider::new(volume_settings,volume_glyphs);
 
 
         let button_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
@@ -54,8 +59,8 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
 
         Self{
             head:head,
-            head_signs_per_sec:TextView::new(head_settings,head_glyphs),
-            signs_per_sec:SliderViewed::new(signs_per_sec_slider_sets,slider_glyphs),
+            signs_per_sec:Slider::new(signs_per_sec_slider_sets,slider_glyphs),
+            volume:volume,
             back_button:Button::new(button_settings,button_glyphs),
             background:Rectangle::new(Settings_page_color),
             background_rect:[
@@ -78,8 +83,9 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::MouseMovement(_)=>{
+                GameWindowEvent::MouseMovementDelta(_)=>{
                     self.signs_per_sec.grab();
+                    self.volume.grab();
                 }
                 
                 GameWindowEvent::Draw=>{ //Рендеринг
@@ -87,9 +93,9 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                         self.background.draw(self.background_rect,&c.draw_state,c.transform,g);
                         self.head.draw(&c,g);
 
-                        self.head_signs_per_sec.draw(&c,g);
                         self.signs_per_sec.draw(&c,g);
-                        
+                        self.volume.draw(&c,g);
+
                         self.back_button.draw(&c,g);
                     });
                 }
@@ -99,6 +105,7 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                         MouseButton::Left=>{
                             self.back_button.pressed();
                             self.signs_per_sec.pressed();
+                            self.volume.pressed();
                         },
                         _=>{}
                     }
@@ -108,6 +115,10 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                     match button{
                         MouseButton::Left=>{
                             Settings.signs_per_frame=self.signs_per_sec.released()/60f64;
+
+                            Settings.volume=self.volume.released()/100f64;
+                            music::set_volume(Settings.volume); // Установка громкости
+
 
                             if self.back_button.released(){ // Кнопка "Назад"
                                 return Game::Back
@@ -148,8 +159,9 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                         
                         self.head.draw_smooth(alpha_channel,&c,g);
 
-                        self.head_signs_per_sec.draw_smooth(alpha_channel,&c,g);
                         self.signs_per_sec.draw_smooth(alpha_channel,&c,g);
+                        self.volume.draw_smooth(alpha_channel,&c,g);
+
 
                         self.back_button.draw_smooth(alpha_channel,&c,g);
                     });

@@ -1,5 +1,5 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,dead_code)]
-#![windows_subsystem="windows"] // Отключение консоли
+#![windows_subsystem="windows"] // Отключение консоли для Windows
 
 use image::RgbaImage;
 
@@ -89,6 +89,17 @@ impl Drop for LoadingFlag{
     }
 }
 
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+enum Melody{
+    None,
+    MainMenu
+}
+
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+enum Sound{
+    None
+}
+
 fn main(){
     unsafe{
         Settings.load(); // Загрузка настроек
@@ -121,81 +132,103 @@ fn main(){
 
         let mut dialogue_box=DialogueBox::new(textures.dialogue_box()); // Диалоговое окно
 
-        // Полный цикл игры
-        'game:loop{
-            window.set_wallpaper_image(textures.main_menu_wallpaper()); // Устрановка обоев главного меню
+        music::start::<Melody,Sound,_>(16,||{
+            music::bind_music_file(Melody::MainMenu,"music/audio.mp3");
+            music::set_volume(Settings.volume);
+            music::play_music(&Melody::MainMenu,music::Repeat::Forever);
 
-            // Цикл главного меню
-            match MainMenu::new().start(&mut window){
-                Game::ContinueGamePlay=>{
-                    //
-                }
-                Game::NewGamePlay=>{
-                    Settings._continue=true;
-                    Settings.saved_page=0;
-                    Settings.saved_dialogue=0;
-                    dialogue_box.set_step(0);
-                }
-                Game::Exit=>break 'game,
-                _=>{}
-            };
+            // Полный цикл игры
+            'game:loop{
+                window.set_wallpaper_image(textures.main_menu_wallpaper()); // Устрановка обоев главного меню
 
-            // Загрузка таблицы страниц игры
-            let mut page_table=PageTable::new(&textures,&dialogues);
-
-            smooth=default_page_smooth;
-
-            'gameplay:loop{
-                alpha_channel=0f32;
-
-                characters_view.clear();
-                characters_view.add_character(page_table.current_character(),CharacterLocation::Left);
-
-                window.set_wallpaper_image(page_table.current_wallpaper()); // Установка текущего фона игры
-
-                dialogue_box.set_dialogue(page_table.current_dialogue()); // Установка текущего диалога
-
-                // Сглаживание перехода
-                'smooth:while let Some(event)=window.next_event(){
-                    match event{
-                        GameWindowEvent::Exit=>break 'game, // Закрытие игры
-
-                        GameWindowEvent::Draw=>{ //Рендеринг
-                            window.set_wallpaper_alpha(alpha_channel);
-                            window.draw_with_wallpaper(|c,g|{
-                                dialogue_box.set_alpha_channel(alpha_channel);
-                                dialogue_box.draw_without_text(&c,g);
-                            });
-
-                            alpha_channel+=smooth;
-                            if alpha_channel>1.0{
-                                break 'smooth
-                            }
-                        }
-                        _=>{}
+                // Цикл главного меню
+                match MainMenu::new().start(&mut window){
+                    Game::ContinueGamePlay=>{
+                        //
                     }
-                }
+                    Game::NewGamePlay=>{
+                        Settings._continue=true;
+                        Settings.saved_page=0;
+                        Settings.saved_dialogue=0;
+                        dialogue_box.set_step(0);
+                    }
+                    Game::Exit=>break 'game,
+                    _=>{}
+                };
 
+                // Загрузка таблицы страниц игры
+                let mut page_table=PageTable::new(&textures,&dialogues);
 
-                // Цикл страницы 'page
-                while let Some(event)=window.next_event(){
-                    match event{
-                        GameWindowEvent::Exit=>{ // Закрытие игры
-                            Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
-                            break 'game
+                smooth=default_page_smooth;
+
+                'gameplay:loop{
+                    alpha_channel=0f32;
+
+                    characters_view.clear();
+                    characters_view.add_character(page_table.current_character(),CharacterLocation::Left);
+
+                    window.set_wallpaper_image(page_table.current_wallpaper()); // Установка текущего фона игры
+
+                    dialogue_box.set_dialogue(page_table.current_dialogue()); // Установка текущего диалога
+
+                    // Сглаживание перехода
+                    'smooth:while let Some(event)=window.next_event(){
+                        match event{
+                            GameWindowEvent::Exit=>break 'game, // Закрытие игры
+
+                            GameWindowEvent::Draw=>{ //Рендеринг
+                                window.set_wallpaper_alpha(alpha_channel);
+                                window.draw_with_wallpaper(|c,g|{
+                                    dialogue_box.set_alpha_channel(alpha_channel);
+                                    dialogue_box.draw_without_text(&c,g);
+                                });
+
+                                alpha_channel+=smooth;
+                                if alpha_channel>1.0{
+                                    break 'smooth
+                                }
+                            }
+                            _=>{}
                         }
+                    }
 
-                        GameWindowEvent::Draw=>{ //Рендеринг
-                            window.draw_with_wallpaper(|c,g|{
-                                characters_view.draw(&c,g);
-                                dialogue_box.draw(&c,g);
-                            });
-                        }
 
-                        GameWindowEvent::MouseReleased(button)=>{
-                            match button{
-                                MouseButton::Left=>{
-                                    if dialogue_box.clicked(){
+                    // Цикл страницы 'page
+                    while let Some(event)=window.next_event(){
+                        match event{
+                            GameWindowEvent::Exit=>{ // Закрытие игры
+                                Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
+                                break 'game
+                            }
+
+                            GameWindowEvent::Draw=>{ //Рендеринг
+                                window.draw_with_wallpaper(|c,g|{
+                                    characters_view.draw(&c,g);
+                                    dialogue_box.draw(&c,g);
+                                });
+                            }
+
+                            GameWindowEvent::MouseReleased(button)=>{
+                                match button{
+                                    MouseButton::Left=>{
+                                        if dialogue_box.clicked(){
+                                            if dialogue_box.next_page(){
+                                                if page_table.next_page(){
+                                                    continue 'gameplay // Переход к следующей странице (break 'page)
+                                                }
+                                                else{
+                                                    break 'gameplay
+                                                }
+                                            }
+                                        }
+                                    }
+                                    _=>{}
+                                }
+                            }
+
+                            GameWindowEvent::KeyboardReleased(button)=>{
+                                match button{
+                                    KeyboardButton::Space=>{
                                         if dialogue_box.next_page(){
                                             if page_table.next_page(){
                                                 continue 'gameplay // Переход к следующей странице (break 'page)
@@ -205,95 +238,80 @@ fn main(){
                                             }
                                         }
                                     }
-                                }
-                                _=>{}
-                            }
-                        }
-
-                        GameWindowEvent::KeyboardReleased(button)=>{
-                            match button{
-                                KeyboardButton::Space=>{
-                                    if dialogue_box.next_page(){
-                                        if page_table.next_page(){
-                                            continue 'gameplay // Переход к следующей странице (break 'page)
-                                        }
-                                        else{
-                                            break 'gameplay
-                                        }
-                                    }
-                                }
-                                KeyboardButton::Escape=>{
-                                    // Пауза
-                                    match PauseMenu::new().start(&mut window){
-                                        Game::MainMenu=>{ // Возвращение в гланое меню
-                                            Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
-                                            continue 'game
-                                        }
-                                        Game::Settings=>{
-                                            match SettingsPage::new().start(&mut window){
-                                                Game::Exit=>{
-                                                    Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
-                                                    break 'game
-                                                }
-                                                _=>{}
+                                    KeyboardButton::Escape=>{
+                                        // Пауза
+                                        match PauseMenu::new().start(&mut window){
+                                            Game::MainMenu=>{ // Возвращение в гланое меню
+                                                Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
+                                                continue 'game
                                             }
+                                            Game::Settings=>{
+                                                match SettingsPage::new().start(&mut window){
+                                                    Game::Exit=>{
+                                                        Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
+                                                        break 'game
+                                                    }
+                                                    _=>{}
+                                                }
+                                            }
+                                            Game::Exit=>{ // Выход из игры
+                                                Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
+                                                break 'game
+                                            }
+                                            _=>{}
                                         }
-                                        Game::Exit=>{ // Выход из игры
-                                            Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
-                                            break 'game
-                                        }
-                                        _=>{}
                                     }
+                                    _=>{}
                                 }
-                                _=>{}
+                            }
+                            _=>{}
+                        }
+                        // Конец цикла страницы
+                    }
+                    // Конец цикла только игровой части
+                }
+
+                Settings._continue=false; // Отключение "продолжить игру"
+
+                window.set_wallpaper_image(textures.ending_wallpaper()); // Конечная заставка игры
+
+                smooth=default_page_smooth;
+                alpha_channel=0f32;
+
+                'smooth_ending:while let Some(event)=window.next_event(){
+                    match event{
+                        GameWindowEvent::Exit=>break 'game, // Закрытие игры
+
+                        GameWindowEvent::Draw=>{ //Рендеринг
+                            window.set_wallpaper_alpha(alpha_channel);
+                            window.draw_wallpaper();
+
+                            alpha_channel+=smooth;
+                            if alpha_channel>1.0{
+                                break 'smooth_ending
                             }
                         }
                         _=>{}
                     }
-                    // Конец цикла страницы
                 }
-                // Конец цикла только игровой части
-            }
 
-            Settings._continue=false; // Отключение "продолжить игру"
+                'gameplay_ending:while let Some(event)=window.next_event(){
+                    match event{
+                        GameWindowEvent::Exit=>break 'game, // Закрытие игры
 
-            window.set_wallpaper_image(textures.ending_wallpaper()); // Конечная заставка игры
-
-            smooth=default_page_smooth;
-            alpha_channel=0f32;
-
-            'smooth_ending:while let Some(event)=window.next_event(){
-                match event{
-                    GameWindowEvent::Exit=>break 'game, // Закрытие игры
-
-                    GameWindowEvent::Draw=>{ //Рендеринг
-                        window.set_wallpaper_alpha(alpha_channel);
-                        window.draw_wallpaper();
-
-                        alpha_channel+=smooth;
-                        if alpha_channel>1.0{
-                            break 'smooth_ending
+                        GameWindowEvent::Draw=>{ //Рендеринг
+                            window.draw_wallpaper();
                         }
+
+                        GameWindowEvent::MouseReleased(_button)=>break 'gameplay_ending,
+                        GameWindowEvent::KeyboardReleased(_button)=>break 'gameplay_ending,
+
+                        _=>{}
                     }
-                    _=>{}
                 }
             }
 
-            'gameplay_ending:while let Some(event)=window.next_event(){
-                match event{
-                    GameWindowEvent::Exit=>break 'game, // Закрытие игры
-
-                    GameWindowEvent::Draw=>{ //Рендеринг
-                        window.draw_wallpaper();
-                    }
-
-                    GameWindowEvent::MouseReleased(_button)=>break 'gameplay_ending,
-                    GameWindowEvent::KeyboardReleased(_button)=>break 'gameplay_ending,
-
-                    _=>{}
-                }
-            }
-        }
+        });
         // Конец программы
         Settings.save(); // Сохранение настроек игры
     }

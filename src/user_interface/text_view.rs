@@ -142,6 +142,10 @@ impl TextViewDependent{
         self.base.color[3]=alpha;
     }
 
+    pub fn set_text_raw(&mut self,text:String){
+        self.text=text
+    }
+
     pub fn draw(&mut self,context:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache){
         self.base.draw(&self.text,context,g,glyphs);
     }

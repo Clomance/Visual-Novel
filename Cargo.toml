@@ -1,8 +1,10 @@
 [package]
 name = "Visual_Novel"
-version = "0.6.6"
+version = "0.7.0"
 authors = ["Clomance"]
 edition = "2018"
+build = "build.rs"
+
 
 [dependencies]
 image = "0.23.3"
@@ -11,6 +13,7 @@ piston2d-graphics = "0.36.0"
 winit = "0.22.0"
 gl = "0.11.0"
 glutin = "0.24.0"
+piston-music = "0.25.1"
 
 [lib]
 name="lib"
