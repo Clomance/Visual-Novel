@@ -5,6 +5,9 @@ const focused_movement:f64=focused_resize/2f64;
 
 const margin:f64=focused_resize+1f64;
 
+const movement_scale:f64=8f64;
+const focused_movement_scale:f64=10f64;
+
 // Позиция персонажа на сцене
 pub enum CharacterLocation{
     Left, // Слева с краю
@@ -19,6 +22,14 @@ pub enum CharacterLocation{
 struct Character{
     image:Image,
     texture:Texture
+}
+
+impl Character{
+    pub fn shift(&mut self,dx:f64,dy:f64){
+        let rect=self.image.rectangle.as_mut().unwrap();
+        rect[0]+=dx;
+        rect[1]+=dy;
+    }
 }
 
 pub struct CharactersView{
@@ -78,6 +89,14 @@ impl CharactersView{
         rect[1]-=focused_movement;
         rect[2]+=focused_resize;
         rect[3]+=focused_resize;
+    }
+
+    pub fn mouse_shift(&mut self,mut dx:f64,mut dy:f64){
+        dx/=movement_scale;
+        dy/=movement_scale;
+        for character in &mut self.characters{
+            character.shift(dx,dy)
+        }
     }
 }
 

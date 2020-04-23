@@ -83,21 +83,18 @@ pub struct GameWindow{
 #[derive(Clone)]
 pub enum GameWindowEvent{
     None,
-    Update,
     Draw,
 
     Hide(bool),
 
-    MouseMovement((f64,f64)),
     MouseMovementDelta((f64,f64)),
-
-    KeyboardPressed(KeyboardButton),
-    KeyboardReleased(KeyboardButton),
-
     MousePressed(MouseButton),
     MouseReleased(MouseButton),
 
+    KeyboardPressed(KeyboardButton),
+    KeyboardReleased(KeyboardButton),
     CharacterInput(char),
+
     Exit,
 }
 
@@ -159,9 +156,8 @@ impl GameWindow{
             mouse_cursor.set_position([position.x,position.y]);
         }
 
-        gl::load_with(|s|ctx.get_proc_address(s) as *const _);
-
-        let mut gl=GlGraphics::new(openGL);
+        gl::load_with(|s|ctx.get_proc_address(s) as *const _);  // Подключение OpenGL
+        let mut gl=GlGraphics::new(openGL);                     //
 
         let width=unsafe{window_width as u32};
         let height=unsafe{window_height as u32};
@@ -431,7 +427,7 @@ impl GameWindow{
     }
 }
 
-// Функции обоев и заднего плана
+// Функции для обоев
 impl GameWindow{
     pub fn set_wallpaper_alpha(&mut self,alpha:f32){
         self.wallpaper.set_alpha_channel(alpha)

@@ -124,8 +124,17 @@ impl TextViewDependent{
             text_len+=character.advance_width();
         }
 
-        let x1=settings.rect[0]+(settings.rect[2]-text_len)/2f64;
-        let y1=settings.rect[1]+(settings.rect[3]+settings.font_size as f64)/2f64;
+        let x1=match settings.align.x{
+            TextAlignX::Left=>settings.rect[0],
+            TextAlignX::Center=>settings.rect[0]+(settings.rect[2]-text_len)/2f64,
+            TextAlignX::Right=>settings.rect[0]+settings.rect[2]-text_len,
+        };
+        
+        let y1=match settings.align.y{
+            TextAlignY::Up=>settings.rect[1]+settings.font_size as f64,
+            TextAlignY::Center=>settings.rect[1]+(settings.rect[3]+settings.font_size as f64)/2f64,
+            TextAlignY::Down=>settings.rect[1]+settings.rect[3],
+        };
 
         Self{
             base:TextBase::new_color(settings.text_color,settings.font_size).position([x1,y1]),
@@ -192,7 +201,8 @@ pub struct TextViewSettings{
     pub rect:[f64;4], // [x1,y1,width,height] - сюда вписывается текст
     pub text:String,
     pub font_size:u32,
-    pub text_color:Color
+    pub text_color:Color,
+    pub align:TextAlign,
 }
 
 impl TextViewSettings{
@@ -202,6 +212,7 @@ impl TextViewSettings{
             text:String::new(),
             font_size:20,
             text_color:Black,
+            align:TextAlign::center()
         }
     }
 
@@ -224,4 +235,43 @@ impl TextViewSettings{
         self.text_color=color;
         self
     }
+
+    pub fn align_x(mut self,align:TextAlignX)->TextViewSettings{
+        self.align.x=align;
+        self
+    }
+
+    pub fn align_y(mut self,align:TextAlignY)->TextViewSettings{
+        self.align.y=align;
+        self
+    }
+}
+
+#[derive(Clone)]
+pub struct TextAlign{
+    x:TextAlignX,
+    y:TextAlignY
+}
+
+impl TextAlign{
+    pub fn center()->TextAlign{
+        Self{
+            x:TextAlignX::Center,
+            y:TextAlignY::Center,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum TextAlignX{
+    Left,
+    Center,
+    Right
+}
+
+#[derive(Clone)]
+pub enum TextAlignY{
+    Up,
+    Center,
+    Down
 }

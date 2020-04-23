@@ -1,6 +1,6 @@
 use crate::*;
 
-const circle_radius:f64=15f64;
+const circle_radius:f64=16f64;
 const circle_diametr:f64=circle_radius*2f64;
 
 const line_radius:f64=5f64;
@@ -17,12 +17,14 @@ impl<'a> Slider<'a>{
     pub fn new(settings:SliderSettings,mut glyphs:GlyphCache<'a>)->Slider<'a>{
         let rect=[
             settings.position[0],
-            settings.position[1]-circle_diametr+5.0,
+            settings.position[1]-circle_diametr,
             100f64,
             0f64,
         ];
 
         let head_view_settings=TextViewSettings::new()
+                .align_x(TextAlignX::Left)
+                .align_y(TextAlignY::Down)
                 .rect(rect)
                 .text(settings.head.clone())
                 .text_color(settings.head_color);
@@ -55,59 +57,6 @@ impl<'a> Slider<'a>{
     pub fn released(&mut self)->f64{
         let value=self.base.released();
         self.value.set_text_raw(format!("{:.2}",value));
-        value
-    }
-
-    pub fn grab(&mut self){
-        self.base.grab();
-    }
-}
-
-impl<'a> Drawable for SliderViewed<'a>{
-    fn set_alpha_channel(&mut self,alpha:f32){
-        self.text_view.set_alpha_channel(alpha);
-        self.base.set_alpha_channel(alpha);
-    }
-
-    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
-        self.text_view.draw(context,graphics);
-        self.base.draw(context,graphics);
-    }
-}
-
-
-// Не придумал нормальное название :)
-pub struct SliderViewed<'a>{
-    text_view:TextView<'a>,
-    base:SimpleSlider,
-}
-
-impl<'a> SliderViewed<'a>{
-    pub fn new(settings:SliderSettings,glyphs:GlyphCache<'a>)->SliderViewed<'a>{
-        let rect=[
-            settings.position[0]+settings.length,
-            settings.position[1]-circle_radius,
-            100f64,
-            circle_diametr
-        ];
-        let view_settings=TextViewSettings::new()
-                .rect(rect)
-                .text(format!("{:.2}",settings.current_value))
-                .text_color(settings.circle_color);
-
-        Self{
-            text_view:TextView::new(view_settings,glyphs),
-            base:SimpleSlider::new(settings)
-        }
-    }
-
-    pub fn pressed(&mut self){
-        self.base.pressed();
-    }
-
-    pub fn released(&mut self)->f64{
-        let value=self.base.released();
-        self.text_view.set_text_raw(format!("{:.2}",value));
         value
     }
 
@@ -184,6 +133,16 @@ impl SimpleSlider{
 
         if self.circle_rect[0]<x && x<self.circle_rect[0]+circle_diametr &&
                 self.circle_rect[1]<y && y<self.circle_rect[1]+circle_diametr{
+            // Сдвиг вслед за положением мышки
+            if x<self.line_rect[0]{
+                self.circle_rect[0]=self.line_rect[0]-circle_radius;
+            }
+            else if x>self.line_rect[2]{
+                self.circle_rect[0]=self.line_rect[2]-circle_radius;
+            }
+            else{
+                self.circle_rect[0]=x-circle_radius;
+            }
             self.grab=true;
         }
     }
@@ -200,11 +159,11 @@ impl SimpleSlider{
         self.current_value
     }
 
+    // Сдвиг вслед за мышкой
     pub fn grab(&mut self){
         if self.grab{
             unsafe{
                 let x=mouse_cursor.position()[0];
-
                 if x<self.line_rect[0]{
                     self.circle_rect[0]=self.line_rect[0]-circle_radius;
                 }

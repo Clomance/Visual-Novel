@@ -52,8 +52,6 @@ impl<'a> PauseMenu<'a>{
                 match event{
                     GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                    GameWindowEvent::MouseMovement((x,y))=>mouse_cursor.set_position([x,y]),
-
                     GameWindowEvent::Draw=>{ // Рендеринг
                         window.draw(|c,g|{
                             self.background.draw(self.background_rect,&c.draw_state,c.transform,g);
@@ -77,7 +75,7 @@ impl<'a> PauseMenu<'a>{
                                     match button_id{
                                         0=>return Game::ContinueGamePlay, // Кнопка продолжить
                                         1=>return Game::MainMenu, // Кнопка главного меню
-                                        2=>{
+                                        2=>{ // Кнопка настроек
                                             match SettingsPage::new().start(window){
                                                 Game::Exit=>return Game::Exit,
                                                 Game::Back=>continue 'page,
@@ -95,7 +93,7 @@ impl<'a> PauseMenu<'a>{
 
                     GameWindowEvent::KeyboardReleased(button)=>{
                         match button{
-                            KeyboardButton::Escape=>return Game::Back,
+                            KeyboardButton::Escape=>return Game::ContinueGamePlay,
                             _=>{}
                         }
                     }

@@ -4,8 +4,8 @@ const common_color:Color=[0.2,0.3,0.9,0.8];
 const pressed_color:Color=[0.1,0.2,0.8,0.8];
 
 
-const common_radius:f64=15f64;
-const pressed_radius:f64=10f64;
+const common_radius:f64=16f64;
+const pressed_radius:f64=12f64;
 
 const d_radius:f64=common_radius-pressed_radius;
 
@@ -68,20 +68,20 @@ impl MouseCursor{
         self.cursor.color=pressed_color;
         self.radius=pressed_radius;
 
-        self.rect[0]+=d_radius/2f64;
-        self.rect[1]+=d_radius/2f64;
-        self.rect[2]-=d_radius;
-        self.rect[3]-=d_radius;
+        self.rect[0]+=d_radius;
+        self.rect[1]+=d_radius;
+        self.rect[2]-=d_radius*2f64;
+        self.rect[3]-=d_radius*2f64;
     }
     // При освобождении левой кнопки мыши
     pub fn released(&mut self){
         self.cursor.color=common_color;
         self.radius=common_radius;
 
-        self.rect[0]-=d_radius/2f64;
-        self.rect[1]-=d_radius/2f64;
-        self.rect[2]+=d_radius;
-        self.rect[3]+=d_radius;
+        self.rect[0]-=d_radius;
+        self.rect[1]-=d_radius;
+        self.rect[2]+=d_radius*2f64;
+        self.rect[3]+=d_radius*2f64;
     }
 
     pub fn draw(&self,context:&Context,graphics:&mut GlGraphics){
