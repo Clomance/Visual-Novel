@@ -292,7 +292,7 @@ fn main(){
                     match event{
                         GameWindowEvent::Exit=>break 'game, // Закрытие игры
 
-                        GameWindowEvent::Draw=>{ //Рендеринг
+                        GameWindowEvent::Draw=>{ // Рендеринг
                             window.draw_wallpaper();
                         }
 

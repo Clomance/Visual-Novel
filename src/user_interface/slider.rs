@@ -159,7 +159,7 @@ impl SimpleSlider{
         self.current_value
     }
 
-    // Сдвиг вслед за мышкой
+    // Сдвиг вслед за положением мышки
     pub fn grab(&mut self){
         if self.grab{
             unsafe{
