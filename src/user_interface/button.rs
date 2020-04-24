@@ -40,7 +40,7 @@ impl<'a> Drawable for Button<'a>{
     }
 }
 
-// Зависимая от шрифта кнопка (должно быть больше зависимостей)
+// Зависимая от шрифта кнопка для связанных структур (должно быть больше зависимостей)
 pub struct ButtonDependent{
     base:ButtonBase,
     text:TextViewDependent, // Зависимый от шрифта текстовый блок
@@ -193,6 +193,7 @@ impl CheckButton{
     }
 }
 
+// Основа для кнопок
 struct ButtonBase{
     x1:f64,
     y1:f64,
@@ -205,7 +206,7 @@ struct ButtonBase{
 }
 
 impl ButtonBase{
-    #[inline]
+    #[inline(always)]
     pub fn new(rect:[f64;4],color:Color)->ButtonBase{
         Self{
             x1:rect[0],
@@ -219,7 +220,7 @@ impl ButtonBase{
         }
     }
 
-    #[inline]
+    #[inline(always)] // Сдвиг
     pub fn shift(&mut self,dx:f64,dy:f64){
         self.x1+=dx;
         self.y1+=dy;
@@ -227,31 +228,31 @@ impl ButtonBase{
         self.y2+=dy;
     }
 
-    #[inline] // Установка альфа-канала
+    #[inline(always)] // Установка альфа-канала
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.rectangle.color[3]=alpha;
     }
 
-    #[inline]
+    #[inline(always)] // Установка цвета
     pub fn set_color(&mut self,color:Color){
         self.rectangle.color=color
     }
 
-    #[inline]
+    #[inline(always)] // Изменение цвета при нажатии
     pub fn press_color(&mut self){
-        self.rectangle.color[0]-=0.125;
-        self.rectangle.color[1]-=0.125;
-        self.rectangle.color[2]-=0.125;
+        self.rectangle.color[0]-=dcolor;
+        self.rectangle.color[1]-=dcolor;
+        self.rectangle.color[2]-=dcolor;
     }
 
-    #[inline]
+    #[inline(always)] // Изменение цвета при освобождении
     pub fn release_color(&mut self){
-        self.rectangle.color[0]+=0.125;
-        self.rectangle.color[1]+=0.125;
-        self.rectangle.color[2]+=0.125;
+        self.rectangle.color[0]+=dcolor;
+        self.rectangle.color[1]+=dcolor;
+        self.rectangle.color[2]+=dcolor;
     }
 
-    #[inline] // Проверка нажатия на кнопку и локальные действия
+    #[inline(always)] // Проверка нажатия на кнопку и локальные действия
     pub fn pressed(&mut self)->bool{
         let position=unsafe{mouse_cursor.position()};
         let x=position[0];
@@ -267,7 +268,7 @@ impl ButtonBase{
         }
     }
 
-    #[inline] // Проверка находится ли курсор на кнопке и локальные действия
+    #[inline(always)] // Проверка находится ли курсор на кнопке и локальные действия
     pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
         if self.pressed{
             self.release_color();
@@ -289,7 +290,7 @@ impl ButtonBase{
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn draw(&self,context:&Context,g:&mut GlGraphics){
         let rect_pos=[self.x1,self.y1,self.width,self.height];
         self.rectangle.draw(rect_pos,&context.draw_state,context.transform,g);

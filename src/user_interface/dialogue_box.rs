@@ -113,11 +113,10 @@ impl<'a,'b> Drawable for DialogueBox<'a,'b>{
 
     fn draw(&mut self,c:&Context,g:&mut GlGraphics){
         let (name,lines)=self.dialogue.get_line(self.dialogue_step);
-        // Основа
-        g.image(&self.image,&self.texture,&c.draw_state,c.transform);
 
-        // Имя
-        self.name_base.draw(name,c,g,&mut self.glyphs);
+        g.image(&self.image,&self.texture,&c.draw_state,c.transform); // Основа
+
+        self.name_base.draw(name,c,g,&mut self.glyphs); // Имя
 
         // Реплика
         if self.whole_text{
@@ -125,7 +124,7 @@ impl<'a,'b> Drawable for DialogueBox<'a,'b>{
         }
         else{
             unsafe{
-                self.chars+=Settings.signs_per_frame;
+                self.chars+=Settings.signs_per_frame; // Количество выводимых символов
             }
             // Вывод части текста
             self.whole_text=self.text_base.draw_lined_text_part(lines,self.chars as usize,c,g,&mut self.glyphs);

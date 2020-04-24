@@ -1,5 +1,6 @@
 use crate::*;
 
+// Изменяемый текстовый блок (возможность вписывать и удалять символы)
 pub struct EditTextView<'a>{
     base:TextView<'a>,
     max_line_length:f64,
@@ -34,6 +35,7 @@ impl<'a> EditTextView<'a>{
         self.base.get_text()
     }
 
+    // Добавление символа с выравниванием
     pub fn push_char(&mut self,ch:char){
         let glyphs=&mut self.base.glyphs;
 
@@ -50,6 +52,7 @@ impl<'a> EditTextView<'a>{
         }
     }
 
+    // Удаление последнего символа с выравниванием
     pub fn pop_char(&mut self){
         let glyphs=&mut self.base.glyphs;
         if let Some(ch)=self.base.base.text.pop(){
@@ -124,12 +127,14 @@ impl TextViewDependent{
             text_len+=character.advance_width();
         }
 
+        // Выравнивание по x
         let x1=match settings.align.x{
             TextAlignX::Left=>settings.rect[0],
             TextAlignX::Center=>settings.rect[0]+(settings.rect[2]-text_len)/2f64,
             TextAlignX::Right=>settings.rect[0]+settings.rect[2]-text_len,
         };
         
+        // Выравнивание по y
         let y1=match settings.align.y{
             TextAlignY::Up=>settings.rect[1]+settings.font_size as f64,
             TextAlignY::Center=>settings.rect[1]+(settings.rect[3]+settings.font_size as f64)/2f64,
@@ -247,6 +252,7 @@ impl TextViewSettings{
     }
 }
 
+// Выравнивание
 #[derive(Clone)]
 pub struct TextAlign{
     x:TextAlignX,
@@ -262,6 +268,7 @@ impl TextAlign{
     }
 }
 
+// Тип выравнивания по x
 #[derive(Clone)]
 pub enum TextAlignX{
     Left,
@@ -269,6 +276,7 @@ pub enum TextAlignX{
     Right
 }
 
+// Тип выравнивания по y
 #[derive(Clone)]
 pub enum TextAlignY{
     Up,

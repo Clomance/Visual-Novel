@@ -35,10 +35,12 @@ impl MouseCursor{
         }
     }
 
+    #[inline(always)]
     pub fn position(&self)->[f64;2]{
         self.position
     }
 
+    // Расстояние от курсора до центра экрана
     pub fn center_radius(&self)->[f64;2]{
         unsafe{[
             self.position[0]-window_center[0],
@@ -46,10 +48,12 @@ impl MouseCursor{
         ]}
     }
 
+    #[inline(always)]
     pub fn save_position(&mut self){
         self.saved_position=self.position;
     }
 
+    // Сдвиг с сохранённого места
     pub fn saved_movement(&self)->(f64,f64){
         (
             self.position[0]-self.saved_position[0],
@@ -73,6 +77,7 @@ impl MouseCursor{
         self.rect[2]-=d_radius*2f64;
         self.rect[3]-=d_radius*2f64;
     }
+
     // При освобождении левой кнопки мыши
     pub fn released(&mut self){
         self.cursor.color=common_color;

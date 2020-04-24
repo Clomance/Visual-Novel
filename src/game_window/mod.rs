@@ -1,5 +1,7 @@
 #![allow(unused_must_use)]
 
+use lib::White;
+
 mod mouse_cursor;
 pub use mouse_cursor::MouseCursor;
 
@@ -12,8 +14,7 @@ use crate::{
     Drawable
 };
 
-use image::GenericImageView;
-use image::RgbaImage;
+use image::{GenericImageView,RgbaImage};
 
 use opengl_graphics::{
     GlGraphics,
@@ -34,9 +35,8 @@ use glutin::{
     PossiblyCurrent,
     GlRequest,
     dpi::PhysicalPosition,
+    platform::desktop::EventLoopExtDesktop
 };
-
-use winit::platform::desktop::EventLoopExtDesktop;
 
 use graphics::{
     Viewport,
@@ -74,7 +74,7 @@ pub struct GameWindow{
     context:ContextWrapper<PossiblyCurrent,Window>,
     graphics:GlGraphics,
     events:VecDeque<GameWindowEvent>,
-    events_handle_fn:fn(&mut Self),
+    events_handler:fn(&mut Self),
     width:u32,
     height:u32,
     wallpaper:Wallpaper,
@@ -147,7 +147,7 @@ impl GameWindow{
         let ctx=unsafe{ctx.make_current().unwrap()};
 
         ctx.window().set_cursor_visible(false);
-        unsafe{
+        unsafe{ // Установка курсора в центр экрана - как начальная точка при сдвиге интерфейса при движении мышки
             let position=PhysicalPosition{
                 x:window_center[0],
                 y:window_center[1],
@@ -167,22 +167,25 @@ impl GameWindow{
             window_size:unsafe{[window_width,window_height]},
         };
 
+        // Заливка окна белым цветом
         gl.draw(viewport,|_,g|{
-            g.clear_color([1.0;4])
+            g.clear_color(White)
         });
+        ctx.swap_buffers();
 
         Self{
             event_loop:event_loop,
             context:ctx,
             graphics:gl,
             events:VecDeque::with_capacity(6),
-            events_handle_fn:GameWindow::event_listener,
+            events_handler:GameWindow::event_listener,
             width:width,
             height:height,
             wallpaper:Wallpaper::new(),
         }
     }
 
+    #[inline(always)]
     pub fn window(&self)->&Window{
         self.context.window()
     }
@@ -190,19 +193,22 @@ impl GameWindow{
     // Получение событий
     pub fn next_event(&mut self)->Option<GameWindowEvent>{
         if self.events.is_empty(){
-            (self.events_handle_fn)(self); // Вызов функции обработки событий
+            (self.events_handler)(self); // Вызов функции обработки событий
         }
         self.events.pop_front()
     }
 
+    #[inline(always)]
     pub fn request_redraw(&self){
         self.context.window().request_redraw();
     }
 
+    #[inline(always)]
     pub fn redraw(&self){
         self.context.swap_buffers().unwrap();
     }
 
+    #[inline(always)]
     pub fn set_hide(&self,hide:bool){
         self.context.window().set_minimized(hide);
     }
@@ -300,7 +306,7 @@ impl GameWindow{
 
                         WindowEvent::Focused(_)=>unsafe{
                             (*window).set_hide(true); // Сворацивание окна
-                            (*window).events_handle_fn=GameWindow::wait_until_focused; // Смена фукции обработки событий
+                            (*window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
                             GameWindowEvent::Hide(true) // Передача события во внешнее управление
                         }
                         _=>None // Игнорирование остальных событий
@@ -354,7 +360,7 @@ impl GameWindow{
                         }
 
                         WindowEvent::Focused(_)=>unsafe{
-                            (*window).events_handle_fn=GameWindow::event_listener; // Смена фукции обработки событий
+                            (*window).events_handler=GameWindow::event_listener; // Смена фукции обработки событий
                             (*window).set_hide(false); // Выведение окна на экран
                             *control_flow=ControlFlow::Exit; // Остановка цикла обработки событий
                             (*vec).push_back(Hide(false)); // Передача события во внешнее управление
@@ -369,6 +375,7 @@ impl GameWindow{
 }
 
 impl GameWindow{
+    // Рисует только обои и курсор
     pub fn draw_wallpaper(&mut self){
         let viewport=Viewport{
             rect:[0,0,self.width as i32,self.height as i32],
@@ -385,6 +392,7 @@ impl GameWindow{
         self.graphics.draw_end();
     }
 
+    // Рисует курсор и выполняет замыкание f
     pub fn draw<F>(&mut self,f:F)
             where F: FnOnce(&Context,&mut GlGraphics){
 
@@ -405,6 +413,7 @@ impl GameWindow{
         self.graphics.draw_end();
     }
 
+    // Рисует обои, курсор и выполняет замыкание f
     pub fn draw_with_wallpaper<F>(&mut self,f:F)
             where F: FnOnce(&Context,&mut GlGraphics){
 
@@ -429,10 +438,12 @@ impl GameWindow{
 
 // Функции для обоев
 impl GameWindow{
+    #[inline(always)]
     pub fn set_wallpaper_alpha(&mut self,alpha:f32){
         self.wallpaper.set_alpha_channel(alpha)
     }
 
+    #[inline(always)]
     pub fn set_wallpaper_image(&mut self,image:&RgbaImage){
         self.wallpaper.set_image(image)
     }
@@ -605,6 +616,7 @@ pub enum KeyboardButton{
     Unknown,
 }
 
+#[inline(always)]
 pub fn load_window_icon()->Icon{
     let image=image::open("./images/window_icon.png").unwrap();
     let vec=image.to_bytes();
