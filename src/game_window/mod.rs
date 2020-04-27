@@ -45,6 +45,7 @@ use graphics::{
 };
 
 use std::collections::VecDeque;
+
 /*
     EventLoop - минимум четыре шага для моей схемы с мгновенным закрытием цикла обработки событий:
     1) NewEvent
@@ -78,6 +79,8 @@ pub struct GameWindow{
     width:u32,
     height:u32,
     wallpaper:Wallpaper,
+    alpha_channel:f32,
+    smooth:f32,
 }
 
 #[derive(Clone)]
@@ -108,6 +111,7 @@ pub enum MouseButton{
 use GameWindowEvent::*;
 
 impl GameWindow{
+    #[inline]
     pub fn new()->GameWindow{
         let event_loop=EventLoop::new();
         let monitor=event_loop.primary_monitor();
@@ -177,15 +181,17 @@ impl GameWindow{
             event_loop:event_loop,
             context:ctx,
             graphics:gl,
-            events:VecDeque::with_capacity(6),
+            events:VecDeque::with_capacity(32),
             events_handler:GameWindow::event_listener,
             width:width,
             height:height,
             wallpaper:Wallpaper::new(),
+            alpha_channel:0f32,
+            smooth:0f32,
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn window(&self)->&Window{
         self.context.window()
     }
@@ -198,17 +204,17 @@ impl GameWindow{
         self.events.pop_front()
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn request_redraw(&self){
         self.context.window().request_redraw();
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn redraw(&self){
         self.context.swap_buffers().unwrap();
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn set_hide(&self,hide:bool){
         self.context.window().set_minimized(hide);
     }
@@ -374,6 +380,23 @@ impl GameWindow{
     }
 }
 
+// Функции для сглаживания
+impl GameWindow{
+    pub fn set_alpha(&mut self,alpha:f32){
+        self.alpha_channel=alpha;
+    }
+
+    pub fn set_smooth(&mut self,smooth:f32){
+        self.smooth=smooth
+    }
+
+    pub fn set_new_smooth(&mut self,smooth:f32){
+        self.alpha_channel=0f32;
+        self.smooth=smooth
+    }
+}
+
+// Функции для рисования
 impl GameWindow{
     // Рисует только обои и курсор
     pub fn draw_wallpaper(&mut self){
@@ -392,9 +415,35 @@ impl GameWindow{
         self.graphics.draw_end();
     }
 
+    pub fn draw_wallpaper_smooth(&mut self)->bool{
+        let viewport=Viewport{
+            rect:[0,0,self.width as i32,self.height as i32],
+            draw_size:[self.width,self.height],
+            window_size:unsafe{[window_width,window_height]},
+        };
+
+        let context=self.graphics.draw_begin(viewport);
+
+        self.wallpaper.set_alpha_channel(self.alpha_channel);
+        self.wallpaper.draw(&context,&mut self.graphics);
+
+        unsafe{
+            mouse_cursor.draw(&context,&mut self.graphics);
+        }
+
+        self.graphics.draw_end();
+
+        self.alpha_channel+=self.smooth;
+        if self.alpha_channel>1.0{
+            false
+        }
+        else{
+            true
+        }
+    }
+
     // Рисует курсор и выполняет замыкание f
-    pub fn draw<F>(&mut self,f:F)
-            where F: FnOnce(&Context,&mut GlGraphics){
+    pub fn draw<F:FnOnce(&Context,&mut GlGraphics)>(&mut self,f:F){
 
         let viewport=Viewport{
             rect:[0,0,self.width as i32,self.height as i32],
@@ -413,9 +462,34 @@ impl GameWindow{
         self.graphics.draw_end();
     }
 
+    pub fn draw_smooth<F: FnOnce(f32,&Context,&mut GlGraphics)>(&mut self,f:F)->bool{
+        let viewport=Viewport{
+            rect:[0,0,self.width as i32,self.height as i32],
+            draw_size:[self.width,self.height],
+            window_size:unsafe{[window_width,window_height]},
+        };
+
+        let context=self.graphics.draw_begin(viewport);
+
+        f(self.alpha_channel,&context,&mut self.graphics);
+
+        unsafe{
+            mouse_cursor.draw(&context,&mut self.graphics);
+        }
+
+        self.graphics.draw_end();
+
+        self.alpha_channel+=self.smooth;
+        if self.alpha_channel>1.0{
+            false
+        }
+        else{
+            true
+        }
+    }
+
     // Рисует обои, курсор и выполняет замыкание f
-    pub fn draw_with_wallpaper<F>(&mut self,f:F)
-            where F: FnOnce(&Context,&mut GlGraphics){
+    pub fn draw_with_wallpaper<F: FnOnce(&Context,&mut GlGraphics)>(&mut self,f:F){
 
         let viewport=Viewport{
             rect:[0,0,self.width as i32,self.height as i32],
@@ -433,6 +507,35 @@ impl GameWindow{
         }
 
         self.graphics.draw_end();
+    }
+
+    pub fn draw_smooth_with_wallpaper<F: FnOnce(f32,&Context,&mut GlGraphics)>(&mut self,f:F)->bool{
+        let viewport=Viewport{
+            rect:[0,0,self.width as i32,self.height as i32],
+            draw_size:[self.width,self.height],
+            window_size:unsafe{[window_width,window_height]},
+        };
+
+        let context=self.graphics.draw_begin(viewport);
+
+        self.wallpaper.set_alpha_channel(self.alpha_channel);
+        self.wallpaper.draw(&context,&mut self.graphics);
+
+        f(self.alpha_channel,&context,&mut self.graphics);
+
+        unsafe{
+            mouse_cursor.draw(&context,&mut self.graphics);
+        }
+
+        self.graphics.draw_end();
+
+        self.alpha_channel+=self.smooth;
+        if self.alpha_channel>1.0{
+            false
+        }
+        else{
+            true
+        }
     }
 }
 
@@ -616,9 +719,9 @@ pub enum KeyboardButton{
     Unknown,
 }
 
-#[inline(always)]
+#[inline]
 pub fn load_window_icon()->Icon{
-    let image=image::open("./images/window_icon.png").unwrap();
+    let image=image::open("./resources/images/window_icon.png").unwrap();
     let vec=image.to_bytes();
     let width=image.width();
     let height=image.height();

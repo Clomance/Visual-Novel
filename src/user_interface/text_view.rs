@@ -2,22 +2,39 @@ use crate::*;
 
 // Изменяемый текстовый блок (возможность вписывать и удалять символы)
 pub struct EditTextView<'a>{
-    base:TextView<'a>,
+    text:String,
+    base:TextBase,
+    glyphs:GlyphCache<'a>,
     max_line_length:f64,
+    text_length:f64,
     rect:[f64;4],
     background:Rectangle,
 }
 
 impl<'a> EditTextView<'a>{
-    pub fn new(settings:EditTextViewSettings,glyphs:GlyphCache<'a>)->EditTextView<'a>{
+    pub fn new(settings:EditTextViewSettings,mut glyphs:GlyphCache<'a>)->EditTextView<'a>{
+
         let rect=settings.base.rect;
         let border=graphics::rectangle::Border{
             color:settings.border_color,
             radius:2f64,
         };
+
+        let mut text_len=0f64;
+        for ch in settings.base.text.chars(){
+            let character=glyphs.character(settings.base.font_size,ch).unwrap();
+            text_len+=character.advance_width();
+        }
+
+        let (x,y)=settings.base.align.position(settings.base.rect,[text_len,settings.base.font_size as f64]);
+
         Self{
-            base:TextView::new(settings.base,glyphs),
+            text:settings.base.text,
+            base:TextBase::new_color(settings.base.text_color,settings.base.font_size)
+                    .position([x,y]),
+            glyphs:glyphs,
             max_line_length:rect[2]-20f64,
+            text_length:text_len,
             rect:rect,
             background:Rectangle::new(settings.background_color).border(border),
         }
@@ -32,35 +49,33 @@ impl<'a> EditTextView<'a>{
     }
 
     pub fn get_text(&self)->String{
-        self.base.get_text()
+        self.text.clone()
     }
 
     // Добавление символа с выравниванием
     pub fn push_char(&mut self,ch:char){
-        let glyphs=&mut self.base.glyphs;
 
-        let character=glyphs.character(self.base.base.base.font_size,ch).unwrap(); // Поиск нужной буквы
+        let character=self.glyphs.character(self.base.font_size,ch).unwrap(); // Поиск нужной буквы
 
-        let mut len=self.base.base.text_length; // Исходная длина текста
+        let mut len=self.text_length; // Исходная длина текста
         let dlen=character.advance_width(); // Ширина буквы
         len+=dlen; // Длина текста с вписанной буквой
 
         if len<self.max_line_length{
-            self.base.base.text.push(ch);
-            self.base.base.text_length+=dlen;
-            self.base.base.base.image.rectangle.as_mut().unwrap()[0]-=dlen/2f64; // Сдвиг
+            self.text.push(ch);
+            self.text_length+=dlen;
+            self.base.image.rectangle.as_mut().unwrap()[0]-=dlen/2f64; // Сдвиг
         }
     }
 
     // Удаление последнего символа с выравниванием
     pub fn pop_char(&mut self){
-        let glyphs=&mut self.base.glyphs;
-        if let Some(ch)=self.base.base.text.pop(){
-            let character=glyphs.character(self.base.base.base.font_size,ch).unwrap(); // Поиск нужной буквы
+        if let Some(ch)=self.text.pop(){
+            let character=self.glyphs.character(self.base.font_size,ch).unwrap(); // Поиск нужной буквы
             let len=character.advance_width(); // Ширина буквы
 
-            self.base.base.base.image.rectangle.as_mut().unwrap()[0]+=len/2f64; // Сдвиг
-            self.base.base.text_length-=len; // Уменьшение длины строки
+            self.base.image.rectangle.as_mut().unwrap()[0]+=len/2f64; // Сдвиг
+            self.text_length-=len; // Уменьшение длины строки
         }
     }
 }
@@ -74,18 +89,18 @@ impl<'a> Drawable for EditTextView<'a>{
 
     fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
         self.background.draw(self.rect,&context.draw_state,context.transform,graphics);
-        self.base.draw(context,graphics)
+        self.base.draw(&self.text,context,graphics,&mut self.glyphs)
     }
 }
 
 // Текстовый блок
-pub struct TextView<'a>{
-    base:TextViewDependent,
+pub struct TextView<'a,T:Text>{
+    base:TextViewDependent<T>,
     glyphs:GlyphCache<'a>,
 }
 
-impl<'a> TextView<'a>{
-    pub fn new(settings:TextViewSettings,mut glyphs:GlyphCache<'a>)->TextView<'a>{
+impl<'a> TextView<'a,TextLine>{
+    pub fn new(settings:TextViewSettings,mut glyphs:GlyphCache<'a>)->TextView<'a,TextLine>{
         Self{
             base:TextViewDependent::new(settings,&mut glyphs),
             glyphs:glyphs
@@ -93,15 +108,15 @@ impl<'a> TextView<'a>{
     }
 
     pub fn get_text(&self)->String{
-        self.base.text.clone()
+        self.base.text.get_text()
     }
 
     pub fn set_text_raw(&mut self,text:String){
-        self.base.text=text;
+        self.base.text.set_text(text);
     }
 }
 
-impl<'a> Drawable for TextView<'a>{
+impl<'a,T:Text> Drawable for TextView<'a,T>{
     fn set_alpha_channel(&mut self,alpha:f32){
         self.base.set_alpha_channel(alpha)
     }
@@ -112,14 +127,14 @@ impl<'a> Drawable for TextView<'a>{
 }
 
 // Зависимый от шрифта текстовый блок
-pub struct TextViewDependent{
+pub struct TextViewDependent<T:Text>{
     base:TextBase,
-    text:String,
-    text_length:f64,
+    text:T,
 }
 
-impl TextViewDependent{
-    pub fn new(settings:TextViewSettings,glyphs:&mut GlyphCache)->TextViewDependent{
+// Функции для одной строки текста
+impl TextViewDependent<TextLine>{
+    pub fn new(settings:TextViewSettings,glyphs:&mut GlyphCache)->TextViewDependent<TextLine>{
         // Длина текста
         let mut text_len=0f64;
         for ch in settings.text.chars(){
@@ -127,41 +142,32 @@ impl TextViewDependent{
             text_len+=character.advance_width();
         }
 
-        // Выравнивание по x
-        let x1=match settings.align.x{
-            TextAlignX::Left=>settings.rect[0],
-            TextAlignX::Center=>settings.rect[0]+(settings.rect[2]-text_len)/2f64,
-            TextAlignX::Right=>settings.rect[0]+settings.rect[2]-text_len,
-        };
-        
-        // Выравнивание по y
-        let y1=match settings.align.y{
-            TextAlignY::Up=>settings.rect[1]+settings.font_size as f64,
-            TextAlignY::Center=>settings.rect[1]+(settings.rect[3]+settings.font_size as f64)/2f64,
-            TextAlignY::Down=>settings.rect[1]+settings.rect[3],
-        };
+        // Выравнивание
+        let (x,y)=settings.align.position(settings.rect,[text_len,settings.font_size as f64]);
 
         Self{
-            base:TextBase::new_color(settings.text_color,settings.font_size).position([x1,y1]),
-            text_length:text_len,
-            text:settings.text
+            base:TextBase::new_color(settings.text_color,settings.font_size).position([x,y]),
+            text:TextLine::new(settings.text),
         }
     }
 
+    pub fn set_text_raw(&mut self,text:String){
+        self.text.set_text(text)
+    }
+}
+
+// Общие функции
+impl<T:Text> TextViewDependent<T>{
     pub fn shift(&mut self,dx:f64,dy:f64){
         self.base.shift(dx,dy)
     }
 
     pub fn set_alpha_channel(&mut self,alpha:f32){
-        self.base.color[3]=alpha;
-    }
-
-    pub fn set_text_raw(&mut self,text:String){
-        self.text=text
+        self.base.set_alpha_channel(alpha);
     }
 
     pub fn draw(&mut self,context:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache){
-        self.base.draw(&self.text,context,g,glyphs);
+        self.text.draw(&mut self.base,context,g,glyphs)
     }
 }
 
@@ -207,7 +213,7 @@ pub struct TextViewSettings{
     pub text:String,
     pub font_size:u32,
     pub text_color:Color,
-    pub align:TextAlign,
+    pub align:Align,
 }
 
 impl TextViewSettings{
@@ -217,7 +223,7 @@ impl TextViewSettings{
             text:String::new(),
             font_size:20,
             text_color:Black,
-            align:TextAlign::center()
+            align:Align::center()
         }
     }
 
@@ -241,45 +247,13 @@ impl TextViewSettings{
         self
     }
 
-    pub fn align_x(mut self,align:TextAlignX)->TextViewSettings{
+    pub fn align_x(mut self,align:AlignX)->TextViewSettings{
         self.align.x=align;
         self
     }
 
-    pub fn align_y(mut self,align:TextAlignY)->TextViewSettings{
+    pub fn align_y(mut self,align:AlignY)->TextViewSettings{
         self.align.y=align;
         self
     }
-}
-
-// Выравнивание
-#[derive(Clone)]
-pub struct TextAlign{
-    x:TextAlignX,
-    y:TextAlignY
-}
-
-impl TextAlign{
-    pub fn center()->TextAlign{
-        Self{
-            x:TextAlignX::Center,
-            y:TextAlignY::Center,
-        }
-    }
-}
-
-// Тип выравнивания по x
-#[derive(Clone)]
-pub enum TextAlignX{
-    Left,
-    Center,
-    Right
-}
-
-// Тип выравнивания по y
-#[derive(Clone)]
-pub enum TextAlignY{
-    Up,
-    Center,
-    Down
 }

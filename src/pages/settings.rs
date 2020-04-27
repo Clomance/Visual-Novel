@@ -2,13 +2,13 @@ use crate::*;
 
 const page_smooth:f32=Settings_page_smooth;
 
+const background_color:Color=Settings_page_color;
+
 pub struct SettingsPage<'a,'b,'c,'d>{
-    head:TextView<'a>,
+    head:TextView<'a,TextLine>,
     signs_per_sec:Slider<'b>,
     volume:Slider<'d>,
     back_button:Button<'c>,
-    background:Rectangle,
-    background_rect:[f64;4],
 }
 
 impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
@@ -17,7 +17,7 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
         // Загрузка шрифта
         let texture_settings=TextureSettings::new();
 
-        let head_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let head_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let head_settings=TextViewSettings::new()
                 .text("Настройки".to_string())
                 .font_size(40)
@@ -33,7 +33,7 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                 .min_value(15f64)
                 .max_value(120f64)
                 .current_value(Settings.signs_per_frame*60f64);
-        let slider_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let slider_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
 
 
         let volume_settings=SliderSettings::new()
@@ -43,11 +43,11 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                 .min_value(0f64)
                 .max_value(100f64)
                 .current_value(Settings.volume*100f64);
-        let volume_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let volume_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let volume=Slider::new(volume_settings,volume_glyphs);
 
 
-        let button_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let button_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let button_settings=ButtonSettings::new()
                 .rect([
                     40f64,
@@ -62,13 +62,6 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
             signs_per_sec:Slider::new(signs_per_sec_slider_sets,slider_glyphs),
             volume:volume,
             back_button:Button::new(button_settings,button_glyphs),
-            background:Rectangle::new(Settings_page_color),
-            background_rect:[
-                0f64,
-                0f64,
-                window_width,
-                window_height
-            ],
         }
     }
 
@@ -90,7 +83,8 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                 
                 GameWindowEvent::Draw=>{ //Рендеринг
                     window.draw(|c,g|{
-                        self.background.draw(self.background_rect,&c.draw_state,c.transform,g);
+                        g.clear_color(background_color);
+
                         self.head.draw(&c,g);
 
                         self.signs_per_sec.draw(&c,g);
@@ -144,8 +138,14 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
 
     #[inline(always)]
     pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
-        smooth=page_smooth;
-        alpha_channel=0f32;
+        window.set_new_smooth(page_smooth);
+
+        let mut background=Background::new(Settings_page_color,[
+            0f64,
+            0f64,
+            window_width,
+            window_height
+        ]);
 
         // Плавное открытие
         while let Some(event)=window.next_event(){
@@ -153,27 +153,22 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 GameWindowEvent::Draw=>{ //Рендеринг
-                    window.draw(|c,g|{
-                        self.background.color[3]=alpha_channel;
-                        self.background.draw(self.background_rect,&c.draw_state,c.transform,g);
-                        
-                        self.head.draw_smooth(alpha_channel,&c,g);
+                    if !window.draw_smooth(|alpha,c,g|{
+                        background.draw_smooth(alpha,c,g);
 
-                        self.signs_per_sec.draw_smooth(alpha_channel,&c,g);
-                        self.volume.draw_smooth(alpha_channel,&c,g);
+                        self.head.draw_smooth(alpha,c,g);
 
+                        self.signs_per_sec.draw_smooth(alpha,c,g);
+                        self.volume.draw_smooth(alpha,c,g);
 
-                        self.back_button.draw_smooth(alpha_channel,&c,g);
-                    });
-
-                    alpha_channel+=smooth;
-                    if alpha_channel>1.0{
-                        return Game::Current
+                        self.back_button.draw_smooth(alpha,c,g);
+                    }){
+                        break
                     }
                 }
                 _=>{}
             }
         }
-        Game::Exit
+        Game::Current
     }
 }

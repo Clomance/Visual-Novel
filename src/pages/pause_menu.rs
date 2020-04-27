@@ -2,10 +2,10 @@ use crate::*;
 
 const page_smooth:f32=Pause_menu_smooth;
 
+const background_color:Color=Pause_menu_background_color;
+
 pub struct PauseMenu<'a>{
     menu:Menu<'a>,
-    background:Rectangle,
-    background_rect:[f64;4],
 }
 
 impl<'a> PauseMenu<'a>{
@@ -13,7 +13,7 @@ impl<'a> PauseMenu<'a>{
     pub unsafe fn new()->PauseMenu<'a>{
         // Загрузка шрифта
         let texture_settings=TextureSettings::new();
-        let menu_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let menu_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         // Создание меню
         let head="Пауза".to_string();
         let head_view_settings=TextViewSettings::new()
@@ -34,13 +34,6 @@ impl<'a> PauseMenu<'a>{
 
         Self{
             menu:Menu::new(menu_settings,menu_glyphs),
-            background:Rectangle::new(Pause_menu_background_color),
-            background_rect:[
-                0f64,
-                0f64,
-                window_width,
-                window_height,
-            ]
         }
     }
 
@@ -54,8 +47,8 @@ impl<'a> PauseMenu<'a>{
 
                     GameWindowEvent::Draw=>{ // Рендеринг
                         window.draw(|c,g|{
-                            self.background.draw(self.background_rect,&c.draw_state,c.transform,g);
-                            self.menu.draw(&c,g);
+                            g.clear_color(background_color);
+                            self.menu.draw(c,g);
                         });
                     }
 
@@ -106,28 +99,30 @@ impl<'a> PauseMenu<'a>{
 
     #[inline(always)]
     pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
-        smooth=page_smooth;
-        alpha_channel=0f32;
+        window.set_new_smooth(page_smooth);
+
+        let mut background=Background::new(background_color,[
+            0f64,
+            0f64,
+            window_width,
+            window_height
+        ]);
 
         while let Some(event)=window.next_event(){
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 GameWindowEvent::Draw=>{ // Рендеринг
-                    window.draw(|c,g|{
-                        self.background.color[3]=alpha_channel;
-                        self.background.draw(self.background_rect,&c.draw_state,c.transform,g);
-                        self.menu.draw_smooth(alpha_channel,&c,g);
-                    });
-
-                    alpha_channel+=smooth;
-                    if alpha_channel>=1.0{
-                        return Game::Current
+                    if !window.draw_smooth(|alpha,c,g|{
+                        background.draw_smooth(alpha,c,g);
+                        self.menu.draw_smooth(alpha,c,g);
+                    }){
+                        break
                     }
                 }
                 _=>{}
             }
         }
-        Game::Exit
+        Game::Current
     }
 }

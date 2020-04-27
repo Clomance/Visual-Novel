@@ -10,7 +10,6 @@ const pressed_radius:f64=12f64;
 const d_radius:f64=common_radius-pressed_radius;
 
 const common_diametr:f64=common_radius*2f64;
-const pressed_diametr:f64=pressed_radius*2f64;
 
 pub struct MouseCursor{
     radius:f64,
@@ -35,7 +34,7 @@ impl MouseCursor{
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn position(&self)->[f64;2]{
         self.position
     }
@@ -48,7 +47,7 @@ impl MouseCursor{
         ]}
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn save_position(&mut self){
         self.saved_position=self.position;
     }

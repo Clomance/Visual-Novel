@@ -17,7 +17,7 @@ impl LoadingScreen{
                 200f64,
                 200f64
             ]),
-            logo:Texture::from_path("images/logo.png",&texture_settings).unwrap(),
+            logo:Texture::from_path("./resources/images/logo.png",&texture_settings).unwrap(),
         }
     }
 

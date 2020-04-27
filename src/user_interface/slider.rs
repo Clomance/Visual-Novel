@@ -7,8 +7,8 @@ const line_radius:f64=5f64;
 
 // Полная комплектация слайдера с надписью и выводом значения
 pub struct Slider<'a>{
-    head:TextViewDependent, // Надпись над слайдером
-    value:TextViewDependent, // Значение слева от слайдера
+    head:TextViewDependent<TextLine>, // Надпись над слайдером
+    value:TextViewDependent<TextLine>, // Значение слева от слайдера
     glyphs:GlyphCache<'a>,
     base:SimpleSlider,
 }
@@ -23,8 +23,8 @@ impl<'a> Slider<'a>{
         ];
 
         let head_view_settings=TextViewSettings::new()
-                .align_x(TextAlignX::Left)
-                .align_y(TextAlignY::Down)
+                .align_x(AlignX::Left)
+                .align_y(AlignY::Down)
                 .rect(rect)
                 .text(settings.head.clone())
                 .text_color(settings.head_color);

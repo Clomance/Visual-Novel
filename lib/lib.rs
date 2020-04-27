@@ -9,6 +9,25 @@ pub use traits::*;
 mod colors;
 pub use colors::*;
 
+mod text;
+pub use text::*;
+
+mod background;
+pub use background::Background;
+
+use opengl_graphics::{
+    GlGraphics,
+    GlyphCache
+};
+
+use graphics::{
+    Rectangle,
+    character::CharacterCache,
+    types::Color,
+    Image,
+    Context
+};
+
 use image::{
     self,
     DynamicImage,
@@ -20,6 +39,8 @@ use std::{
     path::Path,
     fs::{metadata,read_dir},
 };
+
+
 
 // Загрузка изображений
 pub fn load_image<P:AsRef<Path>>(path:P,width:u32,height:u32)->RgbaImage{

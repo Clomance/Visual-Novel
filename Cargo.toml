@@ -1,6 +1,6 @@
 [package]
 name = "Visual_Novel"
-version = "0.7.2"
+version = "0.7.3"
 authors = ["Clomance"]
 edition = "2018"
 build = "build.rs"
@@ -25,5 +25,5 @@ debug = false
 
 [profile.release]
 opt-level = 3
-lto = false
+lto = true
 debug = false

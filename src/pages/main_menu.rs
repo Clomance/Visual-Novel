@@ -33,7 +33,7 @@ impl<'a> MainMenu<'a>{
         let texture_settings=TextureSettings::new();
         // Настройка заголовка меню
         let head=Settings.game_name.to_string();
-        let menu_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let menu_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let head_view_settings=TextViewSettings::new()
                 .rect([0f64,0f64,100f64,80f64])
                 .text(head)
@@ -62,8 +62,7 @@ impl<'a> MainMenu<'a>{
 
     #[inline(always)]
     pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
-        smooth=page_smooth;
-
+        window.set_smooth(default_page_smooth);
         //                    //
         // Цикл главного меню //
         //                    //
@@ -104,7 +103,7 @@ impl<'a> MainMenu<'a>{
 
                                         MenuButtons::New=>{ // Кнопка начала нового игрового процесса
                                             // Окно ввода имени захватывает управление над меню
-                                            match EnterUserName::new(self).start(window){
+                                            match EnterUserName::new(self,window).start(){
                                                 Game::NewGamePlay=>return Game::NewGamePlay,
                                                 Game::Exit=>return Game::Exit,
                                                 _=>{}
@@ -146,7 +145,7 @@ impl<'a> MainMenu<'a>{
 
     #[inline(always)]
     pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
-        alpha_channel=0f32;
+        window.set_alpha(0f32);
 
         while let Some(event)=window.next_event(){
             
@@ -158,20 +157,17 @@ impl<'a> MainMenu<'a>{
                 }
 
                 GameWindowEvent::Draw=>{
-                    window.set_wallpaper_alpha(alpha_channel);
-                    window.draw_with_wallpaper(|c,g|{
-                        self.draw_smooth(alpha_channel,&c,g);
-                    });
-
-                    alpha_channel+=smooth;
-                    if alpha_channel>1.0{
-                        return Game::Current
+                    if !window.draw_smooth_with_wallpaper(|alpha,c,g|{
+                        self.draw_smooth(alpha,&c,g);
+                    }){
+                        break
                     }
                 }
                 _=>{}
             }
         }
-        Game::Exit
+
+        Game::Current
     }
 
     #[inline(always)]

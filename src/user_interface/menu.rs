@@ -6,7 +6,7 @@ const button_margin:f64=10f64;
 const menu_movement_scale:f64=10f64;
 
 pub struct Menu<'a>{
-    head:TextViewDependent,
+    head:TextViewDependent<TextLine>,
     buttons:Vec<ButtonDependent>,
     glyphs:GlyphCache<'a>
 }
@@ -135,12 +135,12 @@ impl MenuSettings{
         self.rect=rect;
         self
     }
-    
+
     pub fn head_text_settings(mut self,settings:TextViewSettings)->MenuSettings{
         self.head_text_view_settings=settings;
         self
     }
-    
+
     pub fn buttons_size(mut self,size:[f64;2])->MenuSettings{
         self.buttons_size=size;
         self

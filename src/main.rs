@@ -1,5 +1,5 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,dead_code)]
-//#![windows_subsystem="windows"] // Отключение консоли для Windows
+#![windows_subsystem="windows"]
 
 use image::RgbaImage;
 
@@ -72,9 +72,6 @@ pub const dialogues_font_size:u32=24;
 
 pub static mut Settings:game_settings::GameSettings=game_settings::GameSettings::new();
 
-pub static mut smooth:f32=default_page_smooth; // Сглаживание для переходов
-pub static mut alpha_channel:f32=0f32; // Значение альфа-канала
-
 pub static mut textures:Textures=Textures::new();
 
 
@@ -133,7 +130,7 @@ fn main(){
         let mut dialogue_box=DialogueBox::new(textures.dialogue_box()); // Диалоговое окно
 
         music::start::<Melody,Sound,_>(16,||{
-            music::bind_music_file(Melody::MainMenu,"music/audio.mp3");
+            music::bind_music_file(Melody::MainMenu,"./resources/music/audio.mp3");
             music::set_volume(Settings.volume);
             music::play_music(&Melody::MainMenu,music::Repeat::Forever);
 
@@ -151,6 +148,10 @@ fn main(){
                         Settings.saved_page=0;
                         Settings.saved_dialogue=0;
                         dialogue_box.set_step(0);
+
+                        if Intro::new(&mut window).start()==Game::Exit{
+                            break 'game
+                        }
                     }
                     Game::Exit=>break 'game,
                     _=>{}
@@ -158,8 +159,6 @@ fn main(){
 
                 // Загрузка таблицы страниц игры
                 let mut page_table=PageTable::new(&textures,&dialogues);
-
-                smooth=default_page_smooth;
 
                 'gameplay:loop{
                     characters_view.clear();
@@ -170,22 +169,18 @@ fn main(){
                     dialogue_box.set_dialogue(page_table.current_dialogue()); // Установка текущего диалога
 
                     'page:loop{
-                        alpha_channel=0f32;
+                        window.set_smooth(default_page_smooth);
                         // Сглаживание перехода
                         'smooth:while let Some(event)=window.next_event(){
                             match event{
                                 GameWindowEvent::Exit=>break 'game, // Закрытие игры
 
                                 GameWindowEvent::Draw=>{ //Рендеринг
-                                    window.set_wallpaper_alpha(alpha_channel);
-                                    window.draw_with_wallpaper(|c,g|{
-                                        characters_view.draw_smooth(alpha_channel,&c,g);
-                                        dialogue_box.set_alpha_channel(alpha_channel);
+                                    if !window.draw_smooth_with_wallpaper(|alpha,c,g|{
+                                        characters_view.draw_smooth(alpha,&c,g);
+                                        dialogue_box.set_alpha_channel(alpha);
                                         dialogue_box.draw_without_text(&c,g);
-                                    });
-
-                                    alpha_channel+=smooth;
-                                    if alpha_channel>1.0{
+                                    }){
                                         break 'smooth
                                     }
                                 }
@@ -268,19 +263,14 @@ fn main(){
 
                 window.set_wallpaper_image(textures.ending_wallpaper()); // Конечная заставка игры
 
-                smooth=default_page_smooth;
-                alpha_channel=0f32;
+                window.set_new_smooth(default_page_smooth);
 
                 'smooth_ending:while let Some(event)=window.next_event(){
                     match event{
                         GameWindowEvent::Exit=>break 'game, // Закрытие игры
 
                         GameWindowEvent::Draw=>{ //Рендеринг
-                            window.set_wallpaper_alpha(alpha_channel);
-                            window.draw_wallpaper();
-
-                            alpha_channel+=smooth;
-                            if alpha_channel>1.0{
+                            if !window.draw_wallpaper_smooth(){
                                 break 'smooth_ending
                             }
                         }
@@ -311,9 +301,9 @@ fn main(){
 }
 
 pub fn load_dialogues()->Vec<Dialogue>{
-    let meta=metadata("text").unwrap();
+    let meta=metadata("./resources/text").unwrap();
     let mut dialogues=Vec::with_capacity(meta.len() as usize);
-    let dir=read_dir("text").unwrap();
+    let dir=read_dir("./resources/text").unwrap();
 
     for r in dir{
         let file=r.unwrap();

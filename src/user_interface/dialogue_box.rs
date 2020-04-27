@@ -25,7 +25,7 @@ pub struct DialogueBox<'a,'b>{
 impl<'a,'b> DialogueBox<'a,'b>{
     pub fn new(texture:&RgbaImage)->DialogueBox<'a,'b>{
         let texture_settings=TextureSettings::new();
-        let glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let texture=Texture::from_image(texture,&texture_settings);
         unsafe{
             let height=window_height/k; // Высота диалогового окна
@@ -108,7 +108,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
 impl<'a,'b> Drawable for DialogueBox<'a,'b>{
     fn set_alpha_channel(&mut self,alpha:f32){
         self.image.color.as_mut().unwrap()[3]=alpha;
-        self.text_base.color[3]=alpha;
+        self.text_base.set_alpha_channel(alpha);
     }
 
     fn draw(&mut self,c:&Context,g:&mut GlGraphics){
@@ -120,14 +120,14 @@ impl<'a,'b> Drawable for DialogueBox<'a,'b>{
 
         // Реплика
         if self.whole_text{
-            self.text_base.draw_lined_text(lines,c,g,&mut self.glyphs) // Вывод всего текста
+            lines.draw(&mut self.text_base,c,g,&mut self.glyphs) // Вывод всего текста
         }
         else{
             unsafe{
                 self.chars+=Settings.signs_per_frame; // Количество выводимых символов
             }
             // Вывод части текста
-            self.whole_text=self.text_base.draw_lined_text_part(lines,self.chars as usize,c,g,&mut self.glyphs);
+            self.whole_text=lines.draw_part(self.chars as usize,&mut self.text_base,c,g,&mut self.glyphs);
         }
     }
 }

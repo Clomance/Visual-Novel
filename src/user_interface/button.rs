@@ -1,6 +1,5 @@
 use crate::*;
 
-const Default_color:Color=Light_blue;
 const dcolor:f32=0.125; // На столько измененяется цвет при нажитии/освобождении
 
 pub struct Button<'a>{
@@ -43,7 +42,7 @@ impl<'a> Drawable for Button<'a>{
 // Зависимая от шрифта кнопка для связанных структур (должно быть больше зависимостей)
 pub struct ButtonDependent{
     base:ButtonBase,
-    text:TextViewDependent, // Зависимый от шрифта текстовый блок
+    text:TextViewDependent<TextLine>, // Зависимый от шрифта текстовый блок
 }
 
 impl ButtonDependent{

@@ -48,7 +48,7 @@ impl Dialogue{
 
         let mut reader=BufReader::new(dialogue_file);
 
-        // Таблица с краткими именами (short_names,ptr to names_cache)
+        // Таблица с краткими именами (short_names,ptr at names_cache)
         let names_table=read_head(&mut names_cache,&mut reader);
 
         let mut line=String::new();

@@ -3,18 +3,19 @@ use crate::*;
 const page_smooth:f32=Enter_user_name_smooth;
 
 pub struct EnterUserName<'a,'b,'c,'d>{
-    head:TextView<'a>,
+    head:TextView<'a,TextLine>,
     input:EditTextView<'b>,
-    main_menu:&'c mut MainMenu<'d>
+    main_menu:&'c mut MainMenu<'d>,
+    window:*mut GameWindow,
 }
 
 impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
     #[inline(always)]
-    pub unsafe fn new(main_menu:&'c mut MainMenu<'d>)->EnterUserName<'a,'b,'c,'d>{
+    pub unsafe fn new(main_menu:&'c mut MainMenu<'d>,window:&mut GameWindow)->EnterUserName<'a,'b,'c,'d>{
 
         // Загрузка шрифта
         let texture_settings=TextureSettings::new();
-        let head_glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let head_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
 
         let head_settings=TextViewSettings::new()
                 .text("Введите своё имя".to_string())
@@ -25,7 +26,7 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
                     70f64,
                 ]);
 
-        let glyphs=GlyphCache::new("fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
 
         let settings=EditTextViewSettings::new()
                 .rect([
@@ -41,19 +42,20 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
             head:TextView::new(head_settings,head_glyphs),
             input:EditTextView::new(settings,glyphs),
             main_menu:main_menu,
+            window:window as *mut GameWindow,
         }
     }
 
     #[inline(always)]
-    pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
-        match self.smooth(window){
+    pub unsafe fn start(&mut self)->Game{
+        match self.smooth(){
             Game::Exit=>return Game::Exit,
             Game::Back=>return Game::Back,
             _=>{}
         }
 
         // Полная отрисовка
-        while let Some(event)=window.next_event(){
+        while let Some(event)=(*self.window).next_event(){
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
                 
@@ -71,10 +73,10 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
                 }
 
                 GameWindowEvent::Draw=>{ // Рендеринг
-                    window.draw_with_wallpaper(|c,g|{
-                        self.main_menu.draw(&c,g);
-                        self.input.draw(&c,g);
-                        self.head.draw(&c,g);
+                    (*self.window).draw_with_wallpaper(|c,g|{
+                        self.main_menu.draw(c,g);
+                        self.input.draw(c,g);
+                        self.head.draw(c,g);
                     })
                 }
 
@@ -108,27 +110,23 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
     }
 
     #[inline(always)] // Сглаживание перехода к странице (открытие)
-    pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
-        smooth=page_smooth;
-        alpha_channel=0f32;
+    pub unsafe fn smooth(&mut self)->Game{
+        (*self.window).set_new_smooth(page_smooth);
 
-        while let Some(event)=window.next_event(){
+        while let Some(event)=(*self.window).next_event(){
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 GameWindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
 
                 GameWindowEvent::Draw=>{ // Рендеринг
-                    window.draw_with_wallpaper(|c,g|{
-                        self.main_menu.draw(&c,g);
+                    if !(*self.window).draw_smooth_with_wallpaper(|alpha,c,g|{
+                        self.main_menu.draw(c,g);
 
-                        self.input.draw_smooth(alpha_channel,&c,g);
-                        self.head.draw_smooth(alpha_channel,&c,g);
-                    });
-
-                    alpha_channel+=smooth;
-                    if alpha_channel>1.0{
-                        return Game::Current
+                        self.input.draw_smooth(alpha,c,g);
+                        self.head.draw_smooth(alpha,c,g);
+                    }){
+                        break
                     }
                 }
 
@@ -141,36 +139,40 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
                 _=>{}
             }
         }
-        Game::Exit
+        Game::Current
     }
 
     #[inline(always)]
-    pub unsafe fn close(&mut self,window:&mut GameWindow)->Game{
-        smooth=page_smooth;
-        alpha_channel=1.0f32;
+    pub unsafe fn close(&mut self)->Game{
+        (*self.window).set_smooth(page_smooth);
 
-        while let Some(event)=window.next_event(){
+        while let Some(event)=(*self.window).next_event(){
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 GameWindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
 
                 GameWindowEvent::Draw=>{ // Рендеринг
-                    window.draw_with_wallpaper(|c,g|{
-                        self.main_menu.draw(&c,g);
+                    if !(*self.window).draw_smooth_with_wallpaper(|alpha,c,g|{
+                        self.main_menu.draw(c,g);
 
-                        self.input.draw_smooth(alpha_channel,&c,g);
-                        self.head.draw_smooth(alpha_channel,&c,g);
-                    });
-
-                    alpha_channel-=smooth;
-                    if alpha_channel<=0.0{
-                        return Game::Current
+                        self.input.draw_smooth(alpha,c,g);
+                        self.head.draw_smooth(alpha,c,g);
+                    }){
+                        break
                     }
                 }
                 _=>{}
             }
         }
-        Game::Exit
+        Game::Current
+    }
+}
+
+impl<'a,'b,'c,'d> Drop for EnterUserName<'a,'b,'c,'d>{
+    fn drop(&mut self){
+        unsafe{
+            self.close();
+        }
     }
 }
