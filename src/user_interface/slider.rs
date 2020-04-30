@@ -7,44 +7,37 @@ const line_radius:f64=5f64;
 
 // Полная комплектация слайдера с надписью и выводом значения
 pub struct Slider<'a>{
-    head:TextViewDependent<TextLine>, // Надпись над слайдером
-    value:TextViewDependent<TextLine>, // Значение слева от слайдера
+    head:TextViewStaticLineDependent, // Надпись над слайдером
+    value:TextViewLineDependent, // Значение слева от слайдера
     glyphs:GlyphCache<'a>,
     base:SimpleSlider,
 }
 
 impl<'a> Slider<'a>{
     pub fn new(settings:SliderSettings,mut glyphs:GlyphCache<'a>)->Slider<'a>{
-        let rect=[
-            settings.position[0],
-            settings.position[1]-circle_diametr,
-            100f64,
-            0f64,
-        ];
-
-        let head_view_settings=TextViewSettings::new()
+        // Настройки заголовка слайдера
+        let head_settings=TextViewSettings::new(settings.head.clone(),[
+                    settings.position[0],
+                    settings.position[1]-circle_diametr,
+                    100f64,
+                    0f64,
+                ])
                 .align_x(AlignX::Left)
                 .align_y(AlignY::Down)
-                .rect(rect)
-                .text(settings.head.clone())
                 .text_color(settings.head_color);
 
-        let rect=[
-            settings.position[0]+settings.length,
-            settings.position[1]-circle_radius,
-            100f64,
-            circle_diametr
-        ];
-
-
-        let value_view_settings=TextViewSettings::new()
-                .rect(rect)
-                .text(format!("{:.2}",settings.current_value))
+        // Настройки текстового блока со значением слайдера
+        let value_settings=TextViewSettings::new(format!("{:.2}",settings.current_value),[
+                    settings.position[0]+settings.length,
+                    settings.position[1]-circle_radius,
+                    100f64,
+                    circle_diametr
+                ])
                 .text_color(settings.circle_color);
 
         Self{
-            head:TextViewDependent::new(head_view_settings,&mut glyphs),
-            value:TextViewDependent::new(value_view_settings,&mut glyphs),
+            head:TextViewStaticLineDependent::new(head_settings,&mut glyphs),
+            value:TextViewLineDependent::new(value_settings,&mut glyphs),
             glyphs:glyphs,
             base:SimpleSlider::new(settings),
         }
@@ -56,7 +49,7 @@ impl<'a> Slider<'a>{
 
     pub fn released(&mut self)->f64{
         let value=self.base.released();
-        self.value.set_text_raw(format!("{:.2}",value));
+        self.value.set_text(format!("{:.2}",value),&mut self.glyphs);
         value
     }
 

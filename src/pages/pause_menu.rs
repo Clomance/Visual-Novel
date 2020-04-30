@@ -14,23 +14,11 @@ impl<'a> PauseMenu<'a>{
         // Загрузка шрифта
         let texture_settings=TextureSettings::new();
         let menu_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        // Создание меню
-        let head="Пауза".to_string();
-        let head_view_settings=TextViewSettings::new()
-                .rect([0f64,0f64,100f64,80f64])
-                .text(head)
-                .font_size(40)
-                .text_color(Head_main_menu_color);
-
-        let menu_settings=MenuSettings::new()
-            .buttons_size([180f64,60f64])
-            .head_text_settings(head_view_settings)
-            .buttons_text(vec![
-                "Продолжить".to_string(),
-                "Главное меню".to_string(),
-                "Настройки".to_string(),
-                "Выход".to_string(),
-        ]);
+        
+        // Настройка меню
+        let menu_settings=MenuSettings::new("Пауза",&["Продолжить","Главное меню","Настройки","Выход"])
+            .head_size([180f64,80f64])
+            .buttons_size([180f64,60f64]);
 
         Self{
             menu:Menu::new(menu_settings,menu_glyphs),

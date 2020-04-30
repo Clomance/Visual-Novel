@@ -2,7 +2,7 @@ use crate::*;
 
 pub struct DialogueFormatted<'a>{
     names:Vec<&'a str>,
-    dialogues:Vec<TextLines>,
+    dialogues:Vec<String>,
 }
 
 impl<'a> DialogueFormatted<'a>{
@@ -12,7 +12,7 @@ impl<'a> DialogueFormatted<'a>{
             dialogues:Vec::new(),
         }
     }
-    pub fn new(names:Vec<&'a str>,dialogues:Vec<TextLines>)->DialogueFormatted<'a>{
+    pub fn new(names:Vec<&'a str>,dialogues:Vec<String>)->DialogueFormatted<'a>{
         Self{
             names,
             dialogues
@@ -23,8 +23,12 @@ impl<'a> DialogueFormatted<'a>{
         self.names.len()
     }
 
-    pub fn get_line(&self,line:usize)->(&str,&TextLines){
-        (&self.names[line],&self.dialogues[line])
+    pub fn get_name(&self,step:usize)->&str{
+        &self.names[step]
+    }
+
+    pub fn get_line(&self,step:usize)->&str{
+        &self.dialogues[step]
     }
 }
 
@@ -101,12 +105,16 @@ impl Dialogue{
     pub fn len(&self)->usize{
         self.dialogues.len()
     }
-    // Получение текущей реплики - (имя,реплика)
-    pub fn get_line(&self,step:usize)->(&str,&str){
-        (&self.names_cache[self.names[step]],&self.dialogues[step])
+
+    pub fn get_name(&self,step:usize)->&str{
+        &self.names_cache[self.names[step]]
     }
 
-    pub fn format<'a>(&'a self,user_name:&str,line_length:f64,font_size:u32,glyphs:&mut GlyphCache)->DialogueFormatted{
+    pub fn get_line(&self,step:usize)->&str{
+        &self.dialogues[step]
+    }
+
+    pub fn format<'a>(&'a self,user_name:&str)->DialogueFormatted{
         let len=self.names.len();
         let mut names=Vec::with_capacity(len);
         let mut dialogues=Vec::with_capacity(len);
@@ -115,7 +123,6 @@ impl Dialogue{
             let name=self.names_cache[self.names[c]].as_str();
             names.push(name);
             let dialogue=self.dialogues[c].replace("{}",user_name);
-            let dialogue=TextLines::new(dialogue,line_length,font_size,glyphs);
             dialogues.push(dialogue);
         }
 

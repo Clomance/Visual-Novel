@@ -1,66 +1,96 @@
 use crate::*;
 
-const head_margin:f64=50f64;
+const head_margin:f64=50f64; // Расстояние между заголовком и кнопками
 const button_margin:f64=10f64;
+const dmargin:f64=head_margin-button_margin; // Для расчёта высоты меню - чтобы не вычитать button_margin
 
-const menu_movement_scale:f64=10f64;
+const menu_movement_scale:f64=10f64; // Обратный коэфициент сдвига меню при движении мышью
 
 pub struct Menu<'a>{
-    head:TextViewDependent<TextLine>,
+    head:TextViewStaticLineDependent,
     buttons:Vec<ButtonDependent>,
     glyphs:GlyphCache<'a>
 }
 
 impl<'a> Menu<'a>{
+    pub fn new<'b,S:ToString,B:ToString+'a>(settings:MenuSettings<'b,S,B>,mut glyphs:GlyphCache<'a>)->Menu<'a>{
+        let r=unsafe{mouse_cursor.center_radius()}; //
+        let dx=r[0]/menu_movement_scale;            // Сдвиг относительно положения мыши
+        let dy=r[1]/menu_movement_scale;            //
 
-    pub fn new(mut settings:MenuSettings,mut glyphs:GlyphCache<'a>)->Menu<'a>{
-        let r=unsafe{mouse_cursor.center_radius()};
-        let dx=r[0]/menu_movement_scale;
-        let dy=r[1]/menu_movement_scale;
+        let x0=settings.rect[0]+dx;     //
+        let y0=settings.rect[1]+dy;     // Положение и размер
+        let width=settings.rect[2];     // области для вставки
+        let height=settings.rect[3];    //
 
-        let x0=settings.rect[0]+dx;
-        let y0=settings.rect[1]+dy;
-        let width=settings.rect[2];
-        let height=settings.rect[3];
+        // Полная высота меню
+        let menu_height=settings.head_size[1]+dmargin+(settings.buttons_size[1]+button_margin)*settings.buttons_text.len() as f64;
 
-        let head_x=settings.head_text_view_settings.rect[0];
-        let head_y=settings.head_text_view_settings.rect[1];
+        // Положение заголовка по Y
+        let mut y=match settings.align.y{
+            AlignY::Up=>y0,
+            AlignY::Center=>y0+(height-menu_height)/2f64,
+            AlignY::Down=>y0+height-menu_height,
+        };
 
-        let mut x1=head_x+x0+(width-settings.head_text_view_settings.rect[2])/2f64; // Для заголовка
-        settings.head_text_view_settings.rect[0]=x1;
+        // Положение заголовка по X
+        let mut x=match settings.align.x{
+            AlignX::Right=>x0+width-settings.head_size[0],
+            AlignX::Center=>x0+(width-settings.head_size[0])/2f64,
+            AlignX::Left=>x0,
+        };
 
-        x1=x0+(width-settings.buttons_size[0])/2f64; // Для кнопок
+        // Настройки для заголовка
+        let head_settings=TextViewSettings::new(settings.head_text,
+                [
+                    x,
+                    y,
+                    settings.head_size[0],
+                    settings.head_size[1]
+                ])
+                .align_x(settings.align.x.clone())
+                .font_size(settings.head_font_size)
+                .text_color(settings.head_text_color);
 
-        // Полная длина меню
-        let mut menu_height=settings.head_text_view_settings.rect[3]+head_margin; // rect[3] - Высота заголовка
-        menu_height+=(settings.buttons_size[1]+button_margin)*settings.buttons_text.len() as f64-button_margin;
+        // Положение верней кнопки по Y
+        y+=settings.head_size[1]+head_margin;
 
-        let mut y1=head_y+y0+(height-menu_height)/2f64; // Для заголовка
-        settings.head_text_view_settings.rect[1]=y1;
-        y1+=settings.head_text_view_settings.rect[3]+head_margin;
+        // Положение кнопок по X
+        x=match settings.align.x{
+            AlignX::Right=>unsafe{
+                x0+window_width-settings.buttons_size[0]
+            },
+            AlignX::Center=>unsafe{
+                x0+(window_width-settings.buttons_size[0])/2f64
+            },
+            AlignX::Left=>x0,
+        };
 
-        let mut rect=[
-            x1,
-            y1,
+        // Массив кнопок
+        let mut menu_buttons=Vec::with_capacity(settings.buttons_text.len());
+
+        // Положение и размер кнопок
+        let mut button_rect=[
+            x,
+            y,
             settings.buttons_size[0],
             settings.buttons_size[1]
         ];
 
-        let mut menu_buttons=Vec::with_capacity(settings.buttons_text.len());
-
-        let button_settings=ButtonSettings::new()
-                .background_color(Light_blue)
-                .font_size(settings.buttons_font_size);
-
+        // Создание кнопок
         for text in settings.buttons_text{
-            let button_sets=button_settings.clone().text(text).rect(rect);
+            // Настройки кнопок (text.to_string() странно работает: требует fmt::Display без to_string)
+            let button_sets=ButtonSettings::new(text.to_string(),button_rect)
+                    .background_color(settings.buttons_color)
+                    .font_size(settings.buttons_font_size);
+
             let button=ButtonDependent::new(button_sets,&mut glyphs);
             menu_buttons.push(button);
-            rect[1]+=settings.buttons_size[1]+button_margin;
+            button_rect[1]+=settings.buttons_size[1]+button_margin;
         }
 
         Self{
-            head:TextViewDependent::new(settings.head_text_view_settings,&mut glyphs),
+            head:TextViewStaticLineDependent::new(head_settings,&mut glyphs),
             buttons:menu_buttons,
             glyphs:glyphs,
         }
@@ -112,46 +142,61 @@ impl<'a> Drawable for Menu<'a>{
 }
 
 // Настройки меню
-pub struct MenuSettings{
-    pub rect:[f64;4], // [x1,y1,width,height] - сюда встроивается меню, по умочанию размер окна
-    pub head_text_view_settings:TextViewSettings,
-    pub buttons_size:[f64;2], // [width,height], по умолчанию [100, 60]
-    pub buttons_text:Vec<String>,
-    pub buttons_font_size:u32,
+pub struct MenuSettings<'a,S:ToString,B:ToString+'a>{
+    rect:[f64;4], // [x1,y1,width,height] - сюда встроивается меню, по умочанию размер окна
+    align:Align, // Выравнивание меню
+    head_text:S, // Текст заголовка меню
+    head_size:[f64;2], // Ширина и высота заголовка
+    head_font_size:u32,
+    head_text_color:Color,
+    buttons_size:[f64;2], // [width,height], по умолчанию [100, 60]
+    buttons_text:&'a [B],
+    buttons_font_size:u32,
+    buttons_color:Color,
 }
 
-impl MenuSettings{
-    pub fn new()->MenuSettings{
+impl<'a,S:ToString,B:ToString+'a> MenuSettings<'a,S,B>{
+    pub fn new(head:S,buttons:&'a [B])->MenuSettings<'a,S,B>{
         Self{
             rect:unsafe{[0f64,0f64,window_width,window_height]},
-            head_text_view_settings:TextViewSettings::new(),
+            head_text:head,
+            head_size:[100f64,60f64],
+            head_font_size:40u32,
+            head_text_color:White,
+            align:Align::center(),
             buttons_size:[100f64,60f64],
-            buttons_text:Vec::new(),
-            buttons_font_size:20,
+            buttons_text:buttons,
+            buttons_font_size:20u32,
+            buttons_color:Light_blue,
         }
     }
 
-    pub fn rect(mut self,rect:[f64;4])->MenuSettings{
+    pub fn rect(mut self,rect:[f64;4])->MenuSettings<'a,S,B>{
         self.rect=rect;
         self
     }
 
-    pub fn head_text_settings(mut self,settings:TextViewSettings)->MenuSettings{
-        self.head_text_view_settings=settings;
+    pub fn head_size(mut self,size:[f64;2])->MenuSettings<'a,S,B>{
+        self.head_size=size;
         self
     }
 
-    pub fn buttons_size(mut self,size:[f64;2])->MenuSettings{
+    pub fn align_x(mut self,align:AlignX)->MenuSettings<'a,S,B>{
+        self.align.x=align;
+        self
+    }
+
+    pub fn align_y(mut self,align:AlignY)->MenuSettings<'a,S,B>{
+        self.align.y=align;
+        self
+    }
+
+    pub fn buttons_size(mut self,size:[f64;2])->MenuSettings<'a,S,B>{
         self.buttons_size=size;
         self
     }
 
-    pub fn buttons_text(mut self,text:Vec<String>)->MenuSettings{
-        self.buttons_text=text;
-        self
-    }
-
-    pub fn buttons_font_size(mut self,size:u32)->MenuSettings{
+    pub fn buttons_font_size(mut self,size:u32)->MenuSettings<'a,S,B>{
         self.buttons_font_size=size;
         self
     }

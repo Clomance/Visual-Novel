@@ -4,26 +4,29 @@ const page_smooth:f32=Settings_page_smooth;
 
 const background_color:Color=Settings_page_color;
 
-pub struct SettingsPage<'a,'b,'c,'d>{
-    head:TextView<'a,TextLine>,
+pub struct SettingsPage<'a,'b,'d>{
+    head:TextViewStaticLineDependent,
     signs_per_sec:Slider<'b>,
     volume:Slider<'d>,
-    back_button:Button<'c>,
+    back_button:ButtonDependent,
+    glyphs:GlyphCache<'a>,
 }
 
-impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
+impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
     #[inline(always)]
-    pub unsafe fn new()->SettingsPage<'a,'b,'c,'d>{
-        // Загрузка шрифта
+    pub unsafe fn new()->SettingsPage<'a,'b,'d>{
+
         let texture_settings=TextureSettings::new();
 
-        let head_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        let head_settings=TextViewSettings::new()
-                .text("Настройки".to_string())
+        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let head_settings=TextViewSettings::new("Настройки",[
+                    0f64,
+                    0f64,
+                    window_width,
+                    80f64,
+                ])
                 .font_size(40)
-                .text_color(White)
-                .rect([0f64,0f64,window_width,80f64]);
-        let head=TextView::new(head_settings.clone(),head_glyphs);
+                .text_color(White);
 
 
         let signs_per_sec_slider_sets=SliderSettings::new()
@@ -46,22 +49,21 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
         let volume_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let volume=Slider::new(volume_settings,volume_glyphs);
 
-
-        let button_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        let button_settings=ButtonSettings::new()
-                .rect([
+        // Настройки кнопки выхода
+        let button_settings=ButtonSettings::new("Назад",[
                     40f64,
                     window_height-80f64,
                     120f64,
                     60f64
-                ])
-                .text("Назад".to_string());
+                ]);
+
 
         Self{
-            head:head,
+            head:TextViewStaticLineDependent::new(head_settings,&mut glyphs),
             signs_per_sec:Slider::new(signs_per_sec_slider_sets,slider_glyphs),
             volume:volume,
-            back_button:Button::new(button_settings,button_glyphs),
+            back_button:ButtonDependent::new(button_settings,&mut glyphs),
+            glyphs:glyphs,
         }
     }
 
@@ -85,12 +87,12 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                     window.draw(|c,g|{
                         g.clear_color(background_color);
 
-                        self.head.draw(&c,g);
+                        self.head.draw(c,g,&mut self.glyphs);
 
-                        self.signs_per_sec.draw(&c,g);
-                        self.volume.draw(&c,g);
+                        self.signs_per_sec.draw(c,g);
+                        self.volume.draw(c,g);
 
-                        self.back_button.draw(&c,g);
+                        self.back_button.draw(c,g,&mut self.glyphs);
                     });
                 }
             
@@ -156,12 +158,13 @@ impl<'a,'b,'c,'d> SettingsPage<'a,'b,'c,'d>{
                     if !window.draw_smooth(|alpha,c,g|{
                         background.draw_smooth(alpha,c,g);
 
-                        self.head.draw_smooth(alpha,c,g);
+                        self.head.draw_smooth(alpha,c,g,&mut self.glyphs);
 
                         self.signs_per_sec.draw_smooth(alpha,c,g);
                         self.volume.draw_smooth(alpha,c,g);
 
-                        self.back_button.draw_smooth(alpha,c,g);
+                        self.back_button.set_alpha_channel(alpha);
+                        self.back_button.draw(c,g,&mut self.glyphs);
                     }){
                         break
                     }

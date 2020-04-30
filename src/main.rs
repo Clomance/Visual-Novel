@@ -47,14 +47,14 @@ use characters::*;
 mod dialogue;
 use dialogue::*;
 
-mod user_interface;
-use user_interface::*;
+mod textures;
+use textures::Textures;
 
 mod game_window;
 use game_window::*;
 
-mod textures;
-use textures::Textures;
+mod user_interface;
+use user_interface::*;
 
 #[derive(Eq,PartialEq)]
 pub enum Game{
@@ -86,13 +86,13 @@ impl Drop for LoadingFlag{
     }
 }
 
-#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Copy,Clone,Hash,PartialEq,Eq)]
 enum Melody{
     None,
     MainMenu
 }
 
-#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Copy,Clone,Hash,PartialEq,Eq)]
 enum Sound{
     None
 }
@@ -177,9 +177,9 @@ fn main(){
 
                                 GameWindowEvent::Draw=>{ //Рендеринг
                                     if !window.draw_smooth_with_wallpaper(|alpha,c,g|{
-                                        characters_view.draw_smooth(alpha,&c,g);
+                                        characters_view.draw_smooth(alpha,c,g);
                                         dialogue_box.set_alpha_channel(alpha);
-                                        dialogue_box.draw_without_text(&c,g);
+                                        dialogue_box.draw_without_text(c,g);
                                     }){
                                         break 'smooth
                                     }
@@ -199,8 +199,8 @@ fn main(){
 
                                 GameWindowEvent::Draw=>{ //Рендеринг
                                     window.draw_with_wallpaper(|c,g|{
-                                        characters_view.draw(&c,g);
-                                        dialogue_box.draw(&c,g);
+                                        characters_view.draw(c,g);
+                                        dialogue_box.draw(c,g);
                                     });
                                 }
 

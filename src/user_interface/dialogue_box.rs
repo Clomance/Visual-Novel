@@ -7,7 +7,7 @@ const font_size:u32=dialogues_font_size;
 const text_position_x:f64=80f64;
 
 const name_position_x:f64=20f64;
-const name_position_y:f64=40f64;
+const name_position_y:f64=45f64;
 
 pub struct DialogueBox<'a,'b>{
     dialogue:DialogueFormatted<'b>,
@@ -15,8 +15,8 @@ pub struct DialogueBox<'a,'b>{
     chars:f64, // Количесво выводимых в данный момент символов диалога
     dialogue_step:usize,
     y1:f64, // Граница нижней трети экрана, где находится диалоговое окно
-    text_base:TextBase,
     name_base:TextBase,
+    lines:TextViewLinedDependent, // Текстовый блок для диалогов
     image:Image,
     texture:Texture,
     glyphs:GlyphCache<'a>
@@ -25,11 +25,22 @@ pub struct DialogueBox<'a,'b>{
 impl<'a,'b> DialogueBox<'a,'b>{
     pub fn new(texture:&RgbaImage)->DialogueBox<'a,'b>{
         let texture_settings=TextureSettings::new();
-        let glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
         let texture=Texture::from_image(texture,&texture_settings);
         unsafe{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
+
+            let line_settings=TextViewSettings::new("",[
+                        text_position_x,
+                        window_height-height+name_position_y*3f64,
+                        window_width-2f64*text_position_x,
+                        height/2f64,
+                    ])
+                    .font_size(24)
+                    .align_x(AlignX::Left)
+                    .align_y(AlignY::Up)
+                    .text_color(White);
 
             Self{
                 dialogue:DialogueFormatted::empty(),
@@ -37,8 +48,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
                 chars:0f64,
                 dialogue_step:Settings.saved_dialogue,
                 y1:y1,
-                text_base:TextBase::new_color(White,font_size)
-                        .position([text_position_x,window_height-height/2f64]),
+                lines:TextViewLinedDependent::new(line_settings,&mut glyphs),
 
                 name_base:TextBase::new_color(White,font_size)
                         .position([name_position_x,y1+name_position_y]),
@@ -67,8 +77,8 @@ impl<'a,'b> DialogueBox<'a,'b>{
     // Установка нового диалога, шаг обнулён заранее, при переходе к новой странице (next_page)
     pub fn set_dialogue(&mut self,dialogue:&'b Dialogue){
         unsafe{
-            let line_length=window_width-2f64*text_position_x;
-            self.dialogue=dialogue.format(&Settings.user_name,line_length,self.text_base.font_size,&mut self.glyphs);
+            self.dialogue=dialogue.format(&Settings.user_name);
+            self.lines.set_text(self.dialogue.get_line(self.dialogue_step),&mut self.glyphs);
         }
         self.chars=0f64;
         self.whole_text=false;
@@ -81,6 +91,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
             self.chars=0f64; // Обнуление количества выводимых символов
             self.dialogue_step+=1; // Слудующая часть диалога
             if self.dialogue_step<self.dialogue.len(){ // Проверка есть ли следующая часть диалога
+                self.lines.set_text(self.dialogue.get_line(self.dialogue_step),&mut self.glyphs);
                 false
             }
             else{
@@ -108,11 +119,11 @@ impl<'a,'b> DialogueBox<'a,'b>{
 impl<'a,'b> Drawable for DialogueBox<'a,'b>{
     fn set_alpha_channel(&mut self,alpha:f32){
         self.image.color.as_mut().unwrap()[3]=alpha;
-        self.text_base.set_alpha_channel(alpha);
+        //self.lines.set_alpha_channel(alpha);
     }
 
     fn draw(&mut self,c:&Context,g:&mut GlGraphics){
-        let (name,lines)=self.dialogue.get_line(self.dialogue_step);
+        let name=self.dialogue.get_name(self.dialogue_step);
 
         g.image(&self.image,&self.texture,&c.draw_state,c.transform); // Основа
 
@@ -120,14 +131,14 @@ impl<'a,'b> Drawable for DialogueBox<'a,'b>{
 
         // Реплика
         if self.whole_text{
-            lines.draw(&mut self.text_base,c,g,&mut self.glyphs) // Вывод всего текста
+            self.lines.draw(c,g,&mut self.glyphs) // Вывод всего текста
         }
         else{
             unsafe{
                 self.chars+=Settings.signs_per_frame; // Количество выводимых символов
             }
             // Вывод части текста
-            self.whole_text=lines.draw_part(self.chars as usize,&mut self.text_base,c,g,&mut self.glyphs);
+            self.whole_text=self.lines.draw_part(self.chars as usize,c,g,&mut self.glyphs);
         }
     }
 }

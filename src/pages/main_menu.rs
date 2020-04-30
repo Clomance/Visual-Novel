@@ -10,6 +10,7 @@ enum MenuButtons{
 }
 
 impl MenuButtons{
+    #[inline(always)]
     fn button(mut id:u8)->MenuButtons{
         if unsafe{!Settings._continue}{
             id+=1;
@@ -31,14 +32,9 @@ impl<'a> MainMenu<'a>{
     #[inline(always)]
     pub unsafe fn new()->MainMenu<'a>{
         let texture_settings=TextureSettings::new();
+
         // Настройка заголовка меню
-        let head=Settings.game_name.to_string();
         let menu_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        let head_view_settings=TextViewSettings::new()
-                .rect([0f64,0f64,100f64,80f64])
-                .text(head)
-                .font_size(40)
-                .text_color(Head_main_menu_color);
 
         let mut buttons_text=Vec::with_capacity(4);
 
@@ -50,10 +46,9 @@ impl<'a> MainMenu<'a>{
         buttons_text.push("Выход".to_string());
 
         // Настройка меню
-        let menu_settings=MenuSettings::new()
-                .head_text_settings(head_view_settings)
-                .buttons_size([180f64,60f64])
-                .buttons_text(buttons_text);
+        let menu_settings=MenuSettings::new(Settings.game_name.clone(),&buttons_text)
+                .head_size([180f64,80f64])
+                .buttons_size([180f64,60f64]);
 
         Self{
             menu:Menu::new(menu_settings,menu_glyphs), // Создание меню
@@ -63,9 +58,7 @@ impl<'a> MainMenu<'a>{
     #[inline(always)]
     pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
         window.set_smooth(default_page_smooth);
-        //                    //
-        // Цикл главного меню //
-        //                    //
+
         'main:while self.smooth(window)!=Game::Exit{
 
             // Цикл самого меню
@@ -76,7 +69,7 @@ impl<'a> MainMenu<'a>{
 
                     GameWindowEvent::Draw=>{ //Рендеринг
                         window.draw_with_wallpaper(|c,g|{
-                            self.draw(&c,g);
+                            self.draw(c,g);
                         });
                     }
 
@@ -158,7 +151,7 @@ impl<'a> MainMenu<'a>{
 
                 GameWindowEvent::Draw=>{
                     if !window.draw_smooth_with_wallpaper(|alpha,c,g|{
-                        self.draw_smooth(alpha,&c,g);
+                        self.draw_smooth(alpha,c,g);
                     }){
                         break
                     }
@@ -173,7 +166,7 @@ impl<'a> MainMenu<'a>{
     #[inline(always)]
     pub fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
         //self.wallpaper.draw(&context,graphics);
-        self.menu.draw(&context,graphics);
+        self.menu.draw(context,graphics);
     }
 
     #[inline(always)]

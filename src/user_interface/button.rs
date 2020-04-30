@@ -8,7 +8,7 @@ pub struct Button<'a>{
 }
 
 impl<'a> Button<'a>{
-    pub fn new(settings:ButtonSettings,mut glyphs:GlyphCache<'a>)->Button<'a>{
+    pub fn new<S:ToString>(settings:ButtonSettings<S>,mut glyphs:GlyphCache<'a>)->Button<'a>{
         Self{
             base:ButtonDependent::new(settings,&mut glyphs),
             glyphs:glyphs,
@@ -42,19 +42,17 @@ impl<'a> Drawable for Button<'a>{
 // Зависимая от шрифта кнопка для связанных структур (должно быть больше зависимостей)
 pub struct ButtonDependent{
     base:ButtonBase,
-    text:TextViewDependent<TextLine>, // Зависимый от шрифта текстовый блок
+    text:TextViewStaticLineDependent, // Зависимый от шрифта текстовый блок
 }
 
 impl ButtonDependent{
-    pub fn new(settings:ButtonSettings,glyphs:&mut GlyphCache)->ButtonDependent{
-        let text_view_settings=TextViewSettings::new()
-                .rect(settings.rect)
+    pub fn new<S:ToString>(settings:ButtonSettings<S>,glyphs:&mut GlyphCache)->ButtonDependent{
+        let text_view_settings=TextViewSettings::new(settings.text,settings.rect)
                 .text_color(settings.text_color)
-                .text(settings.text)
                 .font_size(settings.font_size);
         Self{
             base:ButtonBase::new(settings.rect,settings.background_color),
-            text:TextViewDependent::new(text_view_settings,glyphs),
+            text:TextViewStaticLineDependent::new(text_view_settings,glyphs),
         }
     }
 
@@ -83,114 +81,69 @@ impl ButtonDependent{
     }
 }
 
-#[derive(Clone)]
-pub struct ButtonSettings{
-    pub rect:[f64;4],
-    pub background_color:Color,
-    pub text:String,
-    pub font_size:u32,
-    pub text_color:Color
-}
-
-impl ButtonSettings{
-    pub fn new()->ButtonSettings{
-        Self{
-            rect:[0f64;4],
-            background_color:Light_blue,
-            text:String::new(),
-            font_size:20,
-            text_color:Black,
-        }
-    }
-
-    pub fn rect(mut self,rect:[f64;4])->ButtonSettings{
-        self.rect=rect;
-        self
-    }
-
-    pub fn background_color(mut self,color:Color)->ButtonSettings{
-        self.background_color=color;
-        self
-    }
-
-    pub fn text(mut self,text:String)->ButtonSettings{
-        self.text=text;
-        self
-    }
-
-    pub fn font_size(mut self,size:u32)->ButtonSettings{
-        self.font_size=size;
-        self
-    }
-    
-    pub fn text_color(mut self,color:Color)->ButtonSettings{
-        self.text_color=color;
-        self
-    }
-}
-
 // Второе название JmyakButton - предложил Тимур Шайхинуров
 // Кнопка, в которую вписывается крестик при нажатии
-pub struct CheckButton{
-    button_base:ButtonBase,
-    tick_color:Color,
-    ticked:bool
-}
+// Нуждается в доработке
+// pub struct CheckButton{
+//     button_base:ButtonBase,
+//     tick_color:Color,
+//     ticked:bool
+// }
 
-impl CheckButton{
-    pub fn new(rect:[f64;4],background_color:Color,ticked:bool)->CheckButton{
-        Self{
-            button_base:ButtonBase::new(rect,background_color),
-            tick_color:Red,
-            ticked:ticked
-        }
-    }
+// impl CheckButton{
+//     pub fn new(rect:[f64;4],background_color:Color,ticked:bool)->CheckButton{
+//         Self{
+//             button_base:ButtonBase::new(rect,background_color),
+//             tick_color:Red,
+//             ticked:ticked
+//         }
+//     }
 
-    pub fn set_alpha_channel(&mut self,alpha:f32){
-        self.button_base.set_alpha_channel(alpha)
-    }
+//     pub fn set_alpha_channel(&mut self,alpha:f32){
+//         self.button_base.set_alpha_channel(alpha)
+//     }
 
-    pub fn clicked(&mut self)->bool{
-        if self.button_base.released(){
-            self.ticked=!self.ticked;
-            true
-        }
-        else{
-            false
-        }
-    }
+//     pub fn clicked(&mut self)->bool{
+//         if self.button_base.released(){
+//             self.ticked=!self.ticked;
+//             true
+//         }
+//         else{
+//             false
+//         }
+//     }
 
-    pub fn draw(&self,context:&Context,g:&mut GlGraphics){
-        self.button_base.draw(context,g);
-        if self.ticked{
-            let line=Line::new(self.tick_color,1f64);
+//     pub fn draw(&self,context:&Context,g:&mut GlGraphics){
+//         self.button_base.draw(context,g);
+//         if self.ticked{
+//             let line=Line::new(self.tick_color,1f64);
             
-            line.draw(
-                [
-                    self.button_base.x1,
-                    self.button_base.y1,
-                    self.button_base.x2,
-                    self.button_base.y2
-                ],
-                &context.draw_state,
-                context.transform,
-                g
-            );
+//             line.draw(
+//                 [
+//                     self.button_base.x1,
+//                     self.button_base.y1,
+//                     self.button_base.x2,
+//                     self.button_base.y2
+//                 ],
+//                 &context.draw_state,
+//                 context.transform,
+//                 g
+//             );
 
-            line.draw(
-                [
-                    self.button_base.x1,
-                    self.button_base.y2,
-                    self.button_base.x2,
-                    self.button_base.y1
-                ],
-                &context.draw_state,
-                context.transform,
-                g
-            )
-        }
-    }
-}
+//             line.draw(
+//                 [
+//                     self.button_base.x1,
+//                     self.button_base.y2,
+//                     self.button_base.x2,
+//                     self.button_base.y1
+//                 ],
+//                 &context.draw_state,
+//                 context.transform,
+//                 g
+//             )
+//         }
+//     }
+// }
 
 // Основа для кнопок
 struct ButtonBase{
@@ -205,7 +158,6 @@ struct ButtonBase{
 }
 
 impl ButtonBase{
-    #[inline(always)]
     pub fn new(rect:[f64;4],color:Color)->ButtonBase{
         Self{
             x1:rect[0],
@@ -219,7 +171,7 @@ impl ButtonBase{
         }
     }
 
-    #[inline(always)] // Сдвиг
+    // Сдвиг
     pub fn shift(&mut self,dx:f64,dy:f64){
         self.x1+=dx;
         self.y1+=dy;
@@ -227,31 +179,31 @@ impl ButtonBase{
         self.y2+=dy;
     }
 
-    #[inline(always)] // Установка альфа-канала
+    // Установка альфа-канала
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.rectangle.color[3]=alpha;
     }
 
-    #[inline(always)] // Установка цвета
+    // Установка цвета
     pub fn set_color(&mut self,color:Color){
         self.rectangle.color=color
     }
 
-    #[inline(always)] // Изменение цвета при нажатии
+    // Изменение цвета при нажатии
     pub fn press_color(&mut self){
         self.rectangle.color[0]-=dcolor;
         self.rectangle.color[1]-=dcolor;
         self.rectangle.color[2]-=dcolor;
     }
 
-    #[inline(always)] // Изменение цвета при освобождении
+    // Изменение цвета при освобождении
     pub fn release_color(&mut self){
         self.rectangle.color[0]+=dcolor;
         self.rectangle.color[1]+=dcolor;
         self.rectangle.color[2]+=dcolor;
     }
 
-    #[inline(always)] // Проверка нажатия на кнопку и локальные действия
+    // Проверка нажатия на кнопку и локальные действия
     pub fn pressed(&mut self)->bool{
         let position=unsafe{mouse_cursor.position()};
         let x=position[0];
@@ -267,7 +219,7 @@ impl ButtonBase{
         }
     }
 
-    #[inline(always)] // Проверка находится ли курсор на кнопке и локальные действия
+    // Проверка находится ли курсор на кнопке и локальные действия
     pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
         if self.pressed{
             self.release_color();
@@ -289,9 +241,44 @@ impl ButtonBase{
         }
     }
 
-    #[inline(always)]
     pub fn draw(&self,context:&Context,g:&mut GlGraphics){
         let rect_pos=[self.x1,self.y1,self.width,self.height];
         self.rectangle.draw(rect_pos,&context.draw_state,context.transform,g);
+    }
+}
+
+
+pub struct ButtonSettings<S:ToString>{
+    rect:[f64;4],
+    background_color:Color,
+    text:S,
+    font_size:u32,
+    text_color:Color
+}
+
+impl<S:ToString> ButtonSettings<S>{
+    pub fn new(text:S,rect:[f64;4])->ButtonSettings<S>{
+        Self{
+            rect,
+            background_color:Light_blue,
+            text,
+            font_size:20,
+            text_color:Black,
+        }
+    }
+
+    pub fn background_color(mut self,color:Color)->ButtonSettings<S>{
+        self.background_color=color;
+        self
+    }
+    
+    pub fn font_size(mut self,size:u32)->ButtonSettings<S>{
+        self.font_size=size;
+        self
+    }
+    
+    pub fn text_color(mut self,color:Color)->ButtonSettings<S>{
+        self.text_color=color;
+        self
     }
 }

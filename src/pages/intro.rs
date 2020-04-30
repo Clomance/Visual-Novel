@@ -5,7 +5,8 @@ const page_smooth:f32=Intro_smooth;
 const background_color:Color=Black;
 
 pub struct Intro<'a,'b>{
-    text_view:TextView<'a,TextLine>,
+    text_view:TextViewStaticLinedDependent,
+    glyphs:GlyphCache<'a>,
     window:&'b mut GameWindow,
 }
 
@@ -14,21 +15,23 @@ impl<'a,'b> Intro<'a,'b>{
     pub unsafe fn new(window:&'b mut GameWindow)->Intro<'a,'b>{
         let texture_settings=TextureSettings::new();
 
-        let glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
 
-        let settings=TextViewSettings::new()
-                .rect([
-                    window_center[0],
-                    window_center[1],
+        let text="Прогресс сохраняется автоматический";
+
+        let settings=TextViewSettings::new(text,
+                [
                     0f64,
-                    0f64
+                    window_center[1]/2f64,
+                    window_width,
+                    window_center[1]
                 ])
-                .text(Settings.game_name.clone())
                 .font_size(40)
-                .text_color(Head_main_menu_color);
+                .text_color(White);
 
         Self{
-            text_view:TextView::new(settings,glyphs), // Создание меню
+            text_view:TextViewStaticLinedDependent::new(settings,&mut glyphs), // Создание меню
+            glyphs:glyphs,
             window:window
         }
     }
@@ -51,7 +54,8 @@ impl<'a,'b> Intro<'a,'b>{
                 GameWindowEvent::Draw=>{ //Рендеринг
                     if !(*window).draw_smooth(|alpha,c,g|{
                         g.clear_color(background_color);
-                        self.text_view.draw_smooth(alpha,c,g);
+                        self.text_view.set_alpha_channel(alpha);
+                        self.text_view.draw(c,g,&mut self.glyphs);
                     }){
                         break
                     }
@@ -70,7 +74,8 @@ impl<'a,'b> Intro<'a,'b>{
                 GameWindowEvent::Draw=>{ //Рендеринг
                     (*window).draw(|c,g|{
                         g.clear_color(background_color);
-                        self.text_view.draw_smooth(alpha,c,g);
+                        self.text_view.set_alpha_channel(alpha);
+                        self.text_view.draw(c,g,&mut self.glyphs);
                     });
 
                     alpha-=smooth;

@@ -28,15 +28,12 @@ impl Textures{
             let mut vec=Vec::with_capacity(3);
 
             // Загрузка главных текстур
-            let wallpaper_texture=load_image("./resources/images/wallpapers/main_menu_wallpaper.png",wallpaper_size[0],wallpaper_size[1]);
+            let mut wallpaper_texture=load_image("./resources/images/wallpapers/main_menu_wallpaper.png",wallpaper_size[0],wallpaper_size[1]);
             vec.push(wallpaper_texture);
-
-            let wallpaper_texture=load_image("./resources/images/dialogue_box.png",window_width as u32,(window_height/3f64) as u32);
+            wallpaper_texture=load_image("./resources/images/dialogue_box.png",window_width as u32,(window_height/3f64) as u32);
             vec.push(wallpaper_texture);
-            
-            let wallpaper_texture=load_image("./resources/images/wallpapers/ending_wallpaper.png",wallpaper_size[0],wallpaper_size[1]);
+            wallpaper_texture=load_image("./resources/images/wallpapers/ending_wallpaper.png",wallpaper_size[0],wallpaper_size[1]);
             vec.push(wallpaper_texture);
-
 
             Self{
                 game_wallpapers:load_textures("./resources/images/wallpapers/game",wallpaper_size[0],wallpaper_size[1]),

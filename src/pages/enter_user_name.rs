@@ -3,7 +3,8 @@ use crate::*;
 const page_smooth:f32=Enter_user_name_smooth;
 
 pub struct EnterUserName<'a,'b,'c,'d>{
-    head:TextView<'a,TextLine>,
+    head:TextViewStaticLineDependent,
+    glyphs:GlyphCache<'a>,
     input:EditTextView<'b>,
     main_menu:&'c mut MainMenu<'d>,
     window:*mut GameWindow,
@@ -15,11 +16,9 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
 
         // Загрузка шрифта
         let texture_settings=TextureSettings::new();
-        let head_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let mut head_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
 
-        let head_settings=TextViewSettings::new()
-                .text("Введите своё имя".to_string())
-                .rect([
+        let head_settings=TextViewSettings::new("Введите своё имя",[
                     (window_width)/2f64-150f64,
                     (window_height)/2f64-150f64,
                     300f64,
@@ -28,18 +27,18 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
 
         let glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
 
-        let settings=EditTextViewSettings::new()
-                .rect([
+        let settings=EditTextViewSettings::new("",[
                     (window_width)/2f64-150f64,
                     (window_height)/2f64-150f64,
                     300f64,
                     150f64,
                 ])
                 .background_color(Light_blue)
-                .border_color(Blue);
+                .border_color(Some(Blue));
 
         Self{
-            head:TextView::new(head_settings,head_glyphs),
+            head:TextViewStaticLineDependent::new(head_settings,&mut head_glyphs),
+            glyphs:head_glyphs,
             input:EditTextView::new(settings,glyphs),
             main_menu:main_menu,
             window:window as *mut GameWindow,
@@ -76,7 +75,7 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
                     (*self.window).draw_with_wallpaper(|c,g|{
                         self.main_menu.draw(c,g);
                         self.input.draw(c,g);
-                        self.head.draw(c,g);
+                        self.head.draw(c,g,&mut self.glyphs);
                     })
                 }
 
@@ -94,7 +93,7 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
                         KeyboardButton::Escape=>return Game::Back,
                         
                         KeyboardButton::Enter=>{
-                            let name=self.input.get_text();
+                            let name=self.input.text().clone();
                             if !name.is_empty(){
                                 Settings.user_name=name;
                                 return Game::NewGamePlay
@@ -124,7 +123,7 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
                         self.main_menu.draw(c,g);
 
                         self.input.draw_smooth(alpha,c,g);
-                        self.head.draw_smooth(alpha,c,g);
+                        self.head.draw_smooth(alpha,c,g,&mut self.glyphs);
                     }){
                         break
                     }
@@ -157,7 +156,7 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
                         self.main_menu.draw(c,g);
 
                         self.input.draw_smooth(alpha,c,g);
-                        self.head.draw_smooth(alpha,c,g);
+                        self.head.draw_smooth(alpha,c,g,&mut self.glyphs);
                     }){
                         break
                     }
