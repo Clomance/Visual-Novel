@@ -42,18 +42,13 @@ impl Dialogue{
     pub fn new<P:AsRef<Path>+Debug+Clone>(path:P)->Dialogue{
         let dialogue_file=OpenOptions::new().read(true).open(path.clone()).unwrap();
 
-        let mut names_cache=Vec::<String>::with_capacity(5);
-        let mut dialogues=Vec::<String>::with_capacity(50);
-        let mut names=Vec::<usize>::with_capacity(50);
-
-        names_cache.push("Я".to_string()); // Для отображения слов игрока
-
-        names_cache.push("".to_string()); // Для отображения мыслей игрока
+        let mut dialogues=Vec::<String>::with_capacity(10);
+        let mut names=Vec::<usize>::with_capacity(10);
 
         let mut reader=BufReader::new(dialogue_file);
 
-        // Таблица с краткими именами (short_names,ptr at names_cache)
-        let names_table=read_head(&mut names_cache,&mut reader);
+        // Таблица с краткими именами (short_names,na)
+        let (short_names,names_cache)=read_head(&mut reader);
 
         let mut line=String::new();
         while let Ok(bytes)=reader.read_line(&mut line){
@@ -78,18 +73,9 @@ impl Dialogue{
             let dialogue=split_line[1].trim().to_string();
 
             // Поиск имени
-            if short_name=="{}"{
-                names.push(0); // Установка имени героя
-            }
-            else if short_name=="_"{
-                names.push(1); // Установка пустого имени
-            }
-            else{
-                // Поиск имени
-                let index=search_short_name(short_name,&names_table.0);
-                let names_cache_index=names_table.1[index];
-                names.push(names_cache_index);
-            }
+            let names_cache_index=search_short_name(short_name,&short_names);
+            names.push(names_cache_index);
+
             line.clear(); // Очистка строки
             dialogues.push(dialogue);
         }
@@ -130,11 +116,94 @@ impl Dialogue{
     }
 }
 
-// (краткие имена, индексы имён)
-fn read_head(names_cache:&mut Vec<String>,reader:&mut BufReader<File>)->(Vec<String>,Vec<usize>){
-    let mut len=names_cache.len();
-    let mut names=Vec::new();
-    let mut short_names=Vec::new();
+// Получение имён персонажей диалога
+pub fn read_characters(reader:&mut BufReader<File>)->Vec<(String,CharacterLocation)>{
+    let mut names=Vec::with_capacity(5);
+    let mut line=String::new();
+
+    // Поиск заголовка
+    while let Ok(bytes)=reader.read_line(&mut line){
+        if bytes==0{
+            break
+        }
+        // Пропуск пустых строк
+        let line_str=line.trim();
+        if line_str.is_empty(){
+            continue
+        }
+        // Проверка начала заголовка
+        if line_str=="{"{
+            break
+        }
+        line.clear()
+    }
+
+    line.clear();
+
+    // Чтение заголовка
+    while let Ok(bytes)=reader.read_line(&mut line){
+        if bytes==0{
+            panic!("Ошибка в диалоге: нет конца заголовка");
+        }
+        // Проверка на завершение заголовка
+        let line_str=line.trim();
+        if line_str=="}"{
+            return names
+        }
+        // Проверка формата
+        let split_line:Vec<&str>=line_str.split("=").collect();
+        if split_line.len()!=2{
+            panic!("Ошибка в диалоге: неверный формат");
+        }
+        // Перевод в строку
+        let name=split_line[1];
+        if let Some(start)=name.find('('){
+            let end=name.find(')').unwrap();
+            let location=match &name[start+1..end]{
+                "Left"=>CharacterLocation::Left,
+                "LeftCenter"=>CharacterLocation::LeftCenter,
+                "CenterLeft"=>CharacterLocation::CenterLeft,
+                "Center"=>CharacterLocation::Center,
+                "CenterRight"=>CharacterLocation::CenterRight,
+                "RightCenter"=>CharacterLocation::RightCenter,
+                "Right"=>CharacterLocation::Right,
+                _=>panic!()
+            };
+            let name=name[..start].trim().to_string();
+            
+            names.push((name,location));
+        }
+        else{
+            let location=CharacterLocation::Center;
+            let name=split_line[1].split("(").next().unwrap().trim().to_string();
+            names.push((name,location));
+        };
+        // Сохранение
+        
+        line.clear()
+    }
+
+    names
+}
+
+// Чтение заголовка (краткие имена, полные имена имён)
+// Формат заголовка:
+/*
+{
+    [краткое имя] = [полное имя персонажа].[дополнительные черты]
+}
+*/
+// (имя файла текстуры персонажа - [полное имя персонажа].[дополнительные черты].png)
+
+fn read_head(reader:&mut BufReader<File>)->(Vec<String>,Vec<String>){
+    let mut names_cache=Vec::with_capacity(5);
+    names_cache.push("Я".to_string()); // Для отображения слов игрока
+    names_cache.push("".to_string()); // Для отображения мыслей игрока
+
+    let mut short_names=Vec::with_capacity(5);
+    short_names.push("{}".to_string()); // Для отображения слов игрока
+    short_names.push("_".to_string()); // Для отображения мыслей игрока
+
 
     let mut line=String::new();
 
@@ -165,7 +234,7 @@ fn read_head(names_cache:&mut Vec<String>,reader:&mut BufReader<File>)->(Vec<Str
         // Проверка на завершение заголовка
         let line_str=line.trim();
         if line_str=="}"{
-            return (short_names,names)
+            return (short_names,names_cache)
         }
         // Проверка формата
         let split_line:Vec<&str>=line_str.split("=").collect();
@@ -173,17 +242,16 @@ fn read_head(names_cache:&mut Vec<String>,reader:&mut BufReader<File>)->(Vec<Str
             panic!();
         }
         // Перевод в строку
-        let name=split_line[0].trim().to_string();
-        let short_name=split_line[1].trim().to_string();
+        let short_name=split_line[0].trim().to_string();
+        let name=split_line[1].split(".").next().unwrap().split("(").next().unwrap().trim().to_string();
+        
         // Сохранение
-        names_cache.push(name);
         short_names.push(short_name);
-        names.push(len);
-        len+=1;
+        names_cache.push(name);
         line.clear()
     }
 
-    (short_names,names)
+    (short_names,names_cache)
 }
 
 fn search_short_name(short_name:&str,short_names:&Vec<String>)->usize{

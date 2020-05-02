@@ -3,7 +3,7 @@ use crate::*;
 pub const wallpaper_movement_scale:f64=16f64;
 
 pub struct Wallpaper{
-    image:Image,
+    image:ImageBase,
     texture:Texture,
 }
 
@@ -21,16 +21,15 @@ impl Wallpaper{
 
             let settings=TextureSettings::new();
             Self{
-                image:Image::new_color([1.0;4]).rect(rect),
+                image:ImageBase::new(White,rect),
                 texture:Texture::empty(&settings).unwrap(),
             }
         }
     }
 
     pub fn mouse_shift(&mut self,dx:f64,dy:f64){
-        let rect=self.image.rectangle.as_mut().unwrap();
-        rect[0]+=dx/wallpaper_movement_scale;
-        rect[1]+=dy/wallpaper_movement_scale;
+        self.image.rect[0]+=dx/wallpaper_movement_scale;
+        self.image.rect[1]+=dy/wallpaper_movement_scale;
     }
 
     pub fn set_image(&mut self,image:&RgbaImage){
@@ -40,7 +39,7 @@ impl Wallpaper{
 }
 impl Drawable for Wallpaper{
     fn set_alpha_channel(&mut self,alpha:f32){
-        self.image.color.as_mut().unwrap()[3]=alpha
+        self.image.color[3]=alpha
     }
 
     fn draw(&mut self,c:&Context,g:&mut GlGraphics){

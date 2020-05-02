@@ -9,11 +9,14 @@ pub use traits::*;
 mod colors;
 pub use colors::*;
 
-mod text;
-pub use text::*;
+mod text_base;
+pub use text_base::TextBase;
 
 mod background;
 pub use background::Background;
+
+mod image_base;
+pub use image_base::ImageBase;
 
 use opengl_graphics::{
     GlGraphics,

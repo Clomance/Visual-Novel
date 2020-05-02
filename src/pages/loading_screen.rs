@@ -1,7 +1,7 @@
 use crate::*;
 
 pub struct LoadingScreen{
-    logo_base:Image,
+    logo_base:ImageBase,
     logo:Texture,
 }
 
@@ -11,7 +11,7 @@ impl LoadingScreen{
         let texture_settings=TextureSettings::new();
 
         Self{
-            logo_base:Image::new().rect([
+            logo_base:ImageBase::new(White,[
                 0f64,
                 0f64,
                 200f64,

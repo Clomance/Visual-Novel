@@ -17,7 +17,7 @@ pub struct DialogueBox<'a,'b>{
     y1:f64, // Граница нижней трети экрана, где находится диалоговое окно
     name_base:TextBase,
     lines:TextViewLinedDependent, // Текстовый блок для диалогов
-    image:Image,
+    image:ImageBase,
     texture:Texture,
     glyphs:GlyphCache<'a>
 }
@@ -53,7 +53,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
                 name_base:TextBase::new_color(White,font_size)
                         .position([name_position_x,y1+name_position_y]),
 
-                image:Image::new_color([1.0;4]).rect([
+                image:ImageBase::new(White,[
                     0f64,
                     y1,
                     window_width,
@@ -112,20 +112,20 @@ impl<'a,'b> DialogueBox<'a,'b>{
     }
 
     pub fn draw_without_text(&mut self,c:&Context,g:&mut GlGraphics){
-        g.image(&self.image,&self.texture,&c.draw_state,c.transform);
+        self.image.draw(&self.texture,&c.draw_state,c.transform,g);
     }
 }
 
 impl<'a,'b> Drawable for DialogueBox<'a,'b>{
     fn set_alpha_channel(&mut self,alpha:f32){
-        self.image.color.as_mut().unwrap()[3]=alpha;
+        self.image.color[3]=alpha;
         //self.lines.set_alpha_channel(alpha);
     }
 
     fn draw(&mut self,c:&Context,g:&mut GlGraphics){
         let name=self.dialogue.get_name(self.dialogue_step);
 
-        g.image(&self.image,&self.texture,&c.draw_state,c.transform); // Основа
+        self.image.draw(&self.texture,&c.draw_state,c.transform,g); // Основа
 
         self.name_base.draw(name,c,g,&mut self.glyphs); // Имя
 

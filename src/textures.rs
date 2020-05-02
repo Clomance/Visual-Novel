@@ -1,4 +1,5 @@
 use crate::*;
+use image::GenericImageView;
 
 pub struct Textures{
     game_wallpapers:Vec<RgbaImage>,
@@ -38,7 +39,7 @@ impl Textures{
             Self{
                 game_wallpapers:load_textures("./resources/images/wallpapers/game",wallpaper_size[0],wallpaper_size[1]),
                 main:vec,
-                characters:load_textures("./resources/images/characters",(2f64*window_height/5f64) as u32,(4f64*window_height/5f64) as u32),
+                characters:load_characters_textutres(window_height*0.75),
             }
         }
     }
@@ -66,5 +67,48 @@ impl Textures{
     #[inline(always)]
     pub fn character(&self,index:usize)->&RgbaImage{
         &self.characters[index]
+    }
+}
+
+fn load_characters_textutres(height:f64)->Vec<RgbaImage>{
+    let path="./resources/images/characters";
+    let meta=metadata(path).unwrap();
+
+    let mut char_textures=Vec::with_capacity(meta.len() as usize);
+
+    let dir=read_dir(path).unwrap();
+
+    for r in dir{
+        let file=r.unwrap();
+        let _name=file.file_name();
+        let path=file.path();
+        let image=load_character_image(path,height);
+        char_textures.push(image)
+    }
+
+    char_textures
+}
+
+use image::{
+    self,
+    DynamicImage,
+    RgbaImage,
+    imageops::FilterType,
+};
+
+// Загрузка изображений
+pub fn load_character_image<P:AsRef<Path>>(path:P,height:f64)->RgbaImage{
+    let mut image=image::open(path).unwrap();
+    let image_height=image.height() as f64;
+    let image_width=image.width() as f64;
+
+    let width=image_width*height/image_height;
+
+    image=image.resize_exact(width as u32,height as u32,FilterType::Gaussian);
+    if let DynamicImage::ImageRgba8(image)=image{
+        image
+    }
+    else{
+        image.into_rgba()
     }
 }

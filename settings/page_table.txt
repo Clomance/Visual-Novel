@@ -1,10 +1,13 @@
-0 - {
-    wallpaper = 0
-    character = 0
-    dialogue = 0
+Опоздание - {
+    wallpaper = аудитория
+    dialogue = dialogue0
 }
 1 - {
-    wallpaper = 0
-    character = 1
-    dialogue = 1
+    wallpaper = аудитория
+    dialogue = dialogue1
+}
+
+После пересдачи - {
+    wallpaper = коридор
+    dialogue = После пересдачи
 }

@@ -4,7 +4,7 @@ use crate::*;
 pub struct PageTable<'a,'c>{
     wallpapers:Vec<&'a RgbaImage>,
     dialogues:Vec<&'c Dialogue>,
-    characters:Vec<&'a RgbaImage>,
+    characters:Vec<Vec<(&'a RgbaImage,CharacterLocation)>>,
     page:usize
 }
 
@@ -19,31 +19,33 @@ impl<'a,'c> PageTable<'a,'c>{
             page:unsafe{Settings.saved_page},
         };
 
-        let table_file=OpenOptions::new().read(true).open("settings/page_table.txt").unwrap();
+        let mut table_file=OpenOptions::new().read(true).open("settings/page_table").unwrap();
 
-        let mut reader=BufReader::new(table_file);
-        let mut line=String::new();
-        let mut line_str;
+        let mut buffer=[0u8;8];
 
-        while let Ok(bytes)=reader.read_line(&mut line){
-            if bytes==0{
-                break // Конец файла
+        while let Ok(_)=table_file.read_exact(&mut buffer){
+            let wallpaper=usize::from_be_bytes(buffer);
+
+            table_file.read_exact(&mut buffer).unwrap();
+            let dialogue=usize::from_be_bytes(buffer);
+
+            table_file.read_exact(&mut buffer[0..1]).unwrap();
+            let char_len=buffer[0] as usize;
+
+            let mut characters=Vec::with_capacity(len);
+            for _ in 0..char_len{
+                table_file.read_exact(&mut buffer).unwrap();
+                let character=usize::from_be_bytes(buffer);
+
+                table_file.read_exact(&mut buffer[0..1]).unwrap();
+                let location:CharacterLocation=unsafe{std::mem::transmute(buffer[0])};
+                characters.push((textures_.character(character),location));
             }
-
-            line_str=line.trim();
-            if line_str.is_empty(){
-                continue // Пропуск пустой строки
-            }
-
             // Проверка на начало блока страницы
-            if let Some(_)=line_str.find("{"){
-                len+=1;
-                let (wallpaper,dialogue,character)=load_page_settings(&mut reader);
-                table.wallpapers.push(&textures_.wallpaper(wallpaper));
-                table.dialogues.push(&dialogues[dialogue]);
-                table.characters.push(&textures_.character(character));
-            }
-            line.clear();
+            len+=1;
+            table.wallpapers.push(&textures_.wallpaper(wallpaper));
+            table.dialogues.push(&dialogues[dialogue]);
+            table.characters.push(characters);
         }
 
         unsafe{
@@ -67,7 +69,7 @@ impl<'a,'c> PageTable<'a,'c>{
         }
     }
 
-    pub fn current_character(&self)->&'a RgbaImage{
+    pub fn current_character(&self)->&Vec<(&'a RgbaImage,CharacterLocation)>{
         &self.characters[self.page]
     }
 

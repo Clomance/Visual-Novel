@@ -9,6 +9,7 @@ const movement_scale:f64=8f64;
 const focused_movement_scale:f64=10f64;
 
 // Позиция персонажа на сцене
+#[derive(Clone)]
 pub enum CharacterLocation{
     Left, // Слева с краю
     LeftCenter, // Центр левой половины
@@ -20,15 +21,14 @@ pub enum CharacterLocation{
 }
 
 struct Character{
-    image:Image,
+    image:ImageBase,
     texture:Texture
 }
 
 impl Character{
     pub fn shift(&mut self,dx:f64,dy:f64){
-        let rect=self.image.rectangle.as_mut().unwrap();
-        rect[0]+=dx;
-        rect[1]+=dy;
+        self.image.rect[0]+=dx;
+        self.image.rect[1]+=dy;
     }
 }
 
@@ -45,8 +45,8 @@ impl CharactersView{
 
     pub fn add_character(&mut self,character:&RgbaImage,location:CharacterLocation){
         let rect=unsafe{
-            let height:f64=window_height-window_height/10f64;
-            let width:f64=3f64*height/4f64;
+            let height:f64=character.height() as f64;
+            let width:f64=character.width() as f64;
 
             let y=window_height-height;
 
@@ -68,11 +68,9 @@ impl CharactersView{
             [x,y,width,height]
         };
 
-        let image=Image::new_color(White).rect(rect);
-
         let settings=TextureSettings::new();
         let character=Character{
-            image:image,
+            image:ImageBase::new(White,rect),
             texture:Texture::from_image(character,&settings),
         };
 
@@ -84,7 +82,7 @@ impl CharactersView{
     }
 
     pub fn set_focus(&mut self,index:usize){
-        let rect=self.characters[index].image.rectangle.as_mut().unwrap();
+        let rect=&mut self.characters[index].image.rect;
         rect[0]-=focused_movement;
         rect[1]-=focused_movement;
         rect[2]+=focused_resize;
@@ -103,7 +101,7 @@ impl CharactersView{
 impl Drawable for CharactersView{
     fn set_alpha_channel(&mut self,alpha:f32){
         for ch in &mut self.characters{
-            ch.image.color.as_mut().unwrap()[3]=alpha;
+            ch.image.color[3]=alpha;
         }
     }
 
