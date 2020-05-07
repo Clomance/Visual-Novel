@@ -1,31 +1,53 @@
-use glium::index::{NoIndices, PrimitiveType};
-use glium::{Program, Surface,VertexBuffer,implement_vertex,uniform,Display};
-use graphics::color::gamma_srgb_to_linear;
-use graphics::{self, DrawState, Graphics};
-use shader_version::glsl::GLSL;
-use shader_version::{OpenGL, Shaders};
+use glium::{
+    // macroses
+    implement_vertex,
+    uniform,
+    //
+    Program,
+    Surface,
+    VertexBuffer,
+    Display,
+    index::{NoIndices,PrimitiveType},
+    uniforms::{Sampler,SamplerWrapFunction}
+};
 
-use glium::uniforms::{Sampler, SamplerWrapFunction};
+use graphics::{
+    self,
+    DrawState,
+    Graphics,
+    color::gamma_srgb_to_linear
+};
+
+use shader_version::{
+    OpenGL,
+    Shaders,
+    glsl::GLSL
+};
+
 use std::cmp::min;
 
-use crate::*;
+use super::{
+    draw_state,
+    Texture,
+};
 
-const CHUNKS: usize = 100;
+const CHUNKS:usize=100;
 
+implement_vertex!(PlainVertex,color,pos);
 #[derive(Copy,Clone)]
 struct PlainVertex{
-    color:[f32; 4],
-    pos: [f32; 2],
+    color:[f32;4],
+    pos:[f32;2],
 }
 
-implement_vertex!(PlainVertex, color, pos);
-#[derive(Copy, Clone)]
-struct TexturedVertex {
-    pos: [f32; 2],
-    uv: [f32; 2],
+implement_vertex!(TexturedVertex,pos,uv);
+#[derive(Copy,Clone)]
+struct TexturedVertex{
+    pos:[f32;2],
+    uv:[f32;2],
 }
 
-implement_vertex!(TexturedVertex, pos, uv);
+
 pub struct Glium2d {
     pub colored_offset: usize,
     pub colored_draw_state: DrawState,

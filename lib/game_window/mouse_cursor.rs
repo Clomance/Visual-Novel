@@ -1,6 +1,8 @@
 use super::window_center; // statics
 
 use glium::{
+    BlendingFunction,
+    LinearBlendingFactor,
     Blend,
     Frame,
     implement_vertex,
@@ -71,7 +73,7 @@ const points:usize=60usize; // Количество точек для иконк
 
 const d_angle:f32=2f32*std::f32::consts::PI/points as f32;
 
-const mouse_icon_color:(f32,f32,f32,f32)=(0.2,0.3,0.9,0.8);
+const mouse_icon_color:(f32,f32,f32,f32)=(0.15,0.25,0.9,0.85);
 
 implement_vertex!(Vertex2DPoint,position);
 #[derive(Clone,Copy)]
@@ -154,8 +156,18 @@ impl MouseCursorIcon{
         let indices=IndexBuffer::new(display,PrimitiveType::TrianglesList,&indices).unwrap();
 
         let mut draw_parameters:DrawParameters=Default::default();
-        draw_parameters.blend=Blend::alpha_blending();
 
+        draw_parameters.blend=Blend{
+            color:BlendingFunction::Addition{
+                source:LinearBlendingFactor::SourceAlpha,
+                destination:LinearBlendingFactor::OneMinusSourceAlpha,
+            },
+            alpha:BlendingFunction::Addition{
+                source:LinearBlendingFactor::One,
+                destination:LinearBlendingFactor::One,
+            },
+            constant_value:(0.0,0.0,0.0,0.0),
+        };
         Self{
             vertex_buffer,
             vertex_buffer_pressed,

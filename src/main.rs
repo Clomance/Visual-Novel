@@ -142,7 +142,7 @@ fn main(){
 
             // Полный цикл игры
             'game:loop{
-                wallpaper.update_image(texture_base.main_menu_wallpaper(),window.display()); // Устрановка обоев главного меню
+                wallpaper.update_image(texture_base.main_menu_wallpaper()); // Устрановка обоев главного меню
 
                 // Цикл главного меню
                 match MainMenu::new(&mut wallpaper,&mut window).start(&mut window){
@@ -175,7 +175,7 @@ fn main(){
                     let wallpaper_path=page_table.current_wallpaper();
                     let current_wallpaper=textures::load_wallpaper_image(wallpaper_path,wallpaper_size[0],wallpaper_size[1]);
 
-                    wallpaper.update_image(&current_wallpaper,window.display()); // Установка текущего фона игры
+                    wallpaper.update_image(&current_wallpaper); // Установка текущего фона игры
 
                     dialogue_box.set_dialogue(page_table.current_dialogue()); // Установка текущего диалога
 
@@ -314,7 +314,7 @@ fn main(){
                 }
                 Settings.continue_game=false; // Отключение "продолжить игру"
 
-                wallpaper.update_image(texture_base.ending_wallpaper(),window.display()); // Конечная заставка игры
+                wallpaper.update_image(texture_base.ending_wallpaper()); // Конечная заставка игры
 
                 window.set_new_smooth(default_page_smooth);
 

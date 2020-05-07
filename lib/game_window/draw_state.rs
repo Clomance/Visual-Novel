@@ -35,20 +35,20 @@ pub fn convert_scissor(rect:Option<[u32;4]>)->Option<glium::Rect>{
     })
 }
 
-pub fn convert_stencil(stencil: Option<draw_state::Stencil>) -> glium::draw_parameters::Stencil {
-    match stencil {
-        None => Default::default(),
-        Some(stencil) => {
-            let (stencil_test, stencil_test_fail_operation, reference_value) = {
-                match stencil {
-                    Stencil::Clip(val) => (StencilTest::AlwaysFail, StencilOperation::Replace, val),
-                    Stencil::Inside(val) => (
-                        StencilTest::IfEqual { mask: 255 },
+pub fn convert_stencil(stencil:Option<draw_state::Stencil>)->glium::draw_parameters::Stencil{
+    match stencil{
+        None=>Default::default(),
+        Some(stencil)=>{
+            let (stencil_test,stencil_test_fail_operation,reference_value)={
+                match stencil{
+                    Stencil::Clip(val)=>(StencilTest::AlwaysFail,StencilOperation::Replace,val),
+                    Stencil::Inside(val)=>(
+                        StencilTest::IfEqual{mask:255},
                         StencilOperation::Keep,
                         val,
                     ),
-                    Stencil::Outside(val) => (
-                        StencilTest::IfNotEqual { mask: 255 },
+                    Stencil::Outside(val)=>(
+                        StencilTest::IfNotEqual{mask:255},
                         StencilOperation::Keep,
                         val,
                     ),
@@ -77,7 +77,7 @@ pub fn convert_stencil(stencil: Option<draw_state::Stencil>) -> glium::draw_para
     }
 }
 
-pub fn convert_blend(blend:Option<draw_state::Blend>)->glium::Blend{
+pub fn convert_blend(blend:Option<Blend>)->glium::Blend{
     match blend{
         None=>Default::default(),
         Some(blend)=>{

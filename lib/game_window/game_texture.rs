@@ -1,27 +1,32 @@
-pub use glium::backend::Facade;
-pub use glium::texture::srgb_texture2d::SrgbTexture2d;
-pub use glium::texture::{RawImage2d, TextureCreationError};
-pub use glium::uniforms::SamplerWrapFunction;
-pub use graphics::ImageSize;
-pub use texture::{self, CreateTexture, Format, TextureOp, TextureSettings, UpdateTexture};
+use glium::{
+    backend::Facade,
+    uniforms::SamplerWrapFunction,
+    texture::{RawImage2d,TextureCreationError,srgb_texture2d::SrgbTexture2d},
+};
+
+use graphics::ImageSize;
+
+use texture::{
+    self,
+    CreateTexture,
+    Format,
+    TextureOp,
+    TextureSettings,
+    UpdateTexture
+};
 
 use image::{RgbaImage,DynamicImage};
 
 use std::path::Path;
 
-use crate::*;
-
 /// Flip settings.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Flip {
-    /// Does not flip.
-    None,
-    /// Flips image vertically.
-    Vertical,
+#[derive(Clone,Copy,PartialEq,Eq)]
+pub enum Flip{
+    None, // Does not flip.
+    Vertical, // Flips image vertically.
 }
 
-/// Wrapper for 2D texture.
-pub struct Texture(pub SrgbTexture2d, pub [SamplerWrapFunction; 2]);
+pub struct Texture(pub SrgbTexture2d,pub [SamplerWrapFunction;2]); // Wrapper for 2D texture.
 
 impl Texture{
     /// Creates a new `Texture`.
@@ -35,7 +40,7 @@ impl Texture{
     }
 
     /// Creates a texture from path.
-    pub fn from_path<F:Facade,P:AsRef<Path>>(factory: &mut F,path: P,flip: Flip,settings: &TextureSettings,)->Result<Self, String>{
+    pub fn from_path<F:Facade,P:AsRef<Path>>(factory:&mut F,path:P,flip:Flip,settings:&TextureSettings)->Result<Self,String>{
         let img=image::open(path).map_err(|e|e.to_string())?;
 
         let img=match img {
@@ -54,8 +59,7 @@ impl Texture{
 
     /// Creates a texture from image.
 
-    pub fn from_image<F>(factory:&mut F,img:&RgbaImage,settings:&TextureSettings)->Result<Self,TextureCreationError>
-            where F: Facade{
+    pub fn from_image<F:Facade>(factory:&mut F,img:&RgbaImage,settings:&TextureSettings)->Result<Self,TextureCreationError>{
         let (width, height) = img.dimensions();
         CreateTexture::create(factory, Format::Rgba8, img, [width, height], settings)
     }
@@ -78,19 +82,24 @@ impl Texture{
     }
 
     /// Updates texture with an image.
-    pub fn update<F: Facade>(
-        &mut self,
-        factory: &mut F,
-        img: &RgbaImage,
-    ) -> Result<(), TextureCreationError>{
-        let (width, height) = img.dimensions();
-        UpdateTexture::update(self, factory, Format::Rgba8, img, [0, 0], [width, height])
+    pub fn update(&mut self,img:&RgbaImage){
+        let (width,height)=img.dimensions();
+        let (_, h)=self.get_size();
+
+        self.0.write(glium::Rect{
+                left:0u32,
+                bottom:h-height,
+                width:width,
+                height:height,
+            },
+            RawImage2d::from_raw_rgba_reversed(img,(width,height)),
+        );
     }
 }
 
 impl ImageSize for Texture {
-    fn get_size(&self) -> (u32, u32) {
-        let ref tex = self.0;
+    fn get_size(&self)->(u32,u32){
+        let ref tex=self.0;
         (tex.get_width(), tex.get_height().unwrap())
     }
 }
@@ -100,14 +109,7 @@ impl<F> TextureOp<F> for Texture {
 }
 
 impl<F: Facade> CreateTexture<F> for Texture{
-
-    fn create<S: Into<[u32; 2]>>(
-        factory: &mut F,
-        _format: Format,
-        memory: &[u8],
-        size: S,
-        settings: &TextureSettings,
-    ) -> Result<Self, Self::Error> {
+    fn create<S: Into<[u32; 2]>>(factory: &mut F,_format: Format,memory: &[u8],size: S,settings: &TextureSettings) -> Result<Self, Self::Error> {
         use texture::Wrap;
         let size = size.into();
 
@@ -130,28 +132,26 @@ impl<F: Facade> CreateTexture<F> for Texture{
     }
 }
 
-impl<F: Facade> UpdateTexture<F> for Texture{
-    fn update<O: Into<[u32; 2]>, S: Into<[u32; 2]>>(
+impl<F:Facade> UpdateTexture<F> for Texture{
+    fn update<O:Into<[u32;2]>,S:Into<[u32;2]>>(
         &mut self,
-        _factory: &mut F,
-        _format: Format,
-        memory: &[u8],
-        offset: O,
-        size: S,
-    ) -> Result<(), Self::Error> {
-        use glium::Rect;
-
-        let offset = offset.into();
-        let size = size.into();
-        let (_, h) = self.get_size();
+        _factory:&mut F,
+        _format:Format,
+        memory:&[u8],
+        offset:O,
+        size:S,
+    )->Result<(),Self::Error>{
+        let offset=offset.into();
+        let size=size.into();
+        let (_,h)=self.get_size();
         self.0.write(
-            Rect {
-                left: offset[0],
-                bottom: h - offset[1] - size[1],
-                width: size[0],
-                height: size[1],
+            glium::Rect{
+                left:offset[0],
+                bottom:h-offset[1]-size[1],
+                width:size[0],
+                height:size[1],
             },
-            RawImage2d::from_raw_rgba_reversed(memory, (size[0], size[1])),
+            RawImage2d::from_raw_rgba_reversed(memory,(size[0],size[1])),
         );
         Ok(())
     }

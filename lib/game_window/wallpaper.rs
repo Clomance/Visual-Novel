@@ -10,9 +10,10 @@ use super::{
     window_height,
     //
     Texture,
-    TextureSettings,
     GameGraphics,
 };
+
+use texture::TextureSettings;
 
 use image::RgbaImage;
 
@@ -53,8 +54,8 @@ impl Wallpaper{
     }
 
     // Обновляет картинка (она должна быть такого же размера, как и предыдущая)
-    pub fn update_image(&mut self,image:&RgbaImage,display:&mut Display){
-        self.texture.update(display,image);
+    pub fn update_image(&mut self,image:&RgbaImage){
+        self.texture.update(image);
     }
 }
 

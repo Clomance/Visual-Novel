@@ -94,7 +94,7 @@ impl<'a> EditTextView<'a>{
                 AlignX::Center=>character_width/2f64,
                 AlignX::Left=>0f64,
             };
-            self.base.image.rect[0]+=dx/2f64; // Сдвиг
+            self.base.image.rect[0]+=dx; // Сдвиг
         }
     }
 }
