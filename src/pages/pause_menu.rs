@@ -10,10 +10,10 @@ pub struct PauseMenu<'a>{
 
 impl<'a> PauseMenu<'a>{
     #[inline(always)]
-    pub unsafe fn new()->PauseMenu<'a>{
+    pub unsafe fn new(window:&mut GameWindow)->PauseMenu<'a>{
         // Загрузка шрифта
         let texture_settings=TextureSettings::new();
-        let menu_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let menu_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
         
         // Настройка меню
         let menu_settings=MenuSettings::new("Пауза",&["Продолжить","Главное меню","Настройки","Выход"])
@@ -27,8 +27,12 @@ impl<'a> PauseMenu<'a>{
 
     #[inline(always)]
     pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
-        'page:while self.smooth(window)!=Game::Exit{
-
+        'page:loop{
+            match self.smooth(window){
+                Game::Exit=>return Game::Exit,
+                Game::Back=>return Game::Back,
+                _=>{}
+            }
             while let Some(event)=window.next_event(){
                 match event{
                     GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
@@ -57,7 +61,7 @@ impl<'a> PauseMenu<'a>{
                                         0=>return Game::ContinueGamePlay, // Кнопка продолжить
                                         1=>return Game::MainMenu, // Кнопка главного меню
                                         2=>{ // Кнопка настроек
-                                            match SettingsPage::new().start(window){
+                                            match SettingsPage::new(window).start(window){
                                                 Game::Exit=>return Game::Exit,
                                                 Game::Back=>continue 'page,
                                                 _=>{}
@@ -82,7 +86,6 @@ impl<'a> PauseMenu<'a>{
                 }
             }
         }
-        Game::Exit
     }
 
     #[inline(always)]
@@ -101,11 +104,18 @@ impl<'a> PauseMenu<'a>{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 GameWindowEvent::Draw=>{ // Рендеринг
-                    if !window.draw_smooth(|alpha,c,g|{
+                    if 1f32<window.draw_smooth(|alpha,c,g|{
                         background.draw_smooth(alpha,c,g);
                         self.menu.draw_smooth(alpha,c,g);
                     }){
                         break
+                    }
+                }
+
+                GameWindowEvent::KeyboardReleased(button)=>{
+                    match button{
+                        KeyboardButton::Escape=>return Game::ContinueGamePlay,
+                        _=>{}
                     }
                 }
                 _=>{}

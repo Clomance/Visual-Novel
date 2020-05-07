@@ -12,7 +12,7 @@ enum MenuButtons{
 impl MenuButtons{
     #[inline(always)]
     fn button(mut id:u8)->MenuButtons{
-        if unsafe{!Settings._continue}{
+        if unsafe{!Settings.continue_game}{
             id+=1;
         }
         match id{
@@ -24,21 +24,22 @@ impl MenuButtons{
     }
 }
 
-pub struct MainMenu<'a>{
+pub struct MainMenu<'a,'b>{
     pub menu:Menu<'a>,
+    pub wallpaper:&'b mut Wallpaper
 }
 
-impl<'a> MainMenu<'a>{
+impl<'a,'b> MainMenu<'a,'b>{
     #[inline(always)]
-    pub unsafe fn new()->MainMenu<'a>{
+    pub unsafe fn new(wallpaper:&'b mut Wallpaper,window:&mut GameWindow)->MainMenu<'a,'b>{
         let texture_settings=TextureSettings::new();
 
         // Настройка заголовка меню
-        let menu_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let menu_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
 
         let mut buttons_text=Vec::with_capacity(4);
 
-        if Settings._continue{
+        if Settings.continue_game{
             buttons_text.push("Продолжить".to_string());
         }
         buttons_text.push("Новая игра".to_string());
@@ -52,11 +53,15 @@ impl<'a> MainMenu<'a>{
 
         Self{
             menu:Menu::new(menu_settings,menu_glyphs), // Создание меню
+            wallpaper,
         }
     }
 
     #[inline(always)]
     pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
+        let radius=mouse_cursor.center_radius();
+        self.wallpaper.mouse_shift(radius[0],radius[1]);
+
         window.set_smooth(default_page_smooth);
 
         'main:while self.smooth(window)!=Game::Exit{
@@ -68,12 +73,14 @@ impl<'a> MainMenu<'a>{
                     GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                     GameWindowEvent::Draw=>{ //Рендеринг
-                        window.draw_with_wallpaper(|c,g|{
+                        window.draw(|c,g|{
+                            self.wallpaper.draw(c,g);
                             self.draw(c,g);
                         });
                     }
 
                     GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                        self.wallpaper.mouse_shift(dx,dy);
                         self.menu.mouse_shift(dx,dy)
                     }
 
@@ -104,12 +111,13 @@ impl<'a> MainMenu<'a>{
                                         }
 
                                         MenuButtons::Settings=>{
-                                            mouse_cursor.save_position(); // Сохранение старой позиции мышки
-                                            match SettingsPage::new().start(window){
+                                            mouse_cursor.save_position(); // Сохранение текущей позиции мышки
+                                            match SettingsPage::new(window).start(window){
                                                 Game::Exit=>return Game::Exit,
                                                 Game::Back=>{
                                                     let (dx,dy)=mouse_cursor.saved_movement();
                                                     self.menu.mouse_shift(dx,dy);
+                                                    self.wallpaper.mouse_shift(dx,dy);
                                                     continue 'main
                                                 }
                                                 _=>{}
@@ -146,11 +154,12 @@ impl<'a> MainMenu<'a>{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                    self.wallpaper.mouse_shift(dx,dy);
                     self.menu.mouse_shift(dx,dy)
                 }
 
                 GameWindowEvent::Draw=>{
-                    if !window.draw_smooth_with_wallpaper(|alpha,c,g|{
+                    if 1f32<window.draw_smooth(|alpha,c,g|{
                         self.draw_smooth(alpha,c,g);
                     }){
                         break
@@ -164,14 +173,14 @@ impl<'a> MainMenu<'a>{
     }
 
     #[inline(always)]
-    pub fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
-        //self.wallpaper.draw(&context,graphics);
+    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
+        self.wallpaper.draw(context,graphics);
         self.menu.draw(context,graphics);
     }
 
     #[inline(always)]
-    pub fn draw_smooth(&mut self,alpha:f32,context:&Context,graphics:&mut GlGraphics){
-        //self.wallpaper.draw_smooth(alpha,context,graphics);
+    pub fn draw_smooth(&mut self,alpha:f32,context:&Context,graphics:&mut GameGraphics){
+        self.wallpaper.draw_smooth(alpha,context,graphics);
         self.menu.draw_smooth(alpha,context,graphics);
     }
 }

@@ -1,27 +1,10 @@
-#![allow(unused_must_use)]
-
-use lib::White;
-
-mod mouse_cursor;
-pub use mouse_cursor::MouseCursor;
-
-mod wallpaper;
-pub use wallpaper::*;
-
-use glutin::window::Icon;
-use crate::{
-    Settings,
-    Drawable
+use glium::{
+    Display,
+    Surface,
+    Frame
 };
 
-use image::{GenericImageView,RgbaImage};
-
-use opengl_graphics::{
-    GlGraphics,
-    OpenGL
-};
-
-use glutin::{
+use glium::glutin::{
     event::{
         Event,
         WindowEvent,
@@ -29,22 +12,34 @@ use glutin::{
         ElementState,
     },
     event_loop::{ControlFlow,EventLoop},
-    window::{Window,WindowBuilder,Fullscreen},
+    window::{WindowBuilder,Fullscreen},
     ContextBuilder,
-    ContextWrapper,
-    PossiblyCurrent,
-    GlRequest,
-    dpi::PhysicalPosition,
-    platform::desktop::EventLoopExtDesktop
+    window::Window,
+    platform::desktop::EventLoopExtDesktop,
+    window::Icon
 };
 
-use graphics::{
-    Viewport,
-    Context,
-    Graphics
-};
+mod game_graphics;
+pub use game_graphics::*;
+
+pub mod draw_state;
+
+use image::GenericImageView;
+
+mod mouse_cursor;
+pub use mouse_cursor::*;
+
+mod game_texture;
+pub use game_texture::*;
+
+mod wallpaper;
+pub use wallpaper::*;
 
 use std::collections::VecDeque;
+
+const open_gl:shader_version::OpenGL=shader_version::OpenGL::V3_2;
+
+pub type GlyphCache<'a>=graphics::glyph_cache::rusttype::GlyphCache<'a,Display,Texture>;
 
 /*
     EventLoop - минимум четыре шага для моей схемы с мгновенным закрытием цикла обработки событий:
@@ -62,23 +57,21 @@ use std::collections::VecDeque;
     При получении фокуса игра возвращается в исходное состояние
 */
 
-pub const openGL:OpenGL=OpenGL::V3_2;
+pub static mut mouse_cursor:MouseCursor=MouseCursor::new();
 
 pub static mut window_width:f64=0f64;
 pub static mut window_height:f64=0f64;
 pub static mut window_center:[f64;2]=[0f64;2];
 
-pub static mut mouse_cursor:MouseCursor=MouseCursor::new();
-
 pub struct GameWindow{
     event_loop:EventLoop<()>,
-    context:ContextWrapper<PossiblyCurrent,Window>,
-    graphics:GlGraphics,
+    glium2d:Glium2d,
+    display:Display,
+    mouse_icon:MouseCursorIcon,
     events:VecDeque<GameWindowEvent>,
     events_handler:fn(&mut Self),
     width:u32,
     height:u32,
-    wallpaper:Wallpaper,
     alpha_channel:f32,
     smooth:f32,
 }
@@ -111,8 +104,8 @@ pub enum MouseButton{
 use GameWindowEvent::*;
 
 impl GameWindow{
-    #[inline]
-    pub fn new()->GameWindow{
+    #[inline(always)]
+    pub fn new(title:&String)->GameWindow{
         let event_loop=EventLoop::new();
         let monitor=event_loop.primary_monitor();
         let size;
@@ -133,67 +126,47 @@ impl GameWindow{
             .with_decorations(false)
             .with_resizable(false)
             .with_always_on_top(true)
-            .with_title(unsafe{&Settings.game_name})
+            .with_title(title)
             .with_window_icon(Some(icon))
             .with_fullscreen(Some(fullscreen));
 
-        let api=openGL.get_major_minor();
 
-        let builder=ContextBuilder::new()
-            .with_gl(GlRequest::GlThenGles{
-                opengl_version:(api.0 as u8,api.1 as u8),
-                opengles_version:(api.0 as u8,api.1 as u8),
-            })
+        let context_builder=ContextBuilder::new()
             .with_vsync(true)
             .with_srgb(true);
 
-        let ctx=builder.build_windowed(window_builder,&event_loop).unwrap();
-        let ctx=unsafe{ctx.make_current().unwrap()};
-
-        ctx.window().set_cursor_visible(false);
-        unsafe{ // Установка курсора в центр экрана - как начальная точка при сдвиге интерфейса при движении мышки
-            let position=PhysicalPosition{
-                x:window_center[0],
-                y:window_center[1],
-            };
-            ctx.window().set_cursor_position(position);
-            mouse_cursor.set_position([position.x,position.y]);
-        }
-
-        gl::load_with(|s|ctx.get_proc_address(s) as *const _);  // Подключение OpenGL
-        let mut gl=GlGraphics::new(openGL);                     //
+        let display=Display::new(window_builder, context_builder, &event_loop).unwrap();
+        let mut frame=display.draw();
+        frame.clear_color(1.0, 1.0, 1.0, 1.0);
+        frame.finish().unwrap();
 
         let width=unsafe{window_width as u32};
         let height=unsafe{window_height as u32};
-        let viewport=Viewport{
-            rect:[0,0,width as i32,height as i32],
-            draw_size:[width,height],
-            window_size:unsafe{[window_width,window_height]},
-        };
 
-        // Заливка окна белым цветом
-        gl.draw(viewport,|_,g|{
-            g.clear_color(White)
-        });
-        ctx.swap_buffers();
+        display.gl_window().window().set_cursor_visible(false);
 
         Self{
-            event_loop:event_loop,
-            context:ctx,
-            graphics:gl,
+            event_loop,
+            glium2d:game_graphics::Glium2d::new(open_gl,&display),
+            mouse_icon:MouseCursorIcon::new(&display,unsafe{[window_width as f32,window_height as f32]}),
+            display,
             events:VecDeque::with_capacity(32),
             events_handler:GameWindow::event_listener,
-            width:width,
-            height:height,
-            wallpaper:Wallpaper::new(),
+            width,
+            height,
             alpha_channel:0f32,
             smooth:0f32,
         }
     }
 
-    #[inline]
-    pub fn window(&self)->&Window{
-        self.context.window()
+    #[inline(always)]
+    pub fn display(&mut self)->&mut Display{
+        &mut self.display
+    }
+
+    #[inline(always)]
+    pub fn size(&self)->[f64;2]{
+        [self.width as f64,self.height as f64]
     }
 
     // Получение событий
@@ -204,27 +177,14 @@ impl GameWindow{
         self.events.pop_front()
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn request_redraw(&self){
-        self.context.window().request_redraw();
+        self.display.gl_window().window().request_redraw();
     }
 
-    #[inline]
-    pub fn redraw(&self){
-        self.context.swap_buffers().unwrap();
-    }
-
-    #[inline]
+    #[inline(always)]
     pub fn set_hide(&self,hide:bool){
-        self.context.window().set_minimized(hide);
-    }
-
-    pub fn set_cursor_position(&self,position:[f64;2]){
-        let position=PhysicalPosition{
-            x:position[0],
-            y:position[1]
-        };
-        self.context.window().set_cursor_position(position);
+        self.display.gl_window().window().set_minimized(hide);
     }
 }
 
@@ -234,7 +194,11 @@ impl GameWindow{
     fn event_listener(&mut self){
         let vec=&mut self.events as *mut VecDeque<GameWindowEvent>;
 
-        let window=self as *mut GameWindow;
+        let game_window=self as *mut GameWindow;
+
+        let display=self.display.gl_window();
+
+        let window:&Window=display.window();
 
         self.event_loop.run_return(|event,_,control_flow|{
             *control_flow=ControlFlow::Wait;
@@ -254,7 +218,6 @@ impl GameWindow{
                             let dx=position.x-last_position[0];
                             let dy=position.y-last_position[1];
                             mouse_cursor.set_position([position.x,position.y]);
-                            (*window).wallpaper.mouse_shift(dx,dy);
                             MouseMovementDelta((dx,dy))
                         }
                         
@@ -263,7 +226,7 @@ impl GameWindow{
                             if state==ElementState::Pressed{
                                 match button{
                                     GMouseButton::Left=>unsafe{
-                                        mouse_cursor.pressed();
+                                        (*game_window).mouse_icon.pressed();
                                         MousePressed(MouseButton::Left)
                                     }
                                     GMouseButton::Middle=>MousePressed(MouseButton::Middle),
@@ -274,7 +237,7 @@ impl GameWindow{
                             else{
                                 match button{
                                     GMouseButton::Left=>unsafe{
-                                        mouse_cursor.released();
+                                        (*game_window).mouse_icon.released();
                                         MouseReleased(MouseButton::Left)
                                     }
                                     GMouseButton::Middle=>MouseReleased(MouseButton::Middle),
@@ -291,6 +254,9 @@ impl GameWindow{
                             else{
                                 KeyboardButton::Unknown
                             };
+                            if key==KeyboardButton::F5{
+                                unsafe{(*game_window).screenshot()}
+                            }
                             if input.state==ElementState::Pressed{
                                 KeyboardPressed(key)
                             }
@@ -311,8 +277,11 @@ impl GameWindow{
                         }
 
                         WindowEvent::Focused(_)=>unsafe{
-                            (*window).set_hide(true); // Сворацивание окна
-                            (*window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+                            window.set_minimized(true); // Сворацивание окна
+
+                            (*game_window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+                            *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
+
                             GameWindowEvent::Hide(true) // Передача события во внешнее управление
                         }
                         _=>None // Игнорирование остальных событий
@@ -321,15 +290,12 @@ impl GameWindow{
 
                 // Создание кадра и запрос на его вывод на окно
                 Event::MainEventsCleared=>{
-                    unsafe{
-                        (*window).request_redraw()
-                    }
+                    window.request_redraw();
                     None
                 }
 
                 // Вывод кадра на окно
                 Event::RedrawRequested(_)=>{
-                    unsafe{(*window).redraw()};
                     Draw
                 }
 
@@ -352,7 +318,12 @@ impl GameWindow{
     // Функция ожидания получения фокуса - перехватывает управление до получения окном фокуса
     fn wait_until_focused(&mut self){
         let vec=&mut self.events as *mut VecDeque<GameWindowEvent>;
-        let window=self as *mut GameWindow;
+
+        let game_window=self as *mut GameWindow;
+
+        let display=self.display.gl_window();
+
+        let window:&Window=display.window();
 
         self.event_loop.run_return(|event,_,control_flow|{
             *control_flow=ControlFlow::Wait;
@@ -366,9 +337,11 @@ impl GameWindow{
                         }
 
                         WindowEvent::Focused(_)=>unsafe{
-                            (*window).events_handler=GameWindow::event_listener; // Смена фукции обработки событий
-                            (*window).set_hide(false); // Выведение окна на экран
+                            (*game_window).events_handler=GameWindow::event_listener; // Смена фукции обработки событий
+                            window.set_minimized(false);
+
                             *control_flow=ControlFlow::Exit; // Остановка цикла обработки событий
+
                             (*vec).push_back(Hide(false)); // Передача события во внешнее управление
                         }
                         _=>{}
@@ -398,161 +371,83 @@ impl GameWindow{
 
 // Функции для рисования
 impl GameWindow{
-    // Рисует только обои и курсор
-    pub fn draw_wallpaper(&mut self){
-        let viewport=Viewport{
-            rect:[0,0,self.width as i32,self.height as i32],
-            draw_size:[self.width,self.height],
-            window_size:unsafe{[window_width,window_height]},
-        };
-        let context=self.graphics.draw_begin(viewport);
-        self.wallpaper.draw(&context,&mut self.graphics);
-
-        unsafe{
-            mouse_cursor.draw(&context,&mut self.graphics);
-        }
-        
-        self.graphics.draw_end();
+    // Даёт прямое управление буфером кадра
+    pub fn draw_raw<F:FnOnce(&mut Frame)>(&mut self,f:F){
+        let mut frame=self.display.draw();
+        f(&mut frame);
+        frame.finish();
     }
 
-    pub fn draw_wallpaper_smooth(&mut self)->bool{
-        let viewport=Viewport{
+    pub fn draw<F:FnOnce(&graphics::Context,&mut GameGraphics)>(&mut self,f:F){
+        let viewport=graphics::Viewport{
             rect:[0,0,self.width as i32,self.height as i32],
             draw_size:[self.width,self.height],
             window_size:unsafe{[window_width,window_height]},
         };
 
-        let context=self.graphics.draw_begin(viewport);
+        let mut frame=self.display.draw();
 
-        self.wallpaper.set_alpha_channel(self.alpha_channel);
-        self.wallpaper.draw(&context,&mut self.graphics);
+        let mut g=GameGraphics::new(&mut self.glium2d,&mut frame);
+        let context=graphics::Context::new_viewport(viewport);
+        f(&context,&mut g);
 
         unsafe{
-            mouse_cursor.draw(&context,&mut self.graphics);
+            let mouse_position=mouse_cursor.position();
+            let dx=(mouse_position[0]/window_center[0]) as f32-1f32;
+            let dy=1f32-(mouse_position[1]/window_center[1]) as f32;
+            self.mouse_icon.draw(g.frame(),(dx,dy));
         }
 
-        self.graphics.draw_end();
+        if g.system.colored_offset>0{
+            g.flush_colored();
+        }
 
-        self.alpha_channel+=self.smooth;
-        if self.alpha_channel>1.0{
-            false
-        }
-        else{
-            true
-        }
+        frame.finish();
     }
 
     // Рисует курсор и выполняет замыкание f
-    pub fn draw<F:FnOnce(&Context,&mut GlGraphics)>(&mut self,f:F){
-
-        let viewport=Viewport{
+    // Выдаёт изменяющийся альфа-канал для рисования, возвращает следующее значение альфа-канала
+    pub fn draw_smooth<F:FnOnce(f32,&graphics::Context,&mut GameGraphics)>(&mut self,f:F)->f32{
+        let viewport=graphics::Viewport{
             rect:[0,0,self.width as i32,self.height as i32],
             draw_size:[self.width,self.height],
             window_size:unsafe{[window_width,window_height]},
         };
 
-        let context=self.graphics.draw_begin(viewport);
+        let mut frame=self.display.draw();
 
-        f(&context,&mut self.graphics);
-
-        unsafe{
-            mouse_cursor.draw(&context,&mut self.graphics);
-        }
-
-        self.graphics.draw_end();
-    }
-
-    pub fn draw_smooth<F: FnOnce(f32,&Context,&mut GlGraphics)>(&mut self,f:F)->bool{
-        let viewport=Viewport{
-            rect:[0,0,self.width as i32,self.height as i32],
-            draw_size:[self.width,self.height],
-            window_size:unsafe{[window_width,window_height]},
-        };
-
-        let context=self.graphics.draw_begin(viewport);
-
-        f(self.alpha_channel,&context,&mut self.graphics);
+        let mut g=GameGraphics::new(&mut self.glium2d,&mut frame);
+        let context=graphics::Context::new_viewport(viewport);
+        f(self.alpha_channel,&context,&mut g);
 
         unsafe{
-            mouse_cursor.draw(&context,&mut self.graphics);
+            let mouse_position=mouse_cursor.position();
+            let dx=(mouse_position[0]/window_center[0]) as f32-1f32;
+            let dy=1f32-(mouse_position[1]/window_center[1]) as f32;
+            self.mouse_icon.draw(g.frame(),(dx,dy));
         }
 
-        self.graphics.draw_end();
+        if g.system.colored_offset>0{
+            g.flush_colored();
+        }
+
+        frame.finish();
 
         self.alpha_channel+=self.smooth;
-        if self.alpha_channel>1.0{
-            false
-        }
-        else{
-            true
-        }
-    }
-
-    // Рисует обои, курсор и выполняет замыкание f
-    pub fn draw_with_wallpaper<F: FnOnce(&Context,&mut GlGraphics)>(&mut self,f:F){
-
-        let viewport=Viewport{
-            rect:[0,0,self.width as i32,self.height as i32],
-            draw_size:[self.width,self.height],
-            window_size:unsafe{[window_width,window_height]},
-        };
-
-        let context=self.graphics.draw_begin(viewport);
-        self.wallpaper.draw(&context,&mut self.graphics);
-
-        f(&context,&mut self.graphics);
-
-        unsafe{
-            mouse_cursor.draw(&context,&mut self.graphics);
-        }
-
-        self.graphics.draw_end();
-    }
-
-    pub fn draw_smooth_with_wallpaper<F: FnOnce(f32,&Context,&mut GlGraphics)>(&mut self,f:F)->bool{
-        let viewport=Viewport{
-            rect:[0,0,self.width as i32,self.height as i32],
-            draw_size:[self.width,self.height],
-            window_size:unsafe{[window_width,window_height]},
-        };
-
-        let context=self.graphics.draw_begin(viewport);
-
-        self.wallpaper.set_alpha_channel(self.alpha_channel);
-        self.wallpaper.draw(&context,&mut self.graphics);
-
-        f(self.alpha_channel,&context,&mut self.graphics);
-
-        unsafe{
-            mouse_cursor.draw(&context,&mut self.graphics);
-        }
-
-        self.graphics.draw_end();
-
-        self.alpha_channel+=self.smooth;
-        if self.alpha_channel>1.0{
-            false
-        }
-        else{
-            true
-        }
+        self.alpha_channel
     }
 }
 
-// Функции для обоев
 impl GameWindow{
-    #[inline(always)]
-    pub fn set_wallpaper_alpha(&mut self,alpha:f32){
-        self.wallpaper.set_alpha_channel(alpha)
-    }
-
-    #[inline(always)]
-    pub fn set_wallpaper_image(&mut self,image:&RgbaImage){
-        self.wallpaper.set_image(image)
+    pub fn screenshot(&self){
+        let image:glium::texture::RawImage2d<u8>=self.display.read_front_buffer().unwrap();
+        let image=image::ImageBuffer::from_raw(image.width,image.height,image.data.into_owned()).unwrap();
+        let image=image::DynamicImage::ImageRgba8(image).flipv();
+        image.save("screenshot.png").unwrap();
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone,PartialEq)]
 #[repr(u32)]
 pub enum KeyboardButton{
     One,

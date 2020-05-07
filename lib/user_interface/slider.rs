@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 const circle_radius:f64=16f64;
 const circle_diametr:f64=circle_radius*2f64;
@@ -8,7 +8,7 @@ const line_radius:f64=5f64;
 // Полная комплектация слайдера с надписью и выводом значения
 pub struct Slider<'a>{
     head:TextViewStaticLineDependent, // Надпись над слайдером
-    value:TextViewLineDependent, // Значение слева от слайдера
+    value:TextViewLineDependent, // Значение справа от слайдера
     glyphs:GlyphCache<'a>,
     base:SimpleSlider,
 }
@@ -54,7 +54,10 @@ impl<'a> Slider<'a>{
     }
 
     pub fn grab(&mut self){
-        self.base.grab();
+        if self.base.grab(){
+            let value=self.base.current_value();
+            self.value.set_text(format!("{:.2}",value),&mut self.glyphs);
+        }
     }
 }
 
@@ -65,13 +68,14 @@ impl<'a> Drawable for Slider<'a>{
         self.base.set_alpha_channel(alpha);
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
+    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
         self.head.draw(context,graphics,&mut self.glyphs);
         self.value.draw(context,graphics,&mut self.glyphs);
         self.base.draw(context,graphics);
     }
 }
 
+// Простой слайдер без текстовых блоков
 pub struct SimpleSlider{
     min_value:f64,
     step:f64,
@@ -119,6 +123,10 @@ impl SimpleSlider{
         }
     }
 
+    pub fn current_value(&self)->f64{
+        self.current_value
+    }
+
     pub fn pressed(&mut self){
         let position=unsafe{mouse_cursor.position()};
         let x=position[0];
@@ -153,7 +161,7 @@ impl SimpleSlider{
     }
 
     // Сдвиг вслед за положением мышки
-    pub fn grab(&mut self){
+    pub fn grab(&mut self)->bool{
         if self.grab{
             unsafe{
                 let x=mouse_cursor.position()[0];
@@ -167,6 +175,16 @@ impl SimpleSlider{
                     self.circle_rect[0]=x-circle_radius;
                 }
             }
+
+            // Вычисление текущего значения
+            let circle_center=self.circle_rect[0]+circle_radius;
+            let line=circle_center-self.line_rect[0];
+            self.current_value=line*self.step+self.min_value;
+
+            true
+        }
+        else{
+            false
         }
     }
 }
@@ -177,7 +195,7 @@ impl Drawable for SimpleSlider{
         self.line.color[3]=alpha;
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
+    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
         self.line.draw(self.line_rect,&context.draw_state,context.transform,graphics);
         self.circle.draw(self.circle_rect,&context.draw_state,context.transform,graphics);
     }

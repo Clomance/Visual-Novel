@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 const dcolor:f32=0.125; // На столько измененяется цвет при нажитии/освобождении
 
@@ -34,7 +34,7 @@ impl<'a> Drawable for Button<'a>{
         self.base.set_alpha_channel(alpha);
     }
 
-    fn draw(&mut self,context:&Context,g:&mut GlGraphics){
+    fn draw(&mut self,context:&Context,g:&mut GameGraphics){
         self.base.draw(context,g,&mut self.glyphs)
     }
 }
@@ -75,7 +75,7 @@ impl ButtonDependent{
         self.base.released()
     }
     
-    pub fn draw(&mut self,context:&Context,graphics:&mut GlGraphics,glyphs:&mut GlyphCache){
+    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&mut GlyphCache){
         self.base.draw(context,graphics);
         self.text.draw(context,graphics,glyphs);
     }
@@ -184,10 +184,10 @@ impl ButtonBase{
         self.rectangle.color[3]=alpha;
     }
 
-    // Установка цвета
-    pub fn set_color(&mut self,color:Color){
-        self.rectangle.color=color
-    }
+    // Установка цвета (Пока без надобности)
+    // pub fn set_color(&mut self,color:Color){
+    //     self.rectangle.color=color
+    // }
 
     // Изменение цвета при нажатии
     pub fn press_color(&mut self){
@@ -241,7 +241,7 @@ impl ButtonBase{
         }
     }
 
-    pub fn draw(&self,context:&Context,g:&mut GlGraphics){
+    pub fn draw(&self,context:&Context,g:&mut GameGraphics){
         let rect_pos=[self.x1,self.y1,self.width,self.height];
         self.rectangle.draw(rect_pos,&context.draw_state,context.transform,g);
     }

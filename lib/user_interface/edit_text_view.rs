@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 // Изменяемый текстовый блок (возможность вписывать и удалять символы)
 pub struct EditTextView<'a>{
@@ -79,7 +79,7 @@ impl<'a> EditTextView<'a>{
                 AlignX::Center=>character_width/2f64,
                 AlignX::Left=>0f64,
             };
-            self.base.image.rectangle.as_mut().unwrap()[0]-=dx; // Сдвиг
+            self.base.image.rect[0]-=dx; // Сдвиг
         }
     }
 
@@ -94,7 +94,7 @@ impl<'a> EditTextView<'a>{
                 AlignX::Center=>character_width/2f64,
                 AlignX::Left=>0f64,
             };
-            self.base.image.rectangle.as_mut().unwrap()[0]+=dx/2f64; // Сдвиг
+            self.base.image.rect[0]+=dx/2f64; // Сдвиг
         }
     }
 }
@@ -106,7 +106,7 @@ impl<'a> Drawable for EditTextView<'a>{
         self.background.border.as_mut().unwrap().color[3]=alpha;
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
+    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
         let rect=[self.x1,self.y1,self.width,self.height];
         self.background.draw(rect,&context.draw_state,context.transform,graphics);
         self.base.draw(&self.line,context,graphics,&mut self.glyphs)

@@ -1,18 +1,24 @@
 [package]
 name = "Visual_Novel"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Clomance"]
 edition = "2018"
 build = "build.rs"
 
 
 [dependencies]
-image = "0.23.3"
-piston2d-opengl_graphics = "0.72.0"
-piston2d-graphics = "0.36.0"
-gl = "0.11.0"
-glutin = "0.24.0"
+image = "0.23.4"
 piston-music = "0.25.1"
+glium = "0.27.0"
+shader_version = "0.6.0"
+piston-shaders_graphics2d = "0.3.1"
+
+[dependencies.piston2d-graphics]
+version = "0.36.0"
+features = ["glyph_cache_rusttype"]
+
+[dependencies.piston-texture]
+version = "0.8.0"
 
 [lib]
 name="lib"

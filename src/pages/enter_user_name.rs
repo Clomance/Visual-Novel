@@ -2,21 +2,21 @@ use crate::*;
 
 const page_smooth:f32=Enter_user_name_smooth;
 
-pub struct EnterUserName<'a,'b,'c,'d>{
+pub struct EnterUserName<'a,'b,'c,'d,'e>{
     head:TextViewStaticLineDependent,
     glyphs:GlyphCache<'a>,
     input:EditTextView<'b>,
-    main_menu:&'c mut MainMenu<'d>,
+    main_menu:&'c mut MainMenu<'e,'d>,
     window:*mut GameWindow,
 }
 
-impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
+impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
     #[inline(always)]
-    pub unsafe fn new(main_menu:&'c mut MainMenu<'d>,window:&mut GameWindow)->EnterUserName<'a,'b,'c,'d>{
+    pub unsafe fn new(main_menu:&'c mut MainMenu<'e,'d>,window:&mut GameWindow)->EnterUserName<'a,'b,'c,'d,'e>{
 
         // Загрузка шрифта
         let texture_settings=TextureSettings::new();
-        let mut head_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let mut head_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
 
         let head_settings=TextViewSettings::new("Введите своё имя",[
                     (window_width)/2f64-150f64,
@@ -25,7 +25,7 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
                     70f64,
                 ]);
 
-        let glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
 
         let settings=EditTextViewSettings::new("",[
                     (window_width)/2f64-150f64,
@@ -57,8 +57,11 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
         while let Some(event)=(*self.window).next_event(){
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
-                
-                GameWindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
+
+                GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                    self.main_menu.wallpaper.mouse_shift(dx,dy);
+                    self.main_menu.menu.mouse_shift(dx,dy)
+                }
 
                 GameWindowEvent::MouseReleased(button)=>{
                     match button{
@@ -72,7 +75,7 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
                 }
 
                 GameWindowEvent::Draw=>{ // Рендеринг
-                    (*self.window).draw_with_wallpaper(|c,g|{
+                    (*self.window).draw(|c,g|{
                         self.main_menu.draw(c,g);
                         self.input.draw(c,g);
                         self.head.draw(c,g,&mut self.glyphs);
@@ -119,7 +122,7 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
                 GameWindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
 
                 GameWindowEvent::Draw=>{ // Рендеринг
-                    if !(*self.window).draw_smooth_with_wallpaper(|alpha,c,g|{
+                    if 1f32<(*self.window).draw_smooth(|alpha,c,g|{
                         self.main_menu.draw(c,g);
 
                         self.input.draw_smooth(alpha,c,g);
@@ -139,39 +142,5 @@ impl<'a,'b,'c,'d> EnterUserName<'a,'b,'c,'d>{
             }
         }
         Game::Current
-    }
-
-    #[inline(always)]
-    pub unsafe fn close(&mut self)->Game{
-        (*self.window).set_smooth(page_smooth);
-
-        while let Some(event)=(*self.window).next_event(){
-            match event{
-                GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
-
-                GameWindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
-
-                GameWindowEvent::Draw=>{ // Рендеринг
-                    if !(*self.window).draw_smooth_with_wallpaper(|alpha,c,g|{
-                        self.main_menu.draw(c,g);
-
-                        self.input.draw_smooth(alpha,c,g);
-                        self.head.draw_smooth(alpha,c,g,&mut self.glyphs);
-                    }){
-                        break
-                    }
-                }
-                _=>{}
-            }
-        }
-        Game::Current
-    }
-}
-
-impl<'a,'b,'c,'d> Drop for EnterUserName<'a,'b,'c,'d>{
-    fn drop(&mut self){
-        unsafe{
-            self.close();
-        }
     }
 }

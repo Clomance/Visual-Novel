@@ -14,11 +14,11 @@ pub struct SettingsPage<'a,'b,'d>{
 
 impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
     #[inline(always)]
-    pub unsafe fn new()->SettingsPage<'a,'b,'d>{
+    pub unsafe fn new(window:&mut GameWindow)->SettingsPage<'a,'b,'d>{
 
         let texture_settings=TextureSettings::new();
 
-        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
         let head_settings=TextViewSettings::new("Настройки",[
                     0f64,
                     0f64,
@@ -36,7 +36,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                 .min_value(15f64)
                 .max_value(120f64)
                 .current_value(Settings.signs_per_frame*60f64);
-        let slider_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let slider_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
 
 
         let volume_settings=SliderSettings::new()
@@ -46,7 +46,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                 .min_value(0f64)
                 .max_value(100f64)
                 .current_value(Settings.volume*100f64);
-        let volume_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let volume_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
         let volume=Slider::new(volume_settings,volume_glyphs);
 
         // Настройки кнопки выхода
@@ -70,8 +70,10 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
     #[inline(always)]
     pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
 
-        if self.smooth(window)==Game::Exit{
-            return Game::Exit
+        match self.smooth(window){
+            Game::Back=>return Game::Back,
+            Game::Exit=>return Game::Exit,
+            _=>{}
         }
 
         while let Some(event)=window.next_event(){
@@ -155,7 +157,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 GameWindowEvent::Draw=>{ //Рендеринг
-                    if !window.draw_smooth(|alpha,c,g|{
+                    if 1f32<window.draw_smooth(|alpha,c,g|{
                         background.draw_smooth(alpha,c,g);
 
                         self.head.draw_smooth(alpha,c,g,&mut self.glyphs);
@@ -169,6 +171,14 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                         break
                     }
                 }
+
+                GameWindowEvent::KeyboardReleased(button)=>{
+                    match button{
+                        KeyboardButton::Escape=>return Game::Back,
+                        _=>{}
+                    }
+                }
+
                 _=>{}
             }
         }

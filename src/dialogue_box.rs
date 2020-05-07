@@ -1,8 +1,10 @@
 use crate::*;
 
+use glium::Display;
+
 const k:f64=3.3f64; // Отношение размера окна игры к диалоговому окну
 
-const font_size:u32=dialogues_font_size;
+const font_size:u32=24u32;
 
 const text_position_x:f64=80f64;
 
@@ -23,10 +25,10 @@ pub struct DialogueBox<'a,'b>{
 }
 
 impl<'a,'b> DialogueBox<'a,'b>{
-    pub fn new(texture:&RgbaImage)->DialogueBox<'a,'b>{
+    pub fn new(texture:&RgbaImage,display:&mut Display)->DialogueBox<'a,'b>{
         let texture_settings=TextureSettings::new();
-        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
-        let texture=Texture::from_image(texture,&texture_settings);
+        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",display.clone(),texture_settings).unwrap();
+        let texture=Texture::from_image(display,texture,&texture_settings).unwrap();
         unsafe{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
@@ -111,7 +113,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
         }
     }
 
-    pub fn draw_without_text(&mut self,c:&Context,g:&mut GlGraphics){
+    pub fn draw_without_text(&mut self,c:&Context,g:&mut GameGraphics){
         self.image.draw(&self.texture,&c.draw_state,c.transform,g);
     }
 }
@@ -122,7 +124,7 @@ impl<'a,'b> Drawable for DialogueBox<'a,'b>{
         //self.lines.set_alpha_channel(alpha);
     }
 
-    fn draw(&mut self,c:&Context,g:&mut GlGraphics){
+    fn draw(&mut self,c:&Context,g:&mut GameGraphics){
         let name=self.dialogue.get_name(self.dialogue_step);
 
         self.image.draw(&self.texture,&c.draw_state,c.transform,g); // Основа

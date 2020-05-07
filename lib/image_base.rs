@@ -1,7 +1,5 @@
 use crate::*;
 
-use opengl_graphics::Texture;
-
 use graphics::{
     DrawState,
     Graphics,
@@ -27,7 +25,7 @@ impl ImageBase{
         }
     }
 
-    pub fn draw(&self,texture:&Texture,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
+    pub fn draw(&self,texture:&Texture,draw_state:&DrawState,transform:Matrix2d,g:&mut GameGraphics){
         let source_rectangle={
             let (w,h) = texture.get_size();
             [0.0, 0.0, w as Scalar,h as Scalar]
@@ -54,7 +52,7 @@ impl ImageBaseSrc{
         }
     }
 
-    pub fn draw(&self,texture:&Texture,draw_state:&DrawState,transform:Matrix2d,g:&mut GlGraphics){
+    pub fn draw(&self,texture:&Texture,draw_state:&DrawState,transform:Matrix2d,g:&mut GameGraphics){
         g.tri_list_uv(draw_state,&self.color,texture,|f|{
             f(&triangulation::rect_tri_list_xy(transform,self.rect),&triangulation::rect_tri_list_uv(texture,self.src_rect))
         });

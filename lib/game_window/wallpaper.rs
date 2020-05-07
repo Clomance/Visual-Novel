@@ -1,4 +1,24 @@
-use crate::*;
+use crate::{
+    colors::*,
+    image_base::ImageBase,
+    traits::Drawable,
+};
+
+use super::{
+    // statics
+    window_width,
+    window_height,
+    //
+    Texture,
+    TextureSettings,
+    GameGraphics,
+};
+
+use image::RgbaImage;
+
+use glium::Display;
+
+use graphics::Context;
 
 pub const wallpaper_movement_scale:f64=16f64;
 
@@ -8,7 +28,7 @@ pub struct Wallpaper{
 }
 
 impl Wallpaper{
-    pub fn new()->Wallpaper{
+    pub fn new(image:&RgbaImage,display:&mut Display)->Wallpaper{
         unsafe{
             let dx=window_width/(wallpaper_movement_scale*2f64);
             let dy=window_height/(wallpaper_movement_scale*2f64);
@@ -22,7 +42,7 @@ impl Wallpaper{
             let settings=TextureSettings::new();
             Self{
                 image:ImageBase::new(White,rect),
-                texture:Texture::empty(&settings).unwrap(),
+                texture:Texture::from_image(display,image,&settings).unwrap(),
             }
         }
     }
@@ -32,17 +52,18 @@ impl Wallpaper{
         self.image.rect[1]+=dy/wallpaper_movement_scale;
     }
 
-    pub fn set_image(&mut self,image:&RgbaImage){
-        let settings=TextureSettings::new();
-        self.texture=Texture::from_image(image,&settings);
+    // Обновляет картинка (она должна быть такого же размера, как и предыдущая)
+    pub fn update_image(&mut self,image:&RgbaImage,display:&mut Display){
+        self.texture.update(display,image);
     }
 }
+
 impl Drawable for Wallpaper{
     fn set_alpha_channel(&mut self,alpha:f32){
         self.image.color[3]=alpha
     }
 
-    fn draw(&mut self,c:&Context,g:&mut GlGraphics){
+    fn draw(&mut self,c:&Context,g:&mut GameGraphics){
         self.image.draw(&self.texture,&c.draw_state,c.transform,g)
     }
 }

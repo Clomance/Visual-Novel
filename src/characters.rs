@@ -1,5 +1,7 @@
 use crate::*;
 
+use glium::Display;
+
 const focused_resize:f64=4f64;
 const focused_movement:f64=focused_resize/2f64;
 
@@ -43,7 +45,7 @@ impl CharactersView{
         }
     }
 
-    pub fn add_character(&mut self,character:&RgbaImage,location:CharacterLocation){
+    pub fn add_character(&mut self,character:&RgbaImage,location:CharacterLocation,display:&mut Display){
         let rect=unsafe{
             let height:f64=character.height() as f64;
             let width:f64=character.width() as f64;
@@ -71,7 +73,7 @@ impl CharactersView{
         let settings=TextureSettings::new();
         let character=Character{
             image:ImageBase::new(White,rect),
-            texture:Texture::from_image(character,&settings),
+            texture:Texture::from_image(display,character,&settings).unwrap(),
         };
 
         self.characters.push(character)
@@ -105,7 +107,7 @@ impl Drawable for CharactersView{
         }
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
+    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
         for ch in &mut self.characters{
             ch.image.draw(&ch.texture,&context.draw_state,context.transform,graphics);
         }

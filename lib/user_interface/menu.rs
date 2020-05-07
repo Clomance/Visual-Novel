@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 const head_margin:f64=50f64; // Расстояние между заголовком и кнопками
 const button_margin:f64=10f64;
@@ -132,7 +132,7 @@ impl<'a> Drawable for Menu<'a>{
         }
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GlGraphics){
+    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
         self.head.draw(&context,graphics,&mut self.glyphs);
 
         for button in &mut self.buttons{

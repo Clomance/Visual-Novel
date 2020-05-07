@@ -2,14 +2,14 @@ use crate::*;
 
 // Таблица распределения ресурсов (картинок, диалогов, персонажей) по страницам
 pub struct PageTable<'a,'c>{
-    wallpapers:Vec<&'a RgbaImage>,
+    wallpapers:Vec<&'a PathBuf>,
     dialogues:Vec<&'c Dialogue>,
     characters:Vec<Vec<(&'a RgbaImage,CharacterLocation)>>,
     page:usize
 }
 
 impl<'a,'c> PageTable<'a,'c>{
-    pub fn new(textures_:&'a Textures,dialogues:&'c Vec<Dialogue>)->PageTable<'a,'c>{
+    pub fn new(textures:&'a Textures,dialogues:&'c Vec<Dialogue>)->PageTable<'a,'c>{
         let mut len=0;
         let cap=10;
         let mut table=Self{
@@ -39,11 +39,11 @@ impl<'a,'c> PageTable<'a,'c>{
 
                 table_file.read_exact(&mut buffer[0..1]).unwrap();
                 let location:CharacterLocation=unsafe{std::mem::transmute(buffer[0])};
-                characters.push((textures_.character(character),location));
+                characters.push((textures.character(character),location));
             }
             // Проверка на начало блока страницы
             len+=1;
-            table.wallpapers.push(&textures_.wallpaper(wallpaper));
+            table.wallpapers.push(&textures.wallpaper(wallpaper));
             table.dialogues.push(&dialogues[dialogue]);
             table.characters.push(characters);
         }
@@ -73,7 +73,7 @@ impl<'a,'c> PageTable<'a,'c>{
         &self.characters[self.page]
     }
 
-    pub fn current_wallpaper(&self)->&'a RgbaImage{
+    pub fn current_wallpaper(&self)->&'a PathBuf{
         &self.wallpapers[self.page]
     }
 

@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 const line_margin:f64=20f64; // Расстояние между строками
 
@@ -56,95 +56,81 @@ impl TextViewLineDependent{
         self.base.shift(dx,dy)
     }
 
-    pub fn draw(&mut self,c:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache){
-        let (x,y)={ // Сохранение начального положения
-            let image_rect=self.base.image.rectangle.as_ref().unwrap();
-            (image_rect[0],image_rect[1])
-        };
+    pub fn draw(&mut self,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache){
+        let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
         // Перебор символов
         for ch in self.line.chars(){
             let character=glyphs.character(self.base.font_size,ch).unwrap();
 
             { // Установка положения и размер символа
-                let image_rect=self.base.image.rectangle.as_mut().unwrap();
-                image_rect[0]+=character.left();
-                image_rect[1]-=character.top();
-                image_rect[2]=character.atlas_size[0];
-                image_rect[3]=character.atlas_size[1];
+                self.base.image.rect[0]+=character.left();
+                self.base.image.rect[1]-=character.top();
+                self.base.image.rect[2]=character.atlas_size[0];
+                self.base.image.rect[3]=character.atlas_size[1];
             }
 
             { // Обрезка символа
-                let image_src_rect=self.base.image.source_rectangle.as_mut().unwrap();
-                image_src_rect[0]=character.atlas_offset[0];
-                image_src_rect[1]=character.atlas_offset[1];
-                image_src_rect[2]=character.atlas_size[0];
-                image_src_rect[3]=character.atlas_size[1];
+                self.base.image.src_rect[0]=character.atlas_offset[0];
+                self.base.image.src_rect[1]=character.atlas_offset[1];
+                self.base.image.src_rect[2]=character.atlas_size[0];
+                self.base.image.src_rect[3]=character.atlas_size[1];
             }
 
             self.base.image.draw(character.texture,&c.draw_state,c.transform,g);
 
-            // Сдвиг дальше по линии и возвращение обратно на линию
-            let image_rect=self.base.image.rectangle.as_mut().unwrap();
-            image_rect[0]+=character.advance_width()-character.left();
-            image_rect[1]+=character.advance_height()+character.top();
+            // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
+            self.base.image.rect[0]+=character.advance_width()-character.left();
+            self.base.image.rect[1]+=character.advance_height()+character.top();
         }
         // Возвращение в начальное положение
-        let image_rect=self.base.image.rectangle.as_mut().unwrap();
-        image_rect[0]=x;
-        image_rect[1]=y;
+        self.base.image.rect[0]=x;
+        self.base.image.rect[1]=y;
     }
 
-    // Частичный вывод текста
-    fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache)->bool{
-        let (x,y)={
-            let image_rect=self.base.image.rectangle.as_ref().unwrap();
-            (image_rect[0],image_rect[1])
-        };
+    // Частичный вывод текста (Может пригодиться)
+    // fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache)->bool{
+    //     let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
 
-        let mut chars_passed=0; // Символов выведенно
-        let mut whole_text=true;
+    //     let mut chars_passed=0; // Символов выведенно
+    //     let mut whole_text=true;
 
-        // Перебор символов
-        for ch in self.line.chars(){
-            if chars_passed==chars{
-                whole_text=false;
-                break
-            }
-            chars_passed+=1;
-            let character=glyphs.character(self.base.font_size,ch).unwrap();
+    //     // Перебор символов
+    //     for ch in self.line.chars(){
+    //         if chars_passed==chars{
+    //             whole_text=false;
+    //             break
+    //         }
+    //         chars_passed+=1;
+    //         let character=glyphs.character(self.base.font_size,ch).unwrap();
 
-            { // Установка положения и размер символа
-                let image_rect=self.base.image.rectangle.as_mut().unwrap();
-                image_rect[0]+=character.left();
-                image_rect[1]-=character.top();
-                image_rect[2]=character.atlas_size[0];
-                image_rect[3]=character.atlas_size[1];
-            }
+    //         { // Установка положения и размер символа
+    //             self.base.image.rect[0]+=character.left();
+    //             self.base.image.rect[1]-=character.top();
+    //             self.base.image.rect[2]=character.atlas_size[0];
+    //             self.base.image.rect[3]=character.atlas_size[1];
+    //         }
 
-            { // Обрезка символа
-                let image_src_rect=self.base.image.source_rectangle.as_mut().unwrap();
-                image_src_rect[0]=character.atlas_offset[0];
-                image_src_rect[1]=character.atlas_offset[1];
-                image_src_rect[2]=character.atlas_size[0];
-                image_src_rect[3]=character.atlas_size[1];
-            }
+    //         { // Обрезка символа
+    //             self.base.image.src_rect[0]=character.atlas_offset[0];
+    //             self.base.image.src_rect[1]=character.atlas_offset[1];
+    //             self.base.image.src_rect[2]=character.atlas_size[0];
+    //             self.base.image.src_rect[3]=character.atlas_size[1];
+    //         }
 
-            self.base.image.draw(character.texture,&c.draw_state,c.transform,g);
+    //         self.base.image.draw(character.texture,&c.draw_state,c.transform,g);
 
-            // Сдвиг дальше по линии и возвращение обратно на линию
-            let image_rect=self.base.image.rectangle.as_mut().unwrap();
-            image_rect[0]+=character.advance_width()-character.left();
-            image_rect[1]+=character.advance_height()+character.top();
-        }
-        // Возвращение в начальное положение
-        let image_rect=self.base.image.rectangle.as_mut().unwrap();
-        image_rect[0]=x;
-        image_rect[1]=y;
+    //         // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
+    //         self.base.image.rect[0]+=character.advance_width()-character.left();
+    //         self.base.image.rect[1]+=character.advance_height()+character.top();
+    //     }
+    //     // Возвращение в начальное положение
+    //     self.base.image.rect[0]=x;
+    //     self.base.image.rect[1]=y;
 
-        whole_text
-    }
+    //     whole_text
+    // }
 
-    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache){
+    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache){
         self.set_alpha_channel(alpha);
         self.draw(c,g,glyphs)
     }
@@ -325,64 +311,52 @@ impl TextViewLinedDependent{
         self.base.set_position([x,y]);
     }
 
-    pub fn draw(&mut self,context:&Context,graphics:&mut GlGraphics,glyphs:&mut GlyphCache){
-        let text_base=&mut self.base;
-        // Сохранение начального положения
-        let (x,y)={
-            let image_rect=text_base.image.rectangle.as_ref().unwrap();
-            (image_rect[0],image_rect[1])
-        };
+    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&mut GlyphCache){
+        let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
 
-        let dy=text_base.font_size as f64+line_margin;
+        let dy=self.base.font_size as f64+line_margin;
 
         // Перебор строк
         for line in &self.lines{
             let dx=line.0; // Выравнивание строки
-            text_base.image.rectangle.as_mut().unwrap()[0]+=dx; // Сдвиг строки
+            self.base.image.rect[0]+=dx; // Сдвиг строки
 
             for ch in line.1.chars(){
-                let character=glyphs.character(text_base.font_size,ch).unwrap();
+                let character=glyphs.character(self.base.font_size,ch).unwrap();
 
                 { // Установка положения и размер символа
-                    let image_rect=text_base.image.rectangle.as_mut().unwrap();
-                    image_rect[0]+=character.left();
-                    image_rect[1]-=character.top();
-                    image_rect[2]=character.atlas_size[0];
-                    image_rect[3]=character.atlas_size[1];
+                    self.base.image.rect[0]+=character.left();
+                    self.base.image.rect[1]-=character.top();
+                    self.base.image.rect[2]=character.atlas_size[0];
+                    self.base.image.rect[3]=character.atlas_size[1];
                 }
 
                 { // Обрезка символа
-                    let image_src_rect=text_base.image.source_rectangle.as_mut().unwrap();
-                    image_src_rect[0]=character.atlas_offset[0];
-                    image_src_rect[1]=character.atlas_offset[1];
-                    image_src_rect[2]=character.atlas_size[0];
-                    image_src_rect[3]=character.atlas_size[1];
+                    self.base.image.src_rect[0]=character.atlas_offset[0];
+                    self.base.image.src_rect[1]=character.atlas_offset[1];
+                    self.base.image.src_rect[2]=character.atlas_size[0];
+                    self.base.image.src_rect[3]=character.atlas_size[1];
                 }
 
-                text_base.image.draw(character.texture,&context.draw_state,context.transform,graphics);
+                self.base.image.draw(character.texture,&context.draw_state,context.transform,graphics);
 
-                // Сдвиг дальше по линии и возвращение обратно на линию
-                let image_rect=text_base.image.rectangle.as_mut().unwrap();
-                image_rect[0]+=character.advance_width()-character.left();
-                image_rect[1]+=character.advance_height()+character.top();
+                // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
+                self.base.image.rect[0]+=character.advance_width()-character.left();
+                self.base.image.rect[1]+=character.advance_height()+character.top();
             }
 
-            let image_rect=text_base.image.rectangle.as_mut().unwrap();
-            image_rect[0]=x;
-            image_rect[1]+=dy;
+            // Переход на новую строку
+            self.base.image.rect[0]=x;
+            self.base.image.rect[1]+=dy;
         }
         // Возвращение в начальное положение
-        let image_rect=text_base.image.rectangle.as_mut().unwrap();
-        image_rect[0]=x;
-        image_rect[1]=y;
+        self.base.image.rect[0]=x;
+        self.base.image.rect[1]=y;
     }
 
-    pub fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache)->bool{
+    pub fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache)->bool{
         // Сохранение начального положения
-        let (x,y)={
-            let image_rect=self.base.image.rectangle.as_ref().unwrap();
-            (image_rect[0],image_rect[1])
-        };
+        let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
 
         let dy=self.base.font_size as f64+line_margin;
 
@@ -393,7 +367,7 @@ impl TextViewLinedDependent{
         // Перебор строк
         'lines:for line in &self.lines{
             let dx=line.0; // Выравнивание строки
-            self.base.image.rectangle.as_mut().unwrap()[0]+=dx; // Сдвиг строки
+            self.base.image.rect[0]+=dx; // Сдвиг строки
 
             for ch in line.1.chars(){
                 if chars_passed==chars{
@@ -405,38 +379,34 @@ impl TextViewLinedDependent{
                 let character=glyphs.character(self.base.font_size,ch).unwrap();
 
                 { // Установка положения и размер символа
-                    let image_rect=self.base.image.rectangle.as_mut().unwrap();
-                    image_rect[0]+=character.left();
-                    image_rect[1]-=character.top();
-                    image_rect[2]=character.atlas_size[0];
-                    image_rect[3]=character.atlas_size[1];
+                    self.base.image.rect[0]+=character.left();
+                    self.base.image.rect[1]-=character.top();
+                    self.base.image.rect[2]=character.atlas_size[0];
+                    self.base.image.rect[3]=character.atlas_size[1];
                 }
 
                 { // Обрезка символа
-                    let image_src_rect=self.base.image.source_rectangle.as_mut().unwrap();
-                    image_src_rect[0]=character.atlas_offset[0];
-                    image_src_rect[1]=character.atlas_offset[1];
-                    image_src_rect[2]=character.atlas_size[0];
-                    image_src_rect[3]=character.atlas_size[1];
+                    self.base.image.src_rect[0]=character.atlas_offset[0];
+                    self.base.image.src_rect[1]=character.atlas_offset[1];
+                    self.base.image.src_rect[2]=character.atlas_size[0];
+                    self.base.image.src_rect[3]=character.atlas_size[1];
                 }
 
                 // Вывод символа
                 self.base.image.draw(character.texture,&c.draw_state,c.transform,g);
 
-                // Сдвиг дальше по линии и возвращение обратно на линию
-                let image_rect=self.base.image.rectangle.as_mut().unwrap();
-                image_rect[0]+=character.advance_width()-character.left();
-                image_rect[1]+=character.advance_height()+character.top();
+                // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
+                self.base.image.rect[0]+=character.advance_width()-character.left();
+                self.base.image.rect[1]+=character.advance_height()+character.top();
             }
 
-            let image_rect=self.base.image.rectangle.as_mut().unwrap();
-            image_rect[0]=x;
-            image_rect[1]+=dy;
+            // Переход на новую строку
+            self.base.image.rect[0]=x;
+            self.base.image.rect[1]+=dy;
         }
         // Возвращение в начальное положение
-        let image_rect=self.base.image.rectangle.as_mut().unwrap();
-        image_rect[0]=x;
-        image_rect[1]=y;
+        self.base.image.rect[0]=x;
+        self.base.image.rect[1]=y;
 
         whole_text
     }
@@ -476,45 +446,39 @@ impl TextViewStaticLineDependent{
         self.base.shift(dx,dy)
     }
 
-    pub fn draw(&mut self,c:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache){
-        let (x,y)={ // Сохранение начального положения
-            let image_rect=self.base.image.rectangle.as_ref().unwrap();
-            (image_rect[0],image_rect[1])
-        };
+    pub fn draw(&mut self,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache){
+        let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
+
         // Перебор символов
         for ch in self.line.chars(){
             let character=glyphs.character(self.base.font_size,ch).unwrap();
 
             { // Установка положения и размер символа
-                let image_rect=self.base.image.rectangle.as_mut().unwrap();
-                image_rect[0]+=character.left();
-                image_rect[1]-=character.top();
-                image_rect[2]=character.atlas_size[0];
-                image_rect[3]=character.atlas_size[1];
+                self.base.image.rect[0]+=character.left();
+                self.base.image.rect[1]-=character.top();
+                self.base.image.rect[2]=character.atlas_size[0];
+                self.base.image.rect[3]=character.atlas_size[1];
             }
 
             { // Обрезка символа
-                let image_src_rect=self.base.image.source_rectangle.as_mut().unwrap();
-                image_src_rect[0]=character.atlas_offset[0];
-                image_src_rect[1]=character.atlas_offset[1];
-                image_src_rect[2]=character.atlas_size[0];
-                image_src_rect[3]=character.atlas_size[1];
+                self.base.image.src_rect[0]=character.atlas_offset[0];
+                self.base.image.src_rect[1]=character.atlas_offset[1];
+                self.base.image.src_rect[2]=character.atlas_size[0];
+                self.base.image.src_rect[3]=character.atlas_size[1];
             }
 
             self.base.image.draw(character.texture,&c.draw_state,c.transform,g);
 
-            // Сдвиг дальше по линии и возвращение обратно на линию
-            let image_rect=self.base.image.rectangle.as_mut().unwrap();
-            image_rect[0]+=character.advance_width()-character.left();
-            image_rect[1]+=character.advance_height()+character.top();
+            // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
+            self.base.image.rect[0]+=character.advance_width()-character.left();
+            self.base.image.rect[1]+=character.advance_height()+character.top();
         }
         // Возвращение в начальное положение
-        let image_rect=self.base.image.rectangle.as_mut().unwrap();
-        image_rect[0]=x;
-        image_rect[1]=y;
+        self.base.image.rect[0]=x;
+        self.base.image.rect[1]=y;
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GlGraphics,glyphs:&mut GlyphCache){
+    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache){
         self.set_alpha_channel(alpha);
         self.draw(c,g,glyphs)
     }
@@ -616,56 +580,47 @@ impl TextViewStaticLinedDependent{
         self.base.set_alpha_channel(alpha);
     }
 
-    pub fn draw(&mut self,context:&Context,graphics:&mut GlGraphics,glyphs:&mut GlyphCache){
-        let text_base=&mut self.base;
-        // Сохранение начального положения
-        let (x,y)={
-            let image_rect=text_base.image.rectangle.as_ref().unwrap();
-            (image_rect[0],image_rect[1])
-        };
+    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&mut GlyphCache){
+        let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
 
-        let dy=text_base.font_size as f64+line_margin;
+        let dy=self.base.font_size as f64+line_margin;
 
         // Перебор строк
         for line in &self.lines{
             let dx=line.0; // Выравнивание строки
-            text_base.image.rectangle.as_mut().unwrap()[0]+=dx; // Сдвиг строки
+            self.base.image.rect[0]+=dx; // Сдвиг строки
 
             for ch in line.1.chars(){
-                let character=glyphs.character(text_base.font_size,ch).unwrap();
+                let character=glyphs.character(self.base.font_size,ch).unwrap();
 
                 { // Установка положения и размер символа
-                    let image_rect=text_base.image.rectangle.as_mut().unwrap();
-                    image_rect[0]+=character.left();
-                    image_rect[1]-=character.top();
-                    image_rect[2]=character.atlas_size[0];
-                    image_rect[3]=character.atlas_size[1];
+                    self.base.image.rect[0]+=character.left();
+                    self.base.image.rect[1]-=character.top();
+                    self.base.image.rect[2]=character.atlas_size[0];
+                    self.base.image.rect[3]=character.atlas_size[1];
                 }
 
                 { // Обрезка символа
-                    let image_src_rect=text_base.image.source_rectangle.as_mut().unwrap();
-                    image_src_rect[0]=character.atlas_offset[0];
-                    image_src_rect[1]=character.atlas_offset[1];
-                    image_src_rect[2]=character.atlas_size[0];
-                    image_src_rect[3]=character.atlas_size[1];
+                    self.base.image.src_rect[0]=character.atlas_offset[0];
+                    self.base.image.src_rect[1]=character.atlas_offset[1];
+                    self.base.image.src_rect[2]=character.atlas_size[0];
+                    self.base.image.src_rect[3]=character.atlas_size[1];
                 }
 
-                text_base.image.draw(character.texture,&context.draw_state,context.transform,graphics);
+                self.base.image.draw(character.texture,&context.draw_state,context.transform,graphics);
 
-                // Сдвиг дальше по линии и возвращение обратно на линию
-                let image_rect=text_base.image.rectangle.as_mut().unwrap();
-                image_rect[0]+=character.advance_width()-character.left();
-                image_rect[1]+=character.advance_height()+character.top();
+                // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
+                self.base.image.rect[0]+=character.advance_width()-character.left();
+                self.base.image.rect[1]+=character.advance_height()+character.top();
             }
 
-            let image_rect=text_base.image.rectangle.as_mut().unwrap();
-            image_rect[0]=x;
-            image_rect[1]+=dy;
+            // Переход на новую строку
+            self.base.image.rect[0]=x;
+            self.base.image.rect[1]+=dy;
         }
         // Возвращение в начальное положение
-        let image_rect=text_base.image.rectangle.as_mut().unwrap();
-        image_rect[0]=x;
-        image_rect[1]=y;
+        self.base.image.rect[0]=x;
+        self.base.image.rect[1]=y;
     }
 }
 

@@ -2,13 +2,14 @@ use crate::*;
 
 pub struct GameSettings{
     pub game_name:String,
-    pub _continue:bool, // Флаг продолжения игры
+    pub continue_game:bool, // Флаг продолжения игры
     pub user_name:String,
     pub saved_page:usize, // Страница на которой остановился пользователь (page_table)
     pub saved_dialogue:usize, // Место в диалоге на котором остановился пользователь (dialogue_box)
-    pub pages:usize,
+    pub pages:usize, // Количество страниц в игре
     pub signs_per_frame:f64, // Знаков на кадр
     pub volume:f64, // Громкость игры
+    pub screenshot_number:usize, // номер следующего скришота
 }
 
 impl GameSettings{
@@ -16,13 +17,14 @@ impl GameSettings{
     pub const fn new()->GameSettings{
         Self{
             game_name:String::new(),
-            _continue:true,
+            continue_game:false,
             user_name:String::new(),
             pages:0,
             saved_page:0,
             saved_dialogue:0,
             signs_per_frame:0.25f64,
             volume:0.5f64,
+            screenshot_number:0usize,
         }
     }
     // Загрузка настроек
@@ -31,6 +33,19 @@ impl GameSettings{
         let mut settings_file=OpenOptions::new().read(true).open("settings/game_settings").unwrap();
         let mut buffer=[0u8;8];
 
+        // Продолжение игры
+        settings_file.read_exact(&mut buffer[0..1]).unwrap();
+        if buffer[0]!=0{
+            self.continue_game=true;
+            // Имя пользователя при продолжении игры
+            settings_file.read_exact(&mut buffer[0..1]).unwrap();
+            {
+                let mut name=vec![0u8;buffer[0] as usize];
+                settings_file.read_exact(&mut name).unwrap();
+                self.user_name=String::from_utf8(name).unwrap();
+            }
+        }
+        //
         settings_file.read_exact(&mut buffer).unwrap();
         self.saved_page=usize::from_be_bytes(buffer);
         //
@@ -43,16 +58,11 @@ impl GameSettings{
         settings_file.read_exact(&mut buffer).unwrap();
         self.volume=f64::from_be_bytes(buffer);
 
-
-        // Редактируемый файл настроек
-        settings_file=OpenOptions::new().read(true).open("settings/settings.txt").unwrap();
+        // Название игры
+        settings_file=OpenOptions::new().read(true).open("resources/game_name.txt").unwrap();
         let mut reader=BufReader::new(settings_file);
 
-        self.game_name=read_line(&mut reader);
-
-        self._continue=read_line(&mut reader);
-
-        self.user_name=read_line(&mut reader);
+        reader.read_line(&mut self.game_name).unwrap();
     }
     // Установка позиций для сохранения
     pub fn set_saved_position(&mut self,page:usize,dialogue:usize){
@@ -62,7 +72,18 @@ impl GameSettings{
     // Сохрание настроек
     pub fn save(&mut self){
         let mut settings_file=OpenOptions::new().write(true).truncate(true).open("settings/game_settings").unwrap();
-
+        if self.continue_game{
+            settings_file.write_all(&[1]).unwrap();// Продолжение игры
+            // Имя пользователя при продолжении игры
+            let buffer=self.user_name.as_bytes();
+            let len=buffer.len() as u8;
+            settings_file.write_all(&[len]).unwrap();
+            settings_file.write_all(buffer).unwrap();
+        }
+        else{
+            settings_file.write_all(&[0]).unwrap();// Продолжение игры
+        }
+        //
         let mut buffer=self.saved_page.to_be_bytes();
         settings_file.write_all(&buffer).unwrap();
         //
@@ -74,27 +95,5 @@ impl GameSettings{
         //
         buffer=self.volume.to_be_bytes();
         settings_file.write_all(&buffer).unwrap();
-
-        settings_file=OpenOptions::new().write(true).truncate(true).open("settings/settings.txt").unwrap();
-
-        let values=[
-            self.game_name.to_string(),
-            self._continue.to_string(),
-            self.user_name.clone(),
-        ];
-
-        for value in &values{
-            settings_file.write_all(value.as_bytes()).unwrap();
-            settings_file.write_all(b"\n").unwrap();
-        }
-    }
-}
-// Перевод строки в нужный тип
-pub fn read_line<T:FromStr>(reader:&mut BufReader<File>)->T{
-    let mut line=String::new();
-    let _r=reader.read_line(&mut line);
-    match line.trim().parse::<T>(){
-        Ok(t)=>t,
-        Err(_)=>panic!()
     }
 }

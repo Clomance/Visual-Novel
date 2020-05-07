@@ -15,7 +15,7 @@ impl<'a,'b> Intro<'a,'b>{
     pub unsafe fn new(window:&'b mut GameWindow)->Intro<'a,'b>{
         let texture_settings=TextureSettings::new();
 
-        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",(),texture_settings).unwrap();
+        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
 
         let text="Прогресс сохраняется автоматический";
 
@@ -52,7 +52,7 @@ impl<'a,'b> Intro<'a,'b>{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 GameWindowEvent::Draw=>{ //Рендеринг
-                    if !(*window).draw_smooth(|alpha,c,g|{
+                    if 1f32<(*window).draw_smooth(|alpha,c,g|{
                         g.clear_color(background_color);
                         self.text_view.set_alpha_channel(alpha);
                         self.text_view.draw(c,g,&mut self.glyphs);
@@ -64,22 +64,17 @@ impl<'a,'b> Intro<'a,'b>{
             }
         }
 
-        let mut alpha=1.0;
-        let smooth=1f32/128f32;
-
+        self.window.set_smooth(-1f32/128f32);
         while let Some(event)=self.window.next_event(){
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 GameWindowEvent::Draw=>{ //Рендеринг
-                    (*window).draw(|c,g|{
+                    if 0f32>(*window).draw_smooth(|alpha,c,g|{
                         g.clear_color(background_color);
                         self.text_view.set_alpha_channel(alpha);
                         self.text_view.draw(c,g,&mut self.glyphs);
-                    });
-
-                    alpha-=smooth;
-                    if alpha<0.0{
+                    }){
                         break
                     }
                 }
@@ -103,12 +98,12 @@ impl<'a,'b> Intro<'a,'b>{
         ]);
 
         while let Some(event)=self.window.next_event(){
-            
+
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 GameWindowEvent::Draw=>{
-                    if !(*window).draw_smooth(|alpha,c,g|{
+                    if 1f32<(*window).draw_smooth(|alpha,c,g|{
                         background.draw_smooth(alpha,c,g);
                     }){
                         break
