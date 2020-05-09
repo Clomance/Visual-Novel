@@ -1,42 +1,36 @@
 use super::*;
 
+use crate::game_engine::text::{TextBase,Glyphs};
+
 const line_margin:f64=20f64; // Расстояние между строками
 
 // Изменяемый зависимый текстовой блок с одной линией текста
 pub struct TextViewLineDependent{
-    base:TextBase,
-    line:String,
+    base:TextViewStaticLineDependent,
     rect:[f64;4],
     align:Align,
 }
 
 impl TextViewLineDependent{
-    pub fn new<S:ToString>(settings:TextViewSettings<S>,glyphs:&mut GlyphCache)->TextViewLineDependent{
-        let line=settings.text.to_string();
-
-        let mut line_len=0f64;
-        for ch in line.chars(){
-            let character=glyphs.character(settings.font_size,ch).unwrap();
-            line_len+=character.advance_width();
-        }
-
-        // Выравнивание
-        let (x,y)=settings.align.text_position(settings.rect,[line_len,settings.font_size as f64]);
-
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&Glyphs)->TextViewLineDependent{
         Self{
-            base:TextBase::new_color(settings.text_color,settings.font_size).position([x,y]),
-            line:line,
             rect:settings.rect,
-            align:settings.align
+            align:settings.align.clone(),
+            base:TextViewStaticLineDependent::new(settings,glyphs),
         }
     }
 
-    pub fn set_text<S:ToString>(&mut self,text:S,glyphs:&mut GlyphCache){
-        self.line=text.to_string();
+    pub fn font_size(&self)->f32{
+        self.base.font_size()
+    }
+
+    pub fn set_text<S:Into<String>>(&mut self,text:S,glyphs:&mut Glyphs){
+        self.base.line=text.into();
+
         let mut line_len=0f64;
-        for ch in self.line.chars(){
-            let character=glyphs.character(self.base.font_size,ch).unwrap();
-            line_len+=character.advance_width();
+        for ch in self.base.line.chars(){
+            let character=glyphs.character(ch,self.font_size());
+            line_len+=character.width() as f64;
         }
 
         let x=match self.align.x{
@@ -45,7 +39,7 @@ impl TextViewLineDependent{
             AlignX::Left=>self.rect[0],
         };
 
-        self.base.set_x(x);
+        self.base.base.set_x(x);
     }
 
     pub fn set_alpha_channel(&mut self,alpha:f32){
@@ -56,39 +50,12 @@ impl TextViewLineDependent{
         self.base.shift(dx,dy)
     }
 
-    pub fn draw(&mut self,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache){
-        let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
-        // Перебор символов
-        for ch in self.line.chars(){
-            let character=glyphs.character(self.base.font_size,ch).unwrap();
-
-            { // Установка положения и размер символа
-                self.base.image.rect[0]+=character.left();
-                self.base.image.rect[1]-=character.top();
-                self.base.image.rect[2]=character.atlas_size[0];
-                self.base.image.rect[3]=character.atlas_size[1];
-            }
-
-            { // Обрезка символа
-                self.base.image.src_rect[0]=character.atlas_offset[0];
-                self.base.image.src_rect[1]=character.atlas_offset[1];
-                self.base.image.src_rect[2]=character.atlas_size[0];
-                self.base.image.src_rect[3]=character.atlas_size[1];
-            }
-
-            self.base.image.draw(character.texture,&c.draw_state,c.transform,g);
-
-            // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
-            self.base.image.rect[0]+=character.advance_width()-character.left();
-            self.base.image.rect[1]+=character.advance_height()+character.top();
-        }
-        // Возвращение в начальное положение
-        self.base.image.rect[0]=x;
-        self.base.image.rect[1]=y;
+    pub fn draw(&mut self,c:&Context,g:&mut GameGraphics,glyphs:&mut Glyphs){
+        self.base.base.draw(&self.base.line,c,g,glyphs);
     }
 
     // Частичный вывод текста (Может пригодиться)
-    // fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache)->bool{
+    // fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&mut Glyphs)->bool{
     //     let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
 
     //     let mut chars_passed=0; // Символов выведенно
@@ -120,7 +87,7 @@ impl TextViewLineDependent{
     //         self.base.image.draw(character.texture,&c.draw_state,c.transform,g);
 
     //         // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
-    //         self.base.image.rect[0]+=character.advance_width()-character.left();
+    //         self.base.image.rect[0]+=character.width() as f64-character.left();
     //         self.base.image.rect[1]+=character.advance_height()+character.top();
     //     }
     //     // Возвращение в начальное положение
@@ -130,7 +97,7 @@ impl TextViewLineDependent{
     //     whole_text
     // }
 
-    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache){
+    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GameGraphics,glyphs:&mut Glyphs){
         self.set_alpha_channel(alpha);
         self.draw(c,g,glyphs)
     }
@@ -144,7 +111,7 @@ pub struct TextViewLinedDependent{
 }
 
 impl TextViewLinedDependent{
-    pub fn new<S:ToString>(settings:TextViewSettings<S>,glyphs:&mut GlyphCache)->TextViewLinedDependent{
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&mut Glyphs)->TextViewLinedDependent{
         let mut lines=Vec::new();
 
         let font_size=settings.font_size as f64;
@@ -159,16 +126,16 @@ impl TextViewLinedDependent{
         let mut line_len=0f64; // Длина строки текста
         let mut word_len=0f64; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
 
-        let whitespace_width=glyphs.character(settings.font_size,' ').unwrap().advance_width();
-        let nl_whitespace_width=glyphs.character(settings.font_size,'\n').unwrap().advance_width();
+        let whitespace_width=glyphs.character(' ',settings.font_size).width() as f64;
+        let nl_whitespace_width=glyphs.character('\n',settings.font_size).width() as f64;
 
-        let text=settings.text.to_string();
+        let text=settings.text.into();
 
         for (c,ch) in text.char_indices(){
 
-            let character=glyphs.character(settings.font_size,ch).unwrap();
+            let character=glyphs.character(ch,settings.font_size);
 
-            let char_width=character.advance_width();
+            let char_width=character.width() as f64;
             line_len+=char_width;
             word_len+=char_width;
 
@@ -223,14 +190,14 @@ impl TextViewLinedDependent{
         };
 
         Self{
-            base:TextBase::new_color(settings.text_color,settings.font_size).position([x,y]),
+            base:TextBase::new(settings.text_color,settings.font_size).position([x,y]),
             lines,
             rect:settings.rect,
             align:settings.align
         }
     }
 
-    pub fn set_text<S:ToString>(&mut self,text:S,glyphs:&mut GlyphCache){
+    pub fn set_text<S:Into<String>>(&mut self,text:S,glyphs:&mut Glyphs){
         self.lines.clear(); // Удаление старого текста
 
         let font_size=self.base.font_size as f64;
@@ -245,16 +212,16 @@ impl TextViewLinedDependent{
         let mut line_len=0f64; // Длина строки текста
         let mut word_len=0f64; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
 
-        let whitespace_width=glyphs.character(self.base.font_size,' ').unwrap().advance_width();
-        let nl_whitespace_width=glyphs.character(self.base.font_size,'\n').unwrap().advance_width();
+        let whitespace_width=glyphs.character(' ',self.base.font_size).width() as f64;
+        let nl_whitespace_width=glyphs.character('\n',self.base.font_size).width() as f64;
 
-        let text=text.to_string();
+        let text=text.into();
 
         for (c,ch) in text.char_indices(){
 
-            let character=glyphs.character(self.base.font_size,ch).unwrap();
+            let character=glyphs.character(ch,self.base.font_size,);
 
-            let char_width=character.advance_width();
+            let char_width=character.width() as f64;
             line_len+=char_width;
             word_len+=char_width;
 
@@ -311,52 +278,25 @@ impl TextViewLinedDependent{
         self.base.set_position([x,y]);
     }
 
-    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&mut GlyphCache){
-        let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
+    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&mut Glyphs){
+        let position=self.base.position; // Сохранение начальной позиции
 
         let dy=self.base.font_size as f64+line_margin;
-
         // Перебор строк
         for line in &self.lines{
             let dx=line.0; // Выравнивание строки
-            self.base.image.rect[0]+=dx; // Сдвиг строки
+            self.base.shift_x(dx);
 
-            for ch in line.1.chars(){
-                let character=glyphs.character(self.base.font_size,ch).unwrap();
+            self.base.draw(&line.1,context,graphics,glyphs);
 
-                { // Установка положения и размер символа
-                    self.base.image.rect[0]+=character.left();
-                    self.base.image.rect[1]-=character.top();
-                    self.base.image.rect[2]=character.atlas_size[0];
-                    self.base.image.rect[3]=character.atlas_size[1];
-                }
-
-                { // Обрезка символа
-                    self.base.image.src_rect[0]=character.atlas_offset[0];
-                    self.base.image.src_rect[1]=character.atlas_offset[1];
-                    self.base.image.src_rect[2]=character.atlas_size[0];
-                    self.base.image.src_rect[3]=character.atlas_size[1];
-                }
-
-                self.base.image.draw(character.texture,&context.draw_state,context.transform,graphics);
-
-                // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
-                self.base.image.rect[0]+=character.advance_width()-character.left();
-                self.base.image.rect[1]+=character.advance_height()+character.top();
-            }
-
-            // Переход на новую строку
-            self.base.image.rect[0]=x;
-            self.base.image.rect[1]+=dy;
+            self.base.shift(-dx,dy);
         }
-        // Возвращение в начальное положение
-        self.base.image.rect[0]=x;
-        self.base.image.rect[1]=y;
+
+        self.base.set_position(position);
     }
 
-    pub fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache)->bool{
-        // Сохранение начального положения
-        let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
+    pub fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&mut Glyphs)->bool{
+        let position=self.base.position; // Сохранение начальной позиции
 
         let dy=self.base.font_size as f64+line_margin;
 
@@ -366,8 +306,7 @@ impl TextViewLinedDependent{
 
         // Перебор строк
         'lines:for line in &self.lines{
-            let dx=line.0; // Выравнивание строки
-            self.base.image.rect[0]+=dx; // Сдвиг строки
+            self.base.shift_x(line.0); // Сдвиг строки
 
             for ch in line.1.chars(){
                 if chars_passed==chars{
@@ -376,37 +315,19 @@ impl TextViewLinedDependent{
                 }
                 chars_passed+=1;
 
-                let character=glyphs.character(self.base.font_size,ch).unwrap();
-
-                { // Установка положения и размер символа
-                    self.base.image.rect[0]+=character.left();
-                    self.base.image.rect[1]-=character.top();
-                    self.base.image.rect[2]=character.atlas_size[0];
-                    self.base.image.rect[3]=character.atlas_size[1];
-                }
-
-                { // Обрезка символа
-                    self.base.image.src_rect[0]=character.atlas_offset[0];
-                    self.base.image.src_rect[1]=character.atlas_offset[1];
-                    self.base.image.src_rect[2]=character.atlas_size[0];
-                    self.base.image.src_rect[3]=character.atlas_size[1];
-                }
-
-                // Вывод символа
-                self.base.image.draw(character.texture,&c.draw_state,c.transform,g);
+                let character=glyphs.character(ch,self.base.font_size);
+                self.base.draw_character(&character,c,g);
 
                 // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
-                self.base.image.rect[0]+=character.advance_width()-character.left();
-                self.base.image.rect[1]+=character.advance_height()+character.top();
+                self.base.shift_x(character.width() as f64);
             }
 
             // Переход на новую строку
-            self.base.image.rect[0]=x;
-            self.base.image.rect[1]+=dy;
+            self.base.position[0]=position[0];
+            self.base.position[1]+=dy;
         }
-        // Возвращение в начальное положение
-        self.base.image.rect[0]=x;
-        self.base.image.rect[1]=y;
+
+        self.base.set_position(position); // Возвращение в начальное положение
 
         whole_text
     }
@@ -420,22 +341,29 @@ pub struct TextViewStaticLineDependent{
 }
 
 impl TextViewStaticLineDependent{
-    pub fn new<S:ToString>(settings:TextViewSettings<S>,glyphs:&mut GlyphCache)->TextViewStaticLineDependent{
-        let line=settings.text.to_string();
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&Glyphs)->TextViewStaticLineDependent{
+        let line=settings.text.into();
+
+        let font=glyphs.glyph_height(settings.font_size) as f64;
 
         let mut line_len=0f64;
         for ch in line.chars(){
-            let character=glyphs.character(settings.font_size,ch).unwrap();
-            line_len+=character.advance_width();
+            let character=glyphs.character(ch,settings.font_size);
+            line_len+=character.width() as f64 as f64;
         }
 
+        
         // Выравнивание
-        let (x,y)=settings.align.text_position(settings.rect,[line_len,settings.font_size as f64]);
+        let (x,y)=settings.align.text_position(settings.rect,[line_len,font]);
 
         Self{
-            base:TextBase::new_color(settings.text_color,settings.font_size).position([x,y]),
+            base:TextBase::new(settings.text_color,settings.font_size).position([x,y]),
             line:line
         }
+    }
+
+    pub fn font_size(&self)->f32{
+        self.base.font_size
     }
 
     pub fn set_alpha_channel(&mut self,alpha:f32){
@@ -446,39 +374,11 @@ impl TextViewStaticLineDependent{
         self.base.shift(dx,dy)
     }
 
-    pub fn draw(&mut self,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache){
-        let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
-
-        // Перебор символов
-        for ch in self.line.chars(){
-            let character=glyphs.character(self.base.font_size,ch).unwrap();
-
-            { // Установка положения и размер символа
-                self.base.image.rect[0]+=character.left();
-                self.base.image.rect[1]-=character.top();
-                self.base.image.rect[2]=character.atlas_size[0];
-                self.base.image.rect[3]=character.atlas_size[1];
-            }
-
-            { // Обрезка символа
-                self.base.image.src_rect[0]=character.atlas_offset[0];
-                self.base.image.src_rect[1]=character.atlas_offset[1];
-                self.base.image.src_rect[2]=character.atlas_size[0];
-                self.base.image.src_rect[3]=character.atlas_size[1];
-            }
-
-            self.base.image.draw(character.texture,&c.draw_state,c.transform,g);
-
-            // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
-            self.base.image.rect[0]+=character.advance_width()-character.left();
-            self.base.image.rect[1]+=character.advance_height()+character.top();
-        }
-        // Возвращение в начальное положение
-        self.base.image.rect[0]=x;
-        self.base.image.rect[1]=y;
+    pub fn draw(&mut self,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs){
+        self.base.draw(&self.line,c,g,glyphs);
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GameGraphics,glyphs:&mut GlyphCache){
+    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs){
         self.set_alpha_channel(alpha);
         self.draw(c,g,glyphs)
     }
@@ -486,13 +386,14 @@ impl TextViewStaticLineDependent{
 
 // Неизменяемый зависимый текстовый блок с множеством линий текста
 // Зависим от шрифта
+
 pub struct TextViewStaticLinedDependent{
     base:TextBase,
     lines:Vec<(f64,String)>,
 }
 
 impl TextViewStaticLinedDependent{
-    pub fn new<S:ToString>(settings:TextViewSettings<S>,glyphs:&mut GlyphCache)->TextViewStaticLinedDependent{
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&Glyphs)->TextViewStaticLinedDependent{
         let mut lines=Vec::new();
 
         let font_size=settings.font_size as f64;
@@ -507,16 +408,16 @@ impl TextViewStaticLinedDependent{
         let mut line_len=0f64; // Длина строки текста
         let mut word_len=0f64; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
 
-        let whitespace_width=glyphs.character(settings.font_size,' ').unwrap().advance_width();
-        let nl_whitespace_width=glyphs.character(settings.font_size,'\n').unwrap().advance_width();
+        let whitespace_width=glyphs.character(' ',settings.font_size as f32).width() as f64;
+        let nl_whitespace_width=glyphs.character('\n',settings.font_size as f32).width() as f64;
 
-        let text=settings.text.to_string();
+        let text=settings.text.into();
 
         for (c,ch) in text.char_indices(){
 
-            let character=glyphs.character(settings.font_size,ch).unwrap();
+            let character=glyphs.character(ch,settings.font_size as f32);
 
-            let char_width=character.advance_width();
+            let char_width=character.width() as f64 as f64;
             line_len+=char_width;
             word_len+=char_width;
 
@@ -571,7 +472,7 @@ impl TextViewStaticLinedDependent{
         };
 
         Self{
-            base:TextBase::new_color(settings.text_color,settings.font_size).position([x,y]),
+            base:TextBase::new(settings.text_color,settings.font_size).position([x,y]),
             lines
         }
     }
@@ -580,71 +481,45 @@ impl TextViewStaticLinedDependent{
         self.base.set_alpha_channel(alpha);
     }
 
-    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&mut GlyphCache){
-        let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
+    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&Glyphs){
+        let position=self.base.position; // Сохранение начальной позиции
 
         let dy=self.base.font_size as f64+line_margin;
-
         // Перебор строк
         for line in &self.lines{
             let dx=line.0; // Выравнивание строки
-            self.base.image.rect[0]+=dx; // Сдвиг строки
+            self.base.shift_x(dx);
 
-            for ch in line.1.chars(){
-                let character=glyphs.character(self.base.font_size,ch).unwrap();
+            self.base.draw(&line.1,context,graphics,glyphs);
 
-                { // Установка положения и размер символа
-                    self.base.image.rect[0]+=character.left();
-                    self.base.image.rect[1]-=character.top();
-                    self.base.image.rect[2]=character.atlas_size[0];
-                    self.base.image.rect[3]=character.atlas_size[1];
-                }
-
-                { // Обрезка символа
-                    self.base.image.src_rect[0]=character.atlas_offset[0];
-                    self.base.image.src_rect[1]=character.atlas_offset[1];
-                    self.base.image.src_rect[2]=character.atlas_size[0];
-                    self.base.image.src_rect[3]=character.atlas_size[1];
-                }
-
-                self.base.image.draw(character.texture,&context.draw_state,context.transform,graphics);
-
-                // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
-                self.base.image.rect[0]+=character.advance_width()-character.left();
-                self.base.image.rect[1]+=character.advance_height()+character.top();
-            }
-
-            // Переход на новую строку
-            self.base.image.rect[0]=x;
-            self.base.image.rect[1]+=dy;
+            self.base.shift(-dx,dy);
         }
-        // Возвращение в начальное положение
-        self.base.image.rect[0]=x;
-        self.base.image.rect[1]=y;
+
+        self.base.set_position(position);
     }
 }
 
 #[derive(Clone)] // Настройки текстового поля
-pub struct TextViewSettings<S:ToString>{
+pub struct TextViewSettings<S:Into<String>>{
     rect:[f64;4], // [x1,y1,width,height] - сюда вписывается текст
     text:S,
-    font_size:u32,
+    font_size:f32,
     text_color:Color,
     align:Align,
 }
 
-impl<S:ToString> TextViewSettings<S>{
+impl<S:Into<String>> TextViewSettings<S>{
     pub fn new(text:S,rect:[f64;4])->TextViewSettings<S>{
         Self{
             rect:rect,
             text:text,
-            font_size:20,
+            font_size:20f32,
             text_color:Black,
             align:Align::center()
         }
     }
 
-    pub fn font_size(mut self,size:u32)->TextViewSettings<S>{
+    pub fn font_size(mut self,size:f32)->TextViewSettings<S>{
         self.font_size=size;
         self
     }

@@ -1,7 +1,6 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use)]
 
 use graphics::{
-    character::CharacterCache,
     types::Color,
     rectangle::Rectangle,
     Context,
@@ -17,22 +16,19 @@ pub use traits::*;
 mod colors;
 pub use colors::*;
 
-mod text_base;
-pub use text_base::TextBase;
-
 mod background;
 pub use background::Background;
 
 mod image_base;
 pub use image_base::ImageBase;
 
-mod game_window;
-pub use game_window::{
+pub mod game_engine;
+pub use game_engine::{
     *,
     GameGraphics,
 };
 
-mod user_interface;
+pub mod user_interface;
 pub use user_interface::*;
 
 // Выравнивание

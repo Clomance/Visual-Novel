@@ -1,23 +1,22 @@
 use crate::*;
 
+use lib::game_engine::text::Glyphs;
+
 const page_smooth:f32=Intro_smooth;
 
 const background_color:Color=Black;
 
 pub struct Intro<'a,'b>{
     text_view:TextViewStaticLinedDependent,
-    glyphs:GlyphCache<'a>,
+    glyphs:Glyphs<'a>,
     window:&'b mut GameWindow,
 }
 
 impl<'a,'b> Intro<'a,'b>{
-    #[inline(always)]
     pub unsafe fn new(window:&'b mut GameWindow)->Intro<'a,'b>{
-        let texture_settings=TextureSettings::new();
+        let mut glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
 
-        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
-
-        let text="Прогресс сохраняется автоматический";
+        let text="Прогресс сохраняется автоматически";
 
         let settings=TextViewSettings::new(text,
                 [
@@ -26,19 +25,17 @@ impl<'a,'b> Intro<'a,'b>{
                     window_width,
                     window_center[1]
                 ])
-                .font_size(40)
+                .font_size(40f32)
                 .text_color(White);
 
         Self{
-            text_view:TextViewStaticLinedDependent::new(settings,&mut glyphs), // Создание меню
+            text_view:TextViewStaticLinedDependent::new(settings,&mut glyphs),
             glyphs:glyphs,
             window:window
         }
     }
 
-    #[inline(always)]
     pub unsafe fn start(&mut self)->Game{
-
         if self.smooth()==Game::Exit{
             return Game::Exit
         }
@@ -51,7 +48,7 @@ impl<'a,'b> Intro<'a,'b>{
             match event{
                 GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::Draw=>{ //Рендеринг
+                GameWindowEvent::Draw=>{ // Рендеринг
                     if 1f32<(*window).draw_smooth(|alpha,c,g|{
                         g.clear_color(background_color);
                         self.text_view.set_alpha_channel(alpha);
@@ -85,7 +82,6 @@ impl<'a,'b> Intro<'a,'b>{
         Game::ContinueGamePlay
     }
 
-    #[inline(always)]
     pub unsafe fn smooth(&mut self)->Game{
         self.window.set_new_smooth(page_smooth);
         let window=self.window as *mut GameWindow;

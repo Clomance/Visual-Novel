@@ -1,14 +1,29 @@
-use super::*;
+use super::{
+    mouse_cursor,
+    Black,
+    Drawable,
+    GameGraphics,
+    Glyphs,
+    Light_blue,
+    TextViewSettings,
+    TextViewStaticLineDependent
+};
+
+use graphics::{
+    types::Color,
+    Context,
+    Rectangle,
+};
 
 const dcolor:f32=0.125; // На столько измененяется цвет при нажитии/освобождении
 
 pub struct Button<'a>{
     base:ButtonDependent,
-    glyphs:GlyphCache<'a>
+    glyphs:Glyphs<'a>
 }
 
 impl<'a> Button<'a>{
-    pub fn new<S:ToString>(settings:ButtonSettings<S>,mut glyphs:GlyphCache<'a>)->Button<'a>{
+    pub fn new<S:Into<String>>(settings:ButtonSettings<S>,mut glyphs:Glyphs<'a>)->Button<'a>{
         Self{
             base:ButtonDependent::new(settings,&mut glyphs),
             glyphs:glyphs,
@@ -46,7 +61,7 @@ pub struct ButtonDependent{
 }
 
 impl ButtonDependent{
-    pub fn new<S:ToString>(settings:ButtonSettings<S>,glyphs:&mut GlyphCache)->ButtonDependent{
+    pub fn new<S:Into<String>>(settings:ButtonSettings<S>,glyphs:&mut Glyphs)->ButtonDependent{
         let text_view_settings=TextViewSettings::new(settings.text,settings.rect)
                 .text_color(settings.text_color)
                 .font_size(settings.font_size);
@@ -75,7 +90,7 @@ impl ButtonDependent{
         self.base.released()
     }
     
-    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&mut GlyphCache){
+    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&mut Glyphs){
         self.base.draw(context,graphics);
         self.text.draw(context,graphics,glyphs);
     }
@@ -248,21 +263,21 @@ impl ButtonBase{
 }
 
 
-pub struct ButtonSettings<S:ToString>{
+pub struct ButtonSettings<S:Into<String>>{
     rect:[f64;4],
     background_color:Color,
     text:S,
-    font_size:u32,
+    font_size:f32,
     text_color:Color
 }
 
-impl<S:ToString> ButtonSettings<S>{
+impl<S:Into<String>> ButtonSettings<S>{
     pub fn new(text:S,rect:[f64;4])->ButtonSettings<S>{
         Self{
             rect,
             background_color:Light_blue,
             text,
-            font_size:20,
+            font_size:20f32,
             text_color:Black,
         }
     }
@@ -272,7 +287,7 @@ impl<S:ToString> ButtonSettings<S>{
         self
     }
     
-    pub fn font_size(mut self,size:u32)->ButtonSettings<S>{
+    pub fn font_size(mut self,size:f32)->ButtonSettings<S>{
         self.font_size=size;
         self
     }

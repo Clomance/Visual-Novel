@@ -9,12 +9,12 @@ const line_radius:f64=5f64;
 pub struct Slider<'a>{
     head:TextViewStaticLineDependent, // Надпись над слайдером
     value:TextViewLineDependent, // Значение справа от слайдера
-    glyphs:GlyphCache<'a>,
+    glyphs:Glyphs<'a>,
     base:SimpleSlider,
 }
 
 impl<'a> Slider<'a>{
-    pub fn new(settings:SliderSettings,mut glyphs:GlyphCache<'a>)->Slider<'a>{
+    pub fn new(settings:SliderSettings,mut glyphs:Glyphs<'a>)->Slider<'a>{
         // Настройки заголовка слайдера
         let head_settings=TextViewSettings::new(settings.head.clone(),[
                     settings.position[0],

@@ -2,6 +2,7 @@ use crate::{
     colors::*,
     image_base::ImageBase,
     traits::Drawable,
+    Texture
 };
 
 use super::{
@@ -9,7 +10,6 @@ use super::{
     window_width,
     window_height,
     //
-    Texture,
     GameGraphics,
 };
 

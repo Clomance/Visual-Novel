@@ -6,14 +6,15 @@ const dmargin:f64=head_margin-button_margin; // Для расчёта высот
 
 const menu_movement_scale:f64=10f64; // Обратный коэфициент сдвига меню при движении мышью
 
+// Меню, состоящее из заголовка и кнопок под ним
 pub struct Menu<'a>{
     head:TextViewStaticLineDependent,
     buttons:Vec<ButtonDependent>,
-    glyphs:GlyphCache<'a>
+    glyphs:Glyphs<'a>
 }
 
 impl<'a> Menu<'a>{
-    pub fn new<'b,S:ToString,B:ToString+'a>(settings:MenuSettings<'b,S,B>,mut glyphs:GlyphCache<'a>)->Menu<'a>{
+    pub fn new<'b,S:Into<String>,B:Into<String>+Clone+'a>(settings:MenuSettings<'b,S,B>,mut glyphs:Glyphs<'a>)->Menu<'a>{
         let r=unsafe{mouse_cursor.center_radius()}; //
         let dx=r[0]/menu_movement_scale;            // Сдвиг относительно положения мыши
         let dy=r[1]/menu_movement_scale;            //
@@ -79,8 +80,9 @@ impl<'a> Menu<'a>{
 
         // Создание кнопок
         for text in settings.buttons_text{
+            let text=text.clone();
             // Настройки кнопок (text.to_string() странно работает: требует fmt::Display без to_string)
-            let button_sets=ButtonSettings::new(text.to_string(),button_rect)
+            let button_sets=ButtonSettings::<String>::new(text.into(),button_rect)
                     .background_color(settings.buttons_color)
                     .font_size(settings.buttons_font_size);
 
@@ -142,31 +144,31 @@ impl<'a> Drawable for Menu<'a>{
 }
 
 // Настройки меню
-pub struct MenuSettings<'a,S:ToString,B:ToString+'a>{
+pub struct MenuSettings<'a,S:Into<String>,B:Into<String>+'a>{
     rect:[f64;4], // [x1,y1,width,height] - сюда встроивается меню, по умочанию размер окна
     align:Align, // Выравнивание меню
     head_text:S, // Текст заголовка меню
     head_size:[f64;2], // Ширина и высота заголовка
-    head_font_size:u32,
+    head_font_size:f32,
     head_text_color:Color,
     buttons_size:[f64;2], // [width,height], по умолчанию [100, 60]
     buttons_text:&'a [B],
-    buttons_font_size:u32,
+    buttons_font_size:f32,
     buttons_color:Color,
 }
 
-impl<'a,S:ToString,B:ToString+'a> MenuSettings<'a,S,B>{
+impl<'a,S:Into<String>,B:Into<String>+'a> MenuSettings<'a,S,B>{
     pub fn new(head:S,buttons:&'a [B])->MenuSettings<'a,S,B>{
         Self{
             rect:unsafe{[0f64,0f64,window_width,window_height]},
             head_text:head,
             head_size:[100f64,60f64],
-            head_font_size:40u32,
+            head_font_size:40f32,
             head_text_color:White,
             align:Align::center(),
             buttons_size:[100f64,60f64],
             buttons_text:buttons,
-            buttons_font_size:20u32,
+            buttons_font_size:20f32,
             buttons_color:Light_blue,
         }
     }
@@ -196,7 +198,7 @@ impl<'a,S:ToString,B:ToString+'a> MenuSettings<'a,S,B>{
         self
     }
 
-    pub fn buttons_font_size(mut self,size:u32)->MenuSettings<'a,S,B>{
+    pub fn buttons_font_size(mut self,size:f32)->MenuSettings<'a,S,B>{
         self.buttons_font_size=size;
         self
     }

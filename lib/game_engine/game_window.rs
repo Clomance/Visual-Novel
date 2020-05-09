@@ -1,3 +1,10 @@
+use super::{
+    Graphics2D,
+    mouse_cursor::*,
+    GameGraphics,
+};
+
+
 use glium::{
     Display,
     Surface,
@@ -19,27 +26,10 @@ use glium::glutin::{
     window::Icon
 };
 
-mod game_graphics;
-pub use game_graphics::*;
-
-pub mod draw_state;
-
 use image::GenericImageView;
 
-mod mouse_cursor;
-pub use mouse_cursor::*;
-
-mod game_texture;
-pub use game_texture::*;
-
-mod wallpaper;
-pub use wallpaper::*;
 
 use std::collections::VecDeque;
-
-const open_gl:shader_version::OpenGL=shader_version::OpenGL::V3_2;
-
-pub type GlyphCache<'a>=graphics::glyph_cache::rusttype::GlyphCache<'a,Display,Texture>;
 
 /*
     EventLoop - минимум четыре шага для моей схемы с мгновенным закрытием цикла обработки событий:
@@ -63,10 +53,14 @@ pub static mut window_width:f64=0f64;
 pub static mut window_height:f64=0f64;
 pub static mut window_center:[f64;2]=[0f64;2];
 
+// Указатель на окно - для упрощения загрузки ресурсов
+pub static mut Game_display_ref:*const Display=std::ptr::null();
+pub static mut Game_display:Option<Display>=Option::None;
+
+
 pub struct GameWindow{
     event_loop:EventLoop<()>,
-    glium2d:Glium2d,
-    display:Display,
+    glium2d:Graphics2D,
     mouse_icon:MouseCursorIcon,
     events:VecDeque<GameWindowEvent>,
     events_handler:fn(&mut Self),
@@ -145,23 +139,31 @@ impl GameWindow{
 
         display.gl_window().window().set_cursor_visible(false);
 
-        Self{
+        let window=Self{
             event_loop,
-            glium2d:game_graphics::Glium2d::new(open_gl,&display),
+            glium2d:Graphics2D::new(&display),
             mouse_icon:MouseCursorIcon::new(&display,unsafe{[window_width as f32,window_height as f32]}),
-            display,
             events:VecDeque::with_capacity(32),
             events_handler:GameWindow::event_listener,
             width,
             height,
             alpha_channel:0f32,
             smooth:0f32,
+        };
+
+        unsafe{
+            Game_display=Some(display);
+            Game_display_ref=Game_display.as_ref().unwrap() as *const Display;
         }
+
+        window
     }
 
     #[inline(always)]
-    pub fn display(&mut self)->&mut Display{
-        &mut self.display
+    pub fn display(&self)->&mut Display{
+        unsafe{
+            Game_display.as_mut().unwrap()
+        }
     }
 
     #[inline(always)]
@@ -179,12 +181,12 @@ impl GameWindow{
 
     #[inline(always)]
     pub fn request_redraw(&self){
-        self.display.gl_window().window().request_redraw();
+        self.display().gl_window().window().request_redraw();
     }
 
     #[inline(always)]
     pub fn set_hide(&self,hide:bool){
-        self.display.gl_window().window().set_minimized(hide);
+        self.display().gl_window().window().set_minimized(hide);
     }
 }
 
@@ -196,7 +198,7 @@ impl GameWindow{
 
         let game_window=self as *mut GameWindow;
 
-        let display=self.display.gl_window();
+        let display=unsafe{&*Game_display_ref}.gl_window();
 
         let window:&Window=display.window();
 
@@ -321,7 +323,7 @@ impl GameWindow{
 
         let game_window=self as *mut GameWindow;
 
-        let display=self.display.gl_window();
+        let display=unsafe{&*Game_display_ref}.gl_window();
 
         let window:&Window=display.window();
 
@@ -373,7 +375,7 @@ impl GameWindow{
 impl GameWindow{
     // Даёт прямое управление буфером кадра
     pub fn draw_raw<F:FnOnce(&mut Frame)>(&mut self,f:F){
-        let mut frame=self.display.draw();
+        let mut frame=self.display().draw();
         f(&mut frame);
         frame.finish();
     }
@@ -385,7 +387,7 @@ impl GameWindow{
             window_size:unsafe{[window_width,window_height]},
         };
 
-        let mut frame=self.display.draw();
+        let mut frame=self.display().draw();
 
         let mut g=GameGraphics::new(&mut self.glium2d,&mut frame);
         let context=graphics::Context::new_viewport(viewport);
@@ -396,10 +398,6 @@ impl GameWindow{
             let dx=(mouse_position[0]/window_center[0]) as f32-1f32;
             let dy=1f32-(mouse_position[1]/window_center[1]) as f32;
             self.mouse_icon.draw(g.frame(),(dx,dy));
-        }
-
-        if g.system.colored_offset>0{
-            g.flush_colored();
         }
 
         frame.finish();
@@ -414,7 +412,7 @@ impl GameWindow{
             window_size:unsafe{[window_width,window_height]},
         };
 
-        let mut frame=self.display.draw();
+        let mut frame=self.display().draw();
 
         let mut g=GameGraphics::new(&mut self.glium2d,&mut frame);
         let context=graphics::Context::new_viewport(viewport);
@@ -427,10 +425,6 @@ impl GameWindow{
             self.mouse_icon.draw(g.frame(),(dx,dy));
         }
 
-        if g.system.colored_offset>0{
-            g.flush_colored();
-        }
-
         frame.finish();
 
         self.alpha_channel+=self.smooth;
@@ -440,10 +434,18 @@ impl GameWindow{
 
 impl GameWindow{
     pub fn screenshot(&self){
-        let image:glium::texture::RawImage2d<u8>=self.display.read_front_buffer().unwrap();
+        let image:glium::texture::RawImage2d<u8>=self.display().read_front_buffer().unwrap();
         let image=image::ImageBuffer::from_raw(image.width,image.height,image.data.into_owned()).unwrap();
         let image=image::DynamicImage::ImageRgba8(image).flipv();
         image.save("screenshot.png").unwrap();
+    }
+}
+
+impl Drop for GameWindow{
+    fn drop(&mut self){
+        unsafe{
+            Game_display=Option::None;
+        }
     }
 }
 

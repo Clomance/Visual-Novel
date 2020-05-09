@@ -37,24 +37,24 @@ impl ImageBase{
     }
 }
 
-pub struct ImageBaseSrc{
-    pub rect:[f64;4],
-    pub color:Color,
-    pub src_rect:[f64;4],
-}
+// pub struct ImageBaseSrc{
+//     pub rect:[f64;4],
+//     pub color:Color,
+//     pub src_rect:[f64;4],
+// }
 
-impl ImageBaseSrc{
-    pub fn new(color:Color,rect:[f64;4],src_rect:[f64;4])->ImageBaseSrc{
-        Self{
-            rect,
-            color,
-            src_rect,
-        }
-    }
+// impl ImageBaseSrc{
+//     pub fn new(color:Color,rect:[f64;4],src_rect:[f64;4])->ImageBaseSrc{
+//         Self{
+//             rect,
+//             color,
+//             src_rect,
+//         }
+//     }
 
-    pub fn draw(&self,texture:&Texture,draw_state:&DrawState,transform:Matrix2d,g:&mut GameGraphics){
-        g.tri_list_uv(draw_state,&self.color,texture,|f|{
-            f(&triangulation::rect_tri_list_xy(transform,self.rect),&triangulation::rect_tri_list_uv(texture,self.src_rect))
-        });
-    }
-}
+//     pub fn draw(&self,texture:&Texture,draw_state:&DrawState,transform:Matrix2d,g:&mut GameGraphics){
+//         g.tri_list_uv(draw_state,&self.color,texture,|f|{
+//             f(&triangulation::rect_tri_list_xy(transform,self.rect),&triangulation::rect_tri_list_uv(texture,self.src_rect))
+//         });
+//     }
+// }

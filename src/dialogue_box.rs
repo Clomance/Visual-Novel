@@ -1,5 +1,7 @@
 use crate::*;
 
+use lib::game_engine::text::{TextBase,Glyphs};
+
 use glium::Display;
 
 const k:f64=3.3f64; // Отношение размера окна игры к диалоговому окну
@@ -21,14 +23,15 @@ pub struct DialogueBox<'a,'b>{
     lines:TextViewLinedDependent, // Текстовый блок для диалогов
     image:ImageBase,
     texture:Texture,
-    glyphs:GlyphCache<'a>
+    glyphs:Glyphs<'a>
 }
 
 impl<'a,'b> DialogueBox<'a,'b>{
     pub fn new(texture:&RgbaImage,display:&mut Display)->DialogueBox<'a,'b>{
         let texture_settings=TextureSettings::new();
-        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",display.clone(),texture_settings).unwrap();
+        let mut glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
         let texture=Texture::from_image(display,texture,&texture_settings).unwrap();
+        
         unsafe{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
@@ -39,7 +42,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
                         window_width-2f64*text_position_x,
                         height/2f64,
                     ])
-                    .font_size(24)
+                    .font_size(24f32)
                     .align_x(AlignX::Left)
                     .align_y(AlignY::Up)
                     .text_color(White);
@@ -52,7 +55,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
                 y1:y1,
                 lines:TextViewLinedDependent::new(line_settings,&mut glyphs),
 
-                name_base:TextBase::new_color(White,font_size)
+                name_base:TextBase::new(White,font_size as f32)
                         .position([name_position_x,y1+name_position_y]),
 
                 image:ImageBase::new(White,[

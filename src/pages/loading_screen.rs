@@ -6,7 +6,6 @@ pub struct LoadingScreen{
 }
 
 impl LoadingScreen{
-    #[inline(always)]
     pub fn new(window:&mut GameWindow)->LoadingScreen{
         let texture_settings=TextureSettings::new();
 
@@ -22,10 +21,9 @@ impl LoadingScreen{
     }
 
     pub unsafe fn start<F,T>(&mut self,window:&mut GameWindow,background:F)->Game
-            where
-                F: FnOnce() -> T,
-                F: Send + 'static,
-                T: Send + 'static{
+            where F:FnOnce()->T,
+                F:Send+'static,
+                T:Send+'static{
         let half_size=100f64;
         let (x,y)=(window_width/2f64,window_height/2f64);
         let mut rotation=0f64;

@@ -13,11 +13,11 @@ pub struct EditTextView<'a>{
     line:String,
     capacity:usize,
     align:Align,
-    glyphs:GlyphCache<'a>,
+    glyphs:Glyphs<'a>,
 }
 
 impl<'a> EditTextView<'a>{
-    pub fn new<S:ToString>(settings:EditTextViewSettings<S>,mut glyphs:GlyphCache<'a>)->EditTextView<'a>{
+    pub fn new<S:Into<String>>(settings:EditTextViewSettings<S>,glyphs:Glyphs<'a>)->EditTextView<'a>{
         // Создание заднего фона
         let rect=settings.rect;
         let mut background=Rectangle::new(settings.background_color);
@@ -29,12 +29,12 @@ impl<'a> EditTextView<'a>{
             background=background.border(border);
         }
         
-        let line=settings.text.to_string();
+        let line=settings.text.into();
         // Вычисление длины строки текста
         let mut text_len=0f64;
         for ch in line.chars(){
-            let character=glyphs.character(settings.font_size,ch).unwrap();
-            text_len+=character.advance_width();
+            let character=glyphs.character(ch,settings.font_size);
+            text_len+=character.width() as f64;
         }
 
         // Выравнивание текста
@@ -48,7 +48,7 @@ impl<'a> EditTextView<'a>{
             y2:rect[1]+rect[3],
             width:rect[2],
             height:rect[3],
-            base:TextBase::new_color(settings.text_color,settings.font_size).position([x,y]),
+            base:TextBase::new(settings.text_color,settings.font_size).position([x,y]),
             line,
             capacity:settings.capacity,
             align:settings.align,
@@ -72,29 +72,29 @@ impl<'a> EditTextView<'a>{
     pub fn push_char(&mut self,ch:char){
         if self.line.len()<self.capacity{
             self.line.push(ch);
-            let character_width=self.glyphs.character(self.base.font_size,ch).unwrap().advance_width(); // Поиск нужной буквы
+            let character_width=self.glyphs.character(ch,self.base.font_size).width() as f64; // Поиск нужной буквы
             
             let dx=match self.align.x{
                 AlignX::Right=>character_width,
                 AlignX::Center=>character_width/2f64,
                 AlignX::Left=>0f64,
             };
-            self.base.image.rect[0]-=dx; // Сдвиг
+            self.base.shift_x(-dx); // Сдвиг
         }
     }
 
     // Удаление последнего символа с выравниванием
     pub fn pop_char(&mut self){
         if let Some(ch)=self.line.pop(){
-            let character=self.glyphs.character(self.base.font_size,ch).unwrap(); // Поиск нужной буквы
-            let character_width=character.advance_width(); // Ширина буквы
+            let character=self.glyphs.character(ch,self.base.font_size); // Поиск нужной буквы
+            let character_width=character.width() as f64; // Ширина буквы
 
             let dx=match self.align.x{
                 AlignX::Right=>character_width,
                 AlignX::Center=>character_width/2f64,
                 AlignX::Left=>0f64,
             };
-            self.base.image.rect[0]+=dx; // Сдвиг
+            self.base.shift_x(dx); // Сдвиг
         }
     }
 }
@@ -114,10 +114,10 @@ impl<'a> Drawable for EditTextView<'a>{
 }
 
 
-pub struct EditTextViewSettings<S:ToString>{
+pub struct EditTextViewSettings<S:Into<String>>{
     text:S,
     capacity:usize,
-    font_size:u32,
+    font_size:f32,
     text_color:Color,
     align:Align,
     rect:[f64;4], // [x1,y1,width,height] - сюда вписывается текст
@@ -125,12 +125,12 @@ pub struct EditTextViewSettings<S:ToString>{
     border_color:Option<Color>,
 }
 
-impl<S:ToString> EditTextViewSettings<S>{
+impl<S:Into<String>> EditTextViewSettings<S>{
     pub fn new(text:S,rect:[f64;4])->EditTextViewSettings<S>{
         Self{
             text,
             capacity:20usize,
-            font_size:20u32,
+            font_size:20f32,
             text_color:Black,
             align:Align::center(),
             rect,

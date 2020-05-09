@@ -1,22 +1,21 @@
 use crate::*;
+use lib::game_engine::text::Glyphs;
 
 const page_smooth:f32=Enter_user_name_smooth;
 
 pub struct EnterUserName<'a,'b,'c,'d,'e>{
     head:TextViewStaticLineDependent,
-    glyphs:GlyphCache<'a>,
+    glyphs:Glyphs<'a>,
     input:EditTextView<'b>,
     main_menu:&'c mut MainMenu<'e,'d>,
     window:*mut GameWindow,
 }
 
 impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
-    #[inline(always)]
     pub unsafe fn new(main_menu:&'c mut MainMenu<'e,'d>,window:&mut GameWindow)->EnterUserName<'a,'b,'c,'d,'e>{
 
         // Загрузка шрифта
-        let texture_settings=TextureSettings::new();
-        let mut head_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
+        let mut head_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
 
         let head_settings=TextViewSettings::new("Введите своё имя",[
                     (window_width)/2f64-150f64,
@@ -25,7 +24,7 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
                     70f64,
                 ]);
 
-        let glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
+        let glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
 
         let settings=EditTextViewSettings::new("",[
                     (window_width)/2f64-150f64,
@@ -45,7 +44,6 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
         }
     }
 
-    #[inline(always)]
     pub unsafe fn start(&mut self)->Game{
         match self.smooth(){
             Game::Exit=>return Game::Exit,
@@ -111,7 +109,7 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
         Game::Exit
     }
 
-    #[inline(always)] // Сглаживание перехода к странице (открытие)
+    // Сглаживание перехода к странице (открытие)
     pub unsafe fn smooth(&mut self)->Game{
         (*self.window).set_new_smooth(page_smooth);
 

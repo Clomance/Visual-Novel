@@ -1,5 +1,7 @@
 use crate::*;
 
+use lib::game_engine::text::Glyphs;
+
 const page_smooth:f32=Pause_menu_smooth;
 
 const background_color:Color=Pause_menu_background_color;
@@ -9,11 +11,9 @@ pub struct PauseMenu<'a>{
 }
 
 impl<'a> PauseMenu<'a>{
-    #[inline(always)]
-    pub unsafe fn new(window:&mut GameWindow)->PauseMenu<'a>{
+    pub unsafe fn new()->PauseMenu<'a>{
         // Загрузка шрифта
-        let texture_settings=TextureSettings::new();
-        let menu_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
+        let menu_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
         
         // Настройка меню
         let menu_settings=MenuSettings::new("Пауза",&["Продолжить","Главное меню","Настройки","Выход"])
@@ -25,7 +25,6 @@ impl<'a> PauseMenu<'a>{
         }
     }
 
-    #[inline(always)]
     pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
         'page:loop{
             match self.smooth(window){
@@ -61,7 +60,7 @@ impl<'a> PauseMenu<'a>{
                                         0=>return Game::ContinueGamePlay, // Кнопка продолжить
                                         1=>return Game::MainMenu, // Кнопка главного меню
                                         2=>{ // Кнопка настроек
-                                            match SettingsPage::new(window).start(window){
+                                            match SettingsPage::new().start(window){
                                                 Game::Exit=>return Game::Exit,
                                                 Game::Back=>continue 'page,
                                                 _=>{}
@@ -88,7 +87,6 @@ impl<'a> PauseMenu<'a>{
         }
     }
 
-    #[inline(always)]
     pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
         window.set_new_smooth(page_smooth);
 

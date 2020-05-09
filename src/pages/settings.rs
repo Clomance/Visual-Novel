@@ -1,5 +1,7 @@
 use crate::*;
 
+use lib::game_engine::text::Glyphs;
+
 const page_smooth:f32=Settings_page_smooth;
 
 const background_color:Color=Settings_page_color;
@@ -9,23 +11,19 @@ pub struct SettingsPage<'a,'b,'d>{
     signs_per_sec:Slider<'b>,
     volume:Slider<'d>,
     back_button:ButtonDependent,
-    glyphs:GlyphCache<'a>,
+    glyphs:Glyphs<'a>,
 }
 
 impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
-    #[inline(always)]
-    pub unsafe fn new(window:&mut GameWindow)->SettingsPage<'a,'b,'d>{
-
-        let texture_settings=TextureSettings::new();
-
-        let mut glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
+    pub unsafe fn new()->SettingsPage<'a,'b,'d>{
+        let mut glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
         let head_settings=TextViewSettings::new("Настройки",[
                     0f64,
                     0f64,
                     window_width,
                     80f64,
                 ])
-                .font_size(40)
+                .font_size(40f32)
                 .text_color(White);
 
 
@@ -36,7 +34,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                 .min_value(15f64)
                 .max_value(120f64)
                 .current_value(Settings.signs_per_frame*60f64);
-        let slider_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
+        let slider_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
 
 
         let volume_settings=SliderSettings::new()
@@ -46,7 +44,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                 .min_value(0f64)
                 .max_value(100f64)
                 .current_value(Settings.volume*100f64);
-        let volume_glyphs=GlyphCache::new("./resources/fonts/CALIBRI.TTF",window.display().clone(),texture_settings).unwrap();
+        let volume_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
         let volume=Slider::new(volume_settings,volume_glyphs);
 
         // Настройки кнопки выхода
@@ -67,7 +65,6 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
         }
     }
 
-    #[inline(always)]
     pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
 
         match self.smooth(window){
@@ -140,7 +137,6 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
         Game::Exit
     }
 
-    #[inline(always)]
     pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
         window.set_new_smooth(page_smooth);
 

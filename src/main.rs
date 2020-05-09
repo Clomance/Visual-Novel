@@ -143,9 +143,8 @@ fn main(){
             // Полный цикл игры
             'game:loop{
                 wallpaper.update_image(texture_base.main_menu_wallpaper()); // Устрановка обоев главного меню
-
                 // Цикл главного меню
-                match MainMenu::new(&mut wallpaper,&mut window).start(&mut window){
+                match MainMenu::new(&mut wallpaper).start(&mut window){
                     Game::ContinueGamePlay=>{
                         //
                     }
@@ -258,7 +257,7 @@ fn main(){
                                         KeyboardButton::Escape=>{
                                             mouse_cursor.save_position(); // Сохранение текущей позиции мышки
                                             // Пауза
-                                            match PauseMenu::new(&mut window).start(&mut window){
+                                            match PauseMenu::new().start(&mut window){
                                                 Game::ContinueGamePlay=>{
                                                     let (dx,dy)=mouse_cursor.saved_movement();
                                                     wallpaper.mouse_shift(dx,dy);

@@ -7,8 +7,7 @@ use crate::{
     colors::*,
     Drawable,
     GameGraphics,
-    GlyphCache,
-    text_base::TextBase,
+    text::{Glyphs,TextBase},
     Align,
     AlignX,
     AlignY,
@@ -18,7 +17,6 @@ use graphics::{
     ellipse::Border,
     ellipse::Ellipse,
     line::Line,
-    character::CharacterCache,
     types::Color,
     rectangle::Rectangle,
     Context,
@@ -41,3 +39,6 @@ pub use menu::{
 
 mod slider;
 pub use slider::*;
+
+mod wallpaper;
+pub use wallpaper::*;
