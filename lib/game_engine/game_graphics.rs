@@ -2,7 +2,7 @@ use glium::{
     // macroses
     implement_vertex,
     uniform,
-    //
+    // structs
     Program,
     DrawParameters,
     Surface,
@@ -156,21 +156,9 @@ impl<'d,'s> GameGraphics<'d,'s>{
         self.system.plain_buffer.invalidate();
     }
 
-    // Рисует один символ
-    pub fn draw_character(
-        &mut self,
-        text_base:&TextBase,
-        character:&Character,
-        position:[f64;2],
-        draw_parameters:&DrawParameters,
-    ){
-        self.system.text.draw_character(
-            character,
-            text_base.color,
-            position,
-            self.surface,
-            draw_parameters,
-        );
+    #[inline(always)] // Рисует один символ
+    pub fn draw_character(&mut self,text_base:&TextBase,character:&Character,draw_parameters:&DrawParameters){
+        self.system.text.draw_character(character,text_base.color,self.surface,draw_parameters);
     }
 }
 

@@ -1,5 +1,5 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,dead_code)]
-//#![windows_subsystem="windows"]
+#![windows_subsystem="windows"]
 
 use image::RgbaImage;
 
@@ -88,7 +88,6 @@ fn main(){
 
     unsafe{
         Settings.load(); // Загрузка настроек
-
         let mut window:GameWindow=GameWindow::new(&Settings.game_name); // Создание окна и загрузка функций OpenGL
 
         let window_size=window.size();
@@ -105,7 +104,7 @@ fn main(){
                 (window_height+2f64*dy)
             ]
         };
-
+    
         let mut dialogues:Vec<Dialogue>=Vec::new(); // Массив диалогов
 
         let mut dialogues_ref=SyncRawPtr::new(&mut dialogues as *mut Vec<Dialogue>);

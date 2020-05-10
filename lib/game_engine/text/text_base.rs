@@ -78,33 +78,36 @@ impl TextBase{
     // Выводит один символ
     pub fn draw_char(&self,character:char,context:&Context,graphics:&mut GameGraphics,glyphs:Glyphs){
         let draw_parameters=convert_draw_state(&context.draw_state);
-        let character=glyphs.character(character,self.font_size);
-        graphics.draw_character(self,&character,self.position,&draw_parameters);
+
+        let position=[self.position[0] as f32,self.position[1] as f32];
+
+        let character=glyphs.character_positioned(character,self.font_size,position);
+
+        graphics.draw_character(self,&character,&draw_parameters);
     }
 
-    // Выводит уже данный символ
-    pub fn draw_character(&self,character:&Character,context:&Context,graphics:&mut GameGraphics){
-        let draw_parameters=convert_draw_state(&context.draw_state);
-        graphics.draw_character(self,character,self.position,&draw_parameters);
+    #[inline(always)] // Выводит уже данный символ
+    pub fn draw_character(&self,character:&Character,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+        graphics.draw_character(self,character,&draw_parameters);
     }
 
     // Выодит весь текст
     pub fn draw(&self,text:&str,context:&Context,graphics:&mut GameGraphics,glyphs:&Glyphs){
-        let mut position=self.position;
+        let mut position=[self.position[0] as f32,self.position[1] as f32];
+
         let draw_parameters=convert_draw_state(&context.draw_state);
 
         for c in text.chars(){
-            let character=glyphs.character(c,self.font_size);
+            let character=glyphs.character_positioned(c,self.font_size,position);
+            graphics.draw_character(self,&character,&draw_parameters);
 
-            graphics.draw_character(self,&character,position,&draw_parameters);
-
-            position[0]+=character.width() as f64;
+            position[0]+=character.width();
         }
     }
 
     // Выводит часть текста, если выведен весь текста, возвращает true
     pub fn draw_part(&self,text:&str,chars:usize,context:&Context,graphics:&mut GameGraphics,glyphs:&Glyphs)->bool{
-        let mut position=self.position;
+        let mut position=[self.position[0] as f32,self.position[1] as f32];
         let draw_parameters=convert_draw_state(&context.draw_state);
 
         let mut whole=true; // Флаг вывода всего текста
@@ -114,11 +117,11 @@ impl TextBase{
                 whole=false;
                 break
             }
-            let character=glyphs.character(c,self.font_size);
+            let character=glyphs.character_positioned(c,self.font_size,position);
 
-            graphics.draw_character(self,&character,position,&draw_parameters);
+            graphics.draw_character(self,&character,&draw_parameters);
 
-            position[0]+=character.width() as f64;
+            position[0]+=character.width();
         }
 
         whole
@@ -178,19 +181,16 @@ impl TextGraphics{
         }
     }
 
-    // Выводит символ в данную позиции
+    // Выводит символ на позицию, которая записана в нём
     pub fn draw_character(
         &mut self,
         character:&Character,
         color:Color,
-        mut position:[f64;2],
         frame:&mut Frame,
         draw_parameters:&DrawParameters
     ){
         // Если у символа есть размерная область (не является пробелом)
         if let Some(rect)=character.pixel_bounding_box(){
-            position[1]+=rect.min.y as f64; // Сдвиг для выравнивания символа
-
             let mut len=(rect.width()*rect.height()) as usize;
             self.vertex_buffer.invalidate();
 
@@ -199,8 +199,8 @@ impl TextGraphics{
             character.draw(|x,y,alpha|unsafe{
                 // Пропуск прозрачных пикселей
                 if alpha!=0f32{
-                    let x=((position[0]+x as f64)/window_center[0]) as f32-1f32;
-                    let y=1f32-((position[1]+y as f64)/window_center[1]) as f32;
+                    let x=(rect.min.x+x as i32) as f32/window_center[0] as f32-1f32;
+                    let y=1f32-(rect.min.y+y as i32)as f32/window_center[1] as f32;
 
                     let point=TextPoint{
                         p:[x,y,alpha],

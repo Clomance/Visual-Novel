@@ -1,6 +1,11 @@
 use super::*;
 
-use crate::game_engine::text::{TextBase,Glyphs};
+use crate::{
+    game_engine::{
+        draw_state::convert_draw_state,
+        text::{TextBase,Glyphs}
+    },
+};
 
 const line_margin:f64=20f64; // Расстояние между строками
 
@@ -24,7 +29,7 @@ impl TextViewLineDependent{
         self.base.font_size()
     }
 
-    pub fn set_text<S:Into<String>>(&mut self,text:S,glyphs:&mut Glyphs){
+    pub fn set_text<S:Into<String>>(&mut self,text:S,glyphs:&Glyphs){
         self.base.line=text.into();
 
         let mut line_len=0f64;
@@ -50,7 +55,7 @@ impl TextViewLineDependent{
         self.base.shift(dx,dy)
     }
 
-    pub fn draw(&mut self,c:&Context,g:&mut GameGraphics,glyphs:&mut Glyphs){
+    pub fn draw(&mut self,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs){
         self.base.base.draw(&self.base.line,c,g,glyphs);
     }
 
@@ -97,110 +102,31 @@ impl TextViewLineDependent{
     //     whole_text
     // }
 
-    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GameGraphics,glyphs:&mut Glyphs){
+    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs){
         self.set_alpha_channel(alpha);
         self.draw(c,g,glyphs)
     }
 }
 
 pub struct TextViewLinedDependent{
-    base:TextBase,
-    lines:Vec<(f64,String)>,
+    base:TextViewStaticLinedDependent,
     rect:[f64;4],
     align:Align,
 }
 
 impl TextViewLinedDependent{
-    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&mut Glyphs)->TextViewLinedDependent{
-        let mut lines=Vec::new();
-
-        let font_size=settings.font_size as f64;
-        let dline=line_margin+font_size; // Расстояние между строками
-
-        let mut height=dline; // Высота всего текста
-        
-        let line_length=settings.rect[2]; // Максимальная длина строки текста
-
-        let mut last_whitespace=0; // Последний пробел - по нему разделяется текст при переходе на новую строку
-        let mut line_start=0; // Индекс символа, с которого начинается строка
-        let mut line_len=0f64; // Длина строки текста
-        let mut word_len=0f64; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
-
-        let whitespace_width=glyphs.character(' ',settings.font_size).width() as f64;
-        let nl_whitespace_width=glyphs.character('\n',settings.font_size).width() as f64;
-
-        let text=settings.text.into();
-
-        for (c,ch) in text.char_indices(){
-
-            let character=glyphs.character(ch,settings.font_size);
-
-            let char_width=character.width() as f64;
-            line_len+=char_width;
-            word_len+=char_width;
-
-            if ch.is_whitespace(){
-                word_len=0f64;
-                last_whitespace=c;
-            }
-
-            if line_len>=line_length || ch=='\n'{
-                if ch=='\n'{
-                    line_len-=word_len+nl_whitespace_width;
-                }
-                else{
-                    line_len-=word_len+whitespace_width;
-                }
-
-                if line_start==last_whitespace{
-                    break // Если слово больше, чем длина строки
-                }
-
-                let line=text[line_start..last_whitespace].to_string();
-
-                let pos=match settings.align.x{
-                    AlignX::Right=>line_length-line_len,
-                    AlignX::Center=>(line_length-line_len)/2f64,
-                    AlignX::Left=>0f64,
-                };
-                lines.push((pos,line));
-
-                last_whitespace+=1;
-                line_start=last_whitespace;
-                
-                line_len=word_len;
-
-                height+=dline;
-            }
-        }
-
-        let line=text[line_start..].to_string();
-        let pos=match settings.align.x{
-            AlignX::Right=>line_length-line_len,
-            AlignX::Center=>(line_length-line_len)/2f64,
-            AlignX::Left=>0f64,
-        };
-        lines.push((pos,line));
-
-        let x=settings.rect[0];
-        let y=settings.rect[1]+match settings.align.y{
-            AlignY::Up=>font_size,
-            AlignY::Center=>(settings.rect[3]-height+font_size)/2f64,
-            AlignY::Down=>settings.rect[3]-height,
-        };
-
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&Glyphs)->TextViewLinedDependent{
         Self{
-            base:TextBase::new(settings.text_color,settings.font_size).position([x,y]),
-            lines,
             rect:settings.rect,
-            align:settings.align
+            align:settings.align.clone(),
+            base:TextViewStaticLinedDependent::new(settings,glyphs)
         }
     }
 
-    pub fn set_text<S:Into<String>>(&mut self,text:S,glyphs:&mut Glyphs){
-        self.lines.clear(); // Удаление старого текста
+    pub fn set_text<S:Into<String>>(&mut self,text:S,glyphs:&Glyphs){
+        self.base.lines.clear(); // Удаление старого текста
 
-        let font_size=self.base.font_size as f64;
+        let font_size=self.base.base.font_size as f64;
         let dline=line_margin+font_size; // Расстояние между строками
 
         let mut height=dline; // Высота всего текста
@@ -212,14 +138,14 @@ impl TextViewLinedDependent{
         let mut line_len=0f64; // Длина строки текста
         let mut word_len=0f64; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
 
-        let whitespace_width=glyphs.character(' ',self.base.font_size).width() as f64;
-        let nl_whitespace_width=glyphs.character('\n',self.base.font_size).width() as f64;
+        let whitespace_width=glyphs.character(' ',self.base.base.font_size).width() as f64;
+        let nl_whitespace_width=glyphs.character('\n',self.base.base.font_size).width() as f64;
 
         let text=text.into();
 
         for (c,ch) in text.char_indices(){
 
-            let character=glyphs.character(ch,self.base.font_size,);
+            let character=glyphs.character(ch,self.base.base.font_size);
 
             let char_width=character.width() as f64;
             line_len+=char_width;
@@ -249,7 +175,7 @@ impl TextViewLinedDependent{
                     AlignX::Center=>(line_length-line_len)/2f64,
                     AlignX::Left=>0f64,
                 };
-                self.lines.push((pos,line));
+                self.base.lines.push((pos,line));
 
                 last_whitespace+=1;
                 line_start=last_whitespace;
@@ -266,7 +192,7 @@ impl TextViewLinedDependent{
             AlignX::Center=>(line_length-line_len)/2f64,
             AlignX::Left=>0f64,
         };
-        self.lines.push((pos,line));
+        self.base.lines.push((pos,line));
 
         let x=self.rect[0];
         let y=self.rect[1]+match self.align.y{
@@ -275,61 +201,16 @@ impl TextViewLinedDependent{
             AlignY::Down=>self.rect[3]-height,
         };
 
-        self.base.set_position([x,y]);
+        self.base.base.set_position([x,y]);
     }
 
-    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&mut Glyphs){
-        let position=self.base.position; // Сохранение начальной позиции
-
-        let dy=self.base.font_size as f64+line_margin;
-        // Перебор строк
-        for line in &self.lines{
-            let dx=line.0; // Выравнивание строки
-            self.base.shift_x(dx);
-
-            self.base.draw(&line.1,context,graphics,glyphs);
-
-            self.base.shift(-dx,dy);
-        }
-
-        self.base.set_position(position);
+    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&Glyphs){
+       self.base.draw(context,graphics,glyphs)
     }
 
-    pub fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&mut Glyphs)->bool{
-        let position=self.base.position; // Сохранение начальной позиции
-
-        let dy=self.base.font_size as f64+line_margin;
-
-        let mut chars_passed=0; // Символов выведенно
-
-        let mut whole_text=true;
-
-        // Перебор строк
-        'lines:for line in &self.lines{
-            self.base.shift_x(line.0); // Сдвиг строки
-
-            for ch in line.1.chars(){
-                if chars_passed==chars{
-                    whole_text=false;
-                    break 'lines
-                }
-                chars_passed+=1;
-
-                let character=glyphs.character(ch,self.base.font_size);
-                self.base.draw_character(&character,c,g);
-
-                // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
-                self.base.shift_x(character.width() as f64);
-            }
-
-            // Переход на новую строку
-            self.base.position[0]=position[0];
-            self.base.position[1]+=dy;
-        }
-
-        self.base.set_position(position); // Возвращение в начальное положение
-
-        whole_text
+    // Вывод части текста
+    pub fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs)->bool{
+        self.base.draw_part(chars,c,g,glyphs)
     }
 }
 
@@ -352,7 +233,6 @@ impl TextViewStaticLineDependent{
             line_len+=character.width() as f64 as f64;
         }
 
-        
         // Выравнивание
         let (x,y)=settings.align.text_position(settings.rect,[line_len,font]);
 
@@ -386,7 +266,6 @@ impl TextViewStaticLineDependent{
 
 // Неизменяемый зависимый текстовый блок с множеством линий текста
 // Зависим от шрифта
-
 pub struct TextViewStaticLinedDependent{
     base:TextBase,
     lines:Vec<(f64,String)>,
@@ -496,6 +375,44 @@ impl TextViewStaticLinedDependent{
         }
 
         self.base.set_position(position);
+    }
+
+    // Вывод части текста
+    pub fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs)->bool{
+        let draw_parameters=convert_draw_state(&c.draw_state);
+
+        let mut position=[self.base.position[0] as f32,self.base.position[1] as f32];
+
+        let dy=self.base.font_size+line_margin as f32;
+
+        let mut chars_passed=0; // Символов выведенно
+
+        let mut whole_text=true;
+
+        // Перебор строк
+        'lines:for line in &self.lines{
+            position[0]+=line.0 as f32; // Сдвиг строки
+
+            for ch in line.1.chars(){
+                if chars_passed==chars{
+                    whole_text=false;
+                    break 'lines
+                }
+                chars_passed+=1;
+
+                let character=glyphs.character_positioned(ch,self.base.font_size,position);
+                self.base.draw_character(&character,&draw_parameters,g);
+
+                // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
+                position[0]+=character.width();
+            }
+
+            // Переход на новую строку
+            position[0]=self.base.position[0] as f32;
+            position[1]+=dy;
+        }
+
+        whole_text
     }
 }
 

@@ -92,9 +92,9 @@ impl<'a,'b> DialogueBox<'a,'b>{
     // false - cлeдующая часть диалога или мгновенный вывод текста, true - следующая страница
     pub fn next_page(&mut self)->bool{
         if self.whole_text{ // Если выведен весь текст
-            self.whole_text=false; // Установка флага вывода всего текста
+            self.whole_text=false; // Установка флага для отключения вывода всего текста
             self.chars=0f64; // Обнуление количества выводимых символов
-            self.dialogue_step+=1; // Слудующая часть диалога
+            self.dialogue_step+=1; // Следующая часть диалога
             if self.dialogue_step<self.dialogue.len(){ // Проверка есть ли следующая часть диалога
                 self.lines.set_text(self.dialogue.get_line(self.dialogue_step),&mut self.glyphs);
                 false
@@ -105,7 +105,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
             }
         }
         else{
-            self.whole_text=true; // Установка флага вывода всего текста
+            self.whole_text=true; // Установка флага для вывода всего текста
             false
         }
     }

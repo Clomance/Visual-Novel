@@ -1,7 +1,6 @@
 mod text_base;
 pub use text_base::{TextBase,TextGraphics};
 
-
 use std::{
     fs,
     path::Path,
@@ -14,6 +13,8 @@ use rusttype::{
     PositionedGlyph,
     Rect,
 };
+
+const pixel_scale:f32=1.47; // Коэффициент для приведения к нужному размеру шрифта
 
 // Шрифт
 pub struct Glyphs<'a>{
@@ -40,13 +41,29 @@ impl<'a> Glyphs<'a>{
         v.ascent-v.descent
     }
 
+    // Символ, определённого размера, с нулейвой позицией
     pub fn character(&self,character:char,font_size:f32)->Character<'a>{
-        let scale=Scale::uniform(font_size*1.47); // Приведение к общему размеру пикселей
+        let scale=Scale::uniform(font_size*pixel_scale); // Приведение к общему размеру пикселей
         let c=self.font.glyph(character).scaled(scale);
 
         let point=Point{
             x:0f32,
             y:0f32
+        };
+
+        Character{
+            c:c.positioned(point)
+        }
+    }
+
+    // Символ, определённого размера с определённой позицией
+    pub fn character_positioned(&self,character:char,font_size:f32,position:[f32;2])->Character<'a>{
+        let scale=Scale::uniform(font_size*pixel_scale); // Приведение к общему размеру пикселей
+        let c=self.font.glyph(character).scaled(scale);
+
+        let point=Point{
+            x:position[0],
+            y:position[1]
         };
 
         Character{
@@ -60,7 +77,11 @@ pub struct Character<'a>{
 }
 
 impl<'a> Character<'a>{
-    #[inline(always)]
+    pub fn position(&self)->[f32;2]{
+        let p=self.c.position();
+        [p.x,p.y]
+    }
+
     pub fn height(&self)->f32{
         if let Some(rect)=self.c.pixel_bounding_box(){
             rect.height() as f32
@@ -80,7 +101,7 @@ impl<'a> Character<'a>{
         h.advance_width+h.left_side_bearing
     }
 
-    #[inline(always)]
+    #[inline(always)] // Прямоугольник которых находится символ
     pub fn pixel_bounding_box(&self)->Option<Rect<i32>>{
         self.c.pixel_bounding_box()
     }
