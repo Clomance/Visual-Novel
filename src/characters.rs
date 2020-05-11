@@ -2,13 +2,13 @@ use crate::*;
 
 use glium::Display;
 
-const focused_resize:f64=4f64;
-const focused_movement:f64=focused_resize/2f64;
+const focused_resize:f32=4f32;
+const focused_movement:f32=focused_resize/2f32;
 
-const margin:f64=focused_resize+1f64;
+const margin:f32=focused_resize+1f32;
 
-const movement_scale:f64=8f64;
-const focused_movement_scale:f64=10f64;
+const movement_scale:f32=8f32;
+const focused_movement_scale:f32=10f32;
 
 // Позиция персонажа на сцене
 #[derive(Clone)]
@@ -28,7 +28,7 @@ struct Character{
 }
 
 impl Character{
-    pub fn shift(&mut self,dx:f64,dy:f64){
+    pub fn shift(&mut self,dx:f32,dy:f32){
         self.image.rect[0]+=dx;
         self.image.rect[1]+=dy;
     }
@@ -47,23 +47,23 @@ impl CharactersView{
 
     pub fn add_character(&mut self,character:&RgbaImage,location:CharacterLocation,display:&mut Display){
         let rect=unsafe{
-            let height:f64=character.height() as f64;
-            let width:f64=character.width() as f64;
+            let height=character.height() as f32;
+            let width=character.width() as f32;
 
             let y=window_height-height;
 
             let x=match location{
                 CharacterLocation::Left=>margin,
 
-                CharacterLocation::LeftCenter=>(window_center[0]-width)/2f64,
+                CharacterLocation::LeftCenter=>(window_center[0]-width)/2f32,
 
                 CharacterLocation::CenterLeft=>window_center[0]-width,
 
-                CharacterLocation::Center=>(window_width-width)/2f64,
+                CharacterLocation::Center=>(window_width-width)/2f32,
 
                 CharacterLocation::CenterRight=>window_center[0],
 
-                CharacterLocation::RightCenter=>window_center[0]+(window_center[0]-width)/2f64,
+                CharacterLocation::RightCenter=>window_center[0]+(window_center[0]-width)/2f32,
 
                 CharacterLocation::Right=>window_width-width-margin
             };
@@ -91,7 +91,7 @@ impl CharactersView{
         rect[3]+=focused_resize;
     }
 
-    pub fn mouse_shift(&mut self,mut dx:f64,mut dy:f64){
+    pub fn mouse_shift(&mut self,mut dx:f32,mut dy:f32){
         dx/=movement_scale;
         dy/=movement_scale;
         for character in &mut self.characters{

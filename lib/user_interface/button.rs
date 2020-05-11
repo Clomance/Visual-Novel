@@ -30,7 +30,7 @@ impl<'a> Button<'a>{
         }
     }
 
-    pub fn shift(&mut self,dx:f64,dy:f64){
+    pub fn shift(&mut self,dx:f32,dy:f32){
         self.base.shift(dx,dy)
     }
 
@@ -61,7 +61,7 @@ pub struct ButtonDependent{
 }
 
 impl ButtonDependent{
-    pub fn new<S:Into<String>>(settings:ButtonSettings<S>,glyphs:&mut Glyphs)->ButtonDependent{
+    pub fn new<S:Into<String>>(settings:ButtonSettings<S>,glyphs:&Glyphs)->ButtonDependent{
         let text_view_settings=TextViewSettings::new(settings.text,settings.rect)
                 .text_color(settings.text_color)
                 .font_size(settings.font_size);
@@ -71,7 +71,7 @@ impl ButtonDependent{
         }
     }
 
-    pub fn shift(&mut self,dx:f64,dy:f64){
+    pub fn shift(&mut self,dx:f32,dy:f32){
         self.base.shift(dx,dy);
         self.text.shift(dx,dy)
     }
@@ -90,7 +90,7 @@ impl ButtonDependent{
         self.base.released()
     }
     
-    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&mut Glyphs){
+    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&Glyphs){
         self.base.draw(context,graphics);
         self.text.draw(context,graphics,glyphs);
     }
@@ -162,18 +162,18 @@ impl ButtonDependent{
 
 // Основа для кнопок
 struct ButtonBase{
-    x1:f64,
-    y1:f64,
-    x2:f64,
-    y2:f64,
-    width:f64,
-    height:f64,
+    x1:f32,
+    y1:f32,
+    x2:f32,
+    y2:f32,
+    width:f32,
+    height:f32,
     rectangle:Rectangle,
     pressed:bool,
 }
 
 impl ButtonBase{
-    pub fn new(rect:[f64;4],color:Color)->ButtonBase{
+    pub fn new(rect:[f32;4],color:Color)->ButtonBase{
         Self{
             x1:rect[0],
             y1:rect[1],
@@ -187,7 +187,7 @@ impl ButtonBase{
     }
 
     // Сдвиг
-    pub fn shift(&mut self,dx:f64,dy:f64){
+    pub fn shift(&mut self,dx:f32,dy:f32){
         self.x1+=dx;
         self.y1+=dy;
         self.x2+=dx;
@@ -257,14 +257,14 @@ impl ButtonBase{
     }
 
     pub fn draw(&self,context:&Context,g:&mut GameGraphics){
-        let rect_pos=[self.x1,self.y1,self.width,self.height];
+        let rect_pos=[self.x1 as f64,self.y1 as f64,self.width as f64,self.height as f64];
         self.rectangle.draw(rect_pos,&context.draw_state,context.transform,g);
     }
 }
 
 
 pub struct ButtonSettings<S:Into<String>>{
-    rect:[f64;4],
+    rect:[f32;4],
     background_color:Color,
     text:S,
     font_size:f32,
@@ -272,7 +272,7 @@ pub struct ButtonSettings<S:Into<String>>{
 }
 
 impl<S:Into<String>> ButtonSettings<S>{
-    pub fn new(text:S,rect:[f64;4])->ButtonSettings<S>{
+    pub fn new(text:S,rect:[f32;4])->ButtonSettings<S>{
         Self{
             rect,
             background_color:Light_blue,

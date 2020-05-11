@@ -1,9 +1,11 @@
+use std::path::Path;
+use std::collections::VecDeque;
+
 use super::{
     Graphics2D,
     mouse_cursor::*,
     GameGraphics,
 };
-
 
 use glium::{
     Display,
@@ -29,8 +31,6 @@ use glium::glutin::{
 use image::GenericImageView;
 
 
-use std::collections::VecDeque;
-
 /*
     EventLoop - минимум четыре шага для моей схемы с мгновенным закрытием цикла обработки событий:
     1) NewEvent
@@ -49,9 +49,9 @@ use std::collections::VecDeque;
 
 pub static mut mouse_cursor:MouseCursor=MouseCursor::new();
 
-pub static mut window_width:f64=0f64;
-pub static mut window_height:f64=0f64;
-pub static mut window_center:[f64;2]=[0f64;2];
+pub static mut window_width:f32=0f32;
+pub static mut window_height:f32=0f32;
+pub static mut window_center:[f32;2]=[0f32;2];
 
 // Указатель на окно - для упрощения загрузки ресурсов
 pub static mut Game_display_ref:*const Display=std::ptr::null();
@@ -60,7 +60,7 @@ pub static mut Game_display:Option<Display>=Option::None;
 
 pub struct GameWindow{
     event_loop:EventLoop<()>,
-    glium2d:Graphics2D,
+    graphics:Graphics2D,
     mouse_icon:MouseCursorIcon,
     events:VecDeque<GameWindowEvent>,
     events_handler:fn(&mut Self),
@@ -77,7 +77,7 @@ pub enum GameWindowEvent{
 
     Hide(bool),
 
-    MouseMovementDelta((f64,f64)),
+    MouseMovementDelta((f32,f32)),
     MousePressed(MouseButton),
     MouseReleased(MouseButton),
 
@@ -102,15 +102,14 @@ impl GameWindow{
     pub fn new(title:&String)->GameWindow{
         let event_loop=EventLoop::new();
         let monitor=event_loop.primary_monitor();
-        let size;
+        let size=monitor.size();
 
-        size=monitor.size();
         let fullscreen=Fullscreen::Borderless(monitor);
 
         unsafe{
-            window_width=size.width as f64;
-            window_height=size.height as f64;
-            window_center=[window_width/2f64,window_height/2f64];
+            window_width=size.width as f32;
+            window_height=size.height as f32;
+            window_center=[window_width/2f32,window_height/2f32];
         }
 
         let icon=load_window_icon();
@@ -129,24 +128,24 @@ impl GameWindow{
             .with_vsync(true)
             .with_srgb(true);
 
-        let display=Display::new(window_builder, context_builder, &event_loop).unwrap();
-        let mut frame=display.draw();
-        frame.clear_color(1.0, 1.0, 1.0, 1.0);
-        frame.finish().unwrap();
+        // Создание окна
+        let display=Display::new(window_builder,context_builder,&event_loop).unwrap();
 
-        let width=unsafe{window_width as u32};
-        let height=unsafe{window_height as u32};
+        let mut frame=display.draw();       //
+        frame.clear_color(1.0,1.0,1.0,1.0); // Заполнение окна
+        frame.finish().unwrap();            //
+
 
         display.gl_window().window().set_cursor_visible(false);
 
         let window=Self{
             event_loop,
-            glium2d:Graphics2D::new(&display),
+            graphics:Graphics2D::new(&display),
             mouse_icon:MouseCursorIcon::new(&display,unsafe{[window_width as f32,window_height as f32]}),
             events:VecDeque::with_capacity(32),
             events_handler:GameWindow::event_listener,
-            width,
-            height,
+            width:size.width,
+            height:size.height,
             alpha_channel:0f32,
             smooth:0f32,
         };
@@ -167,8 +166,8 @@ impl GameWindow{
     }
 
     #[inline(always)]
-    pub fn size(&self)->[f64;2]{
-        [self.width as f64,self.height as f64]
+    pub fn size(&self)->[f32;2]{
+        [self.width as f32,self.height as f32]
     }
 
     // Получение событий
@@ -217,9 +216,12 @@ impl GameWindow{
                         // Движение мыши (конечное положение)
                         WindowEvent::CursorMoved{position,..}=>unsafe{
                             let last_position=mouse_cursor.position();
-                            let dx=position.x-last_position[0];
-                            let dy=position.y-last_position[1];
-                            mouse_cursor.set_position([position.x,position.y]);
+
+                            let position=[position.x as f32,position.y as f32];
+
+                            let dx=position[0]-last_position[0];
+                            let dy=position[1]-last_position[1];
+                            mouse_cursor.set_position([position[0],position[1]]);
                             MouseMovementDelta((dx,dy))
                         }
                         
@@ -256,9 +258,6 @@ impl GameWindow{
                             else{
                                 KeyboardButton::Unknown
                             };
-                            if key==KeyboardButton::F5{
-                                unsafe{(*game_window).screenshot()}
-                            }
                             if input.state==ElementState::Pressed{
                                 KeyboardPressed(key)
                             }
@@ -384,19 +383,19 @@ impl GameWindow{
         let viewport=graphics::Viewport{
             rect:[0,0,self.width as i32,self.height as i32],
             draw_size:[self.width,self.height],
-            window_size:unsafe{[window_width,window_height]},
+            window_size:unsafe{[window_width as f64,window_height as f64]},
         };
 
         let mut frame=self.display().draw();
 
-        let mut g=GameGraphics::new(&mut self.glium2d,&mut frame);
+        let mut g=GameGraphics::new(&mut self.graphics,&mut frame);
         let context=graphics::Context::new_viewport(viewport);
         f(&context,&mut g);
 
         unsafe{
             let mouse_position=mouse_cursor.position();
-            let dx=(mouse_position[0]/window_center[0]) as f32-1f32;
-            let dy=1f32-(mouse_position[1]/window_center[1]) as f32;
+            let dx=(mouse_position[0]/window_center[0])-1f32;
+            let dy=1f32-(mouse_position[1]/window_center[1]);
             self.mouse_icon.draw(g.frame(),(dx,dy));
         }
 
@@ -409,19 +408,19 @@ impl GameWindow{
         let viewport=graphics::Viewport{
             rect:[0,0,self.width as i32,self.height as i32],
             draw_size:[self.width,self.height],
-            window_size:unsafe{[window_width,window_height]},
+            window_size:unsafe{[window_width as f64,window_height as f64]},
         };
 
         let mut frame=self.display().draw();
 
-        let mut g=GameGraphics::new(&mut self.glium2d,&mut frame);
+        let mut g=GameGraphics::new(&mut self.graphics,&mut frame);
         let context=graphics::Context::new_viewport(viewport);
         f(self.alpha_channel,&context,&mut g);
 
         unsafe{
             let mouse_position=mouse_cursor.position();
-            let dx=(mouse_position[0]/window_center[0]) as f32-1f32;
-            let dy=1f32-(mouse_position[1]/window_center[1]) as f32;
+            let dx=(mouse_position[0]/window_center[0])-1f32;
+            let dy=1f32-(mouse_position[1]/window_center[1]);
             self.mouse_icon.draw(g.frame(),(dx,dy));
         }
 
@@ -433,11 +432,11 @@ impl GameWindow{
 }
 
 impl GameWindow{
-    pub fn screenshot(&self){
+    pub fn screenshot<P:AsRef<Path>>(&self,path:P){
         let image:glium::texture::RawImage2d<u8>=self.display().read_front_buffer().unwrap();
         let image=image::ImageBuffer::from_raw(image.width,image.height,image.data.into_owned()).unwrap();
         let image=image::DynamicImage::ImageRgba8(image).flipv();
-        image.save("screenshot.png").unwrap();
+        image.save(path).unwrap();
     }
 }
 

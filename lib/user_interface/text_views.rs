@@ -7,12 +7,12 @@ use crate::{
     },
 };
 
-const line_margin:f64=20f64; // Расстояние между строками
+const line_margin:f32=20f32; // Расстояние между строками
 
 // Изменяемый зависимый текстовой блок с одной линией текста
 pub struct TextViewLineDependent{
     base:TextViewStaticLineDependent,
-    rect:[f64;4],
+    rect:[f32;4],
     align:Align,
 }
 
@@ -32,15 +32,15 @@ impl TextViewLineDependent{
     pub fn set_text<S:Into<String>>(&mut self,text:S,glyphs:&Glyphs){
         self.base.line=text.into();
 
-        let mut line_len=0f64;
+        let mut line_len=0f32;
         for ch in self.base.line.chars(){
             let character=glyphs.character(ch,self.font_size());
-            line_len+=character.width() as f64;
+            line_len+=character.width();
         }
 
         let x=match self.align.x{
             AlignX::Right=>self.rect[0]+self.rect[2]-line_len,
-            AlignX::Center=>self.rect[0]+(self.rect[2]-line_len)/2f64,
+            AlignX::Center=>self.rect[0]+(self.rect[2]-line_len)/2f32,
             AlignX::Left=>self.rect[0],
         };
 
@@ -51,7 +51,7 @@ impl TextViewLineDependent{
         self.base.set_alpha_channel(alpha)
     }
 
-    pub fn shift(&mut self,dx:f64,dy:f64){
+    pub fn shift(&mut self,dx:f32,dy:f32){
         self.base.shift(dx,dy)
     }
 
@@ -110,7 +110,7 @@ impl TextViewLineDependent{
 
 pub struct TextViewLinedDependent{
     base:TextViewStaticLinedDependent,
-    rect:[f64;4],
+    rect:[f32;4],
     align:Align,
 }
 
@@ -126,7 +126,7 @@ impl TextViewLinedDependent{
     pub fn set_text<S:Into<String>>(&mut self,text:S,glyphs:&Glyphs){
         self.base.lines.clear(); // Удаление старого текста
 
-        let font_size=self.base.base.font_size as f64;
+        let font_size=self.base.base.font_size;
         let dline=line_margin+font_size; // Расстояние между строками
 
         let mut height=dline; // Высота всего текста
@@ -135,11 +135,11 @@ impl TextViewLinedDependent{
 
         let mut last_whitespace=0; // Последний пробел - по нему разделяется текст при переходе на новую строку
         let mut line_start=0; // Индекс символа, с которого начинается строка
-        let mut line_len=0f64; // Длина строки текста
-        let mut word_len=0f64; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
+        let mut line_len=0f32; // Длина строки текста
+        let mut word_len=0f32; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
 
-        let whitespace_width=glyphs.character(' ',self.base.base.font_size).width() as f64;
-        let nl_whitespace_width=glyphs.character('\n',self.base.base.font_size).width() as f64;
+        let whitespace_width=glyphs.character(' ',self.base.base.font_size).width();
+        let nl_whitespace_width=glyphs.character('\n',self.base.base.font_size).width();
 
         let text=text.into();
 
@@ -147,12 +147,12 @@ impl TextViewLinedDependent{
 
             let character=glyphs.character(ch,self.base.base.font_size);
 
-            let char_width=character.width() as f64;
+            let char_width=character.width();
             line_len+=char_width;
             word_len+=char_width;
 
             if ch.is_whitespace(){
-                word_len=0f64;
+                word_len=0f32;
                 last_whitespace=c;
             }
 
@@ -172,8 +172,8 @@ impl TextViewLinedDependent{
 
                 let pos=match self.align.x{
                     AlignX::Right=>line_length-line_len,
-                    AlignX::Center=>(line_length-line_len)/2f64,
-                    AlignX::Left=>0f64,
+                    AlignX::Center=>(line_length-line_len)/2f32,
+                    AlignX::Left=>0f32,
                 };
                 self.base.lines.push((pos,line));
 
@@ -189,15 +189,15 @@ impl TextViewLinedDependent{
         let line=text[line_start..].to_string();
         let pos=match self.align.x{
             AlignX::Right=>line_length-line_len,
-            AlignX::Center=>(line_length-line_len)/2f64,
-            AlignX::Left=>0f64,
+            AlignX::Center=>(line_length-line_len)/2f32,
+            AlignX::Left=>0f32,
         };
         self.base.lines.push((pos,line));
 
         let x=self.rect[0];
         let y=self.rect[1]+match self.align.y{
             AlignY::Up=>font_size,
-            AlignY::Center=>(self.rect[3]-height+font_size)/2f64,
+            AlignY::Center=>(self.rect[3]-height+font_size)/2f32,
             AlignY::Down=>self.rect[3]-height,
         };
 
@@ -225,12 +225,12 @@ impl TextViewStaticLineDependent{
     pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&Glyphs)->TextViewStaticLineDependent{
         let line=settings.text.into();
 
-        let font=glyphs.glyph_height(settings.font_size) as f64;
+        let font=glyphs.glyph_height(settings.font_size);
 
-        let mut line_len=0f64;
+        let mut line_len=0f32;
         for ch in line.chars(){
             let character=glyphs.character(ch,settings.font_size);
-            line_len+=character.width() as f64 as f64;
+            line_len+=character.width();
         }
 
         // Выравнивание
@@ -250,7 +250,7 @@ impl TextViewStaticLineDependent{
         self.base.set_alpha_channel(alpha)
     }
 
-    pub fn shift(&mut self,dx:f64,dy:f64){
+    pub fn shift(&mut self,dx:f32,dy:f32){
         self.base.shift(dx,dy)
     }
 
@@ -268,14 +268,14 @@ impl TextViewStaticLineDependent{
 // Зависим от шрифта
 pub struct TextViewStaticLinedDependent{
     base:TextBase,
-    lines:Vec<(f64,String)>,
+    lines:Vec<(f32,String)>,
 }
 
 impl TextViewStaticLinedDependent{
     pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&Glyphs)->TextViewStaticLinedDependent{
         let mut lines=Vec::new();
 
-        let font_size=settings.font_size as f64;
+        let font_size=settings.font_size;
         let dline=line_margin+font_size; // Расстояние между строками
 
         let mut height=dline; // Высота всего текста
@@ -284,24 +284,24 @@ impl TextViewStaticLinedDependent{
 
         let mut last_whitespace=0; // Последний пробел - по нему разделяется текст при переходе на новую строку
         let mut line_start=0; // Индекс символа, с которого начинается строка
-        let mut line_len=0f64; // Длина строки текста
-        let mut word_len=0f64; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
+        let mut line_len=0f32; // Длина строки текста
+        let mut word_len=0f32; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
 
-        let whitespace_width=glyphs.character(' ',settings.font_size as f32).width() as f64;
-        let nl_whitespace_width=glyphs.character('\n',settings.font_size as f32).width() as f64;
+        let whitespace_width=glyphs.character(' ',settings.font_size).width();
+        let nl_whitespace_width=glyphs.character('\n',settings.font_size).width();
 
         let text=settings.text.into();
 
         for (c,ch) in text.char_indices(){
 
-            let character=glyphs.character(ch,settings.font_size as f32);
+            let character=glyphs.character(ch,settings.font_size);
 
-            let char_width=character.width() as f64 as f64;
+            let char_width=character.width();
             line_len+=char_width;
             word_len+=char_width;
 
             if ch.is_whitespace(){
-                word_len=0f64;
+                word_len=0f32;
                 last_whitespace=c;
             }
 
@@ -321,8 +321,8 @@ impl TextViewStaticLinedDependent{
 
                 let pos=match settings.align.x{
                     AlignX::Right=>line_length-line_len,
-                    AlignX::Center=>(line_length-line_len)/2f64,
-                    AlignX::Left=>0f64,
+                    AlignX::Center=>(line_length-line_len)/2f32,
+                    AlignX::Left=>0f32,
                 };
                 lines.push((pos,line));
 
@@ -338,15 +338,15 @@ impl TextViewStaticLinedDependent{
         let line=text[line_start..].to_string();
         let pos=match settings.align.x{
             AlignX::Right=>line_length-line_len,
-            AlignX::Center=>(line_length-line_len)/2f64,
-            AlignX::Left=>0f64,
+            AlignX::Center=>(line_length-line_len)/2f32,
+            AlignX::Left=>0f32,
         };
         lines.push((pos,line));
 
         let x=settings.rect[0];
         let y=settings.rect[1]+match settings.align.y{
             AlignY::Up=>font_size,
-            AlignY::Center=>(settings.rect[3]-height+font_size)/2f64,
+            AlignY::Center=>(settings.rect[3]-height+font_size)/2f32,
             AlignY::Down=>settings.rect[3]-height,
         };
 
@@ -363,7 +363,7 @@ impl TextViewStaticLinedDependent{
     pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&Glyphs){
         let position=self.base.position; // Сохранение начальной позиции
 
-        let dy=self.base.font_size as f64+line_margin;
+        let dy=self.base.font_size+line_margin;
         // Перебор строк
         for line in &self.lines{
             let dx=line.0; // Выравнивание строки
@@ -418,7 +418,7 @@ impl TextViewStaticLinedDependent{
 
 #[derive(Clone)] // Настройки текстового поля
 pub struct TextViewSettings<S:Into<String>>{
-    rect:[f64;4], // [x1,y1,width,height] - сюда вписывается текст
+    rect:[f32;4], // [x1,y1,width,height] - сюда вписывается текст
     text:S,
     font_size:f32,
     text_color:Color,
@@ -426,7 +426,7 @@ pub struct TextViewSettings<S:Into<String>>{
 }
 
 impl<S:Into<String>> TextViewSettings<S>{
-    pub fn new(text:S,rect:[f64;4])->TextViewSettings<S>{
+    pub fn new(text:S,rect:[f32;4])->TextViewSettings<S>{
         Self{
             rect:rect,
             text:text,

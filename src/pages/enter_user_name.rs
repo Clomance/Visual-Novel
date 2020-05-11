@@ -15,28 +15,28 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
     pub unsafe fn new(main_menu:&'c mut MainMenu<'e,'d>,window:&mut GameWindow)->EnterUserName<'a,'b,'c,'d,'e>{
 
         // Загрузка шрифта
-        let mut head_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
+        let head_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
 
         let head_settings=TextViewSettings::new("Введите своё имя",[
-                    (window_width)/2f64-150f64,
-                    (window_height)/2f64-150f64,
-                    300f64,
-                    70f64,
+                    window_width/2f32-150f32,
+                    window_height/2f32-150f32,
+                    300f32,
+                    70f32,
                 ]);
 
         let glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
 
         let settings=EditTextViewSettings::new("",[
-                    (window_width)/2f64-150f64,
-                    (window_height)/2f64-150f64,
-                    300f64,
-                    150f64,
+                    window_width/2f32-150f32,
+                    window_height/2f32-150f32,
+                    300f32,
+                    150f32,
                 ])
                 .background_color(Light_blue)
                 .border_color(Some(Blue));
 
         Self{
-            head:TextViewStaticLineDependent::new(head_settings,&mut head_glyphs),
+            head:TextViewStaticLineDependent::new(head_settings,&head_glyphs),
             glyphs:head_glyphs,
             input:EditTextView::new(settings,glyphs),
             main_menu:main_menu,
@@ -76,7 +76,7 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
                     (*self.window).draw(|c,g|{
                         self.main_menu.draw(c,g);
                         self.input.draw(c,g);
-                        self.head.draw(c,g,&mut self.glyphs);
+                        self.head.draw(c,g,&self.glyphs);
                     })
                 }
 
@@ -124,7 +124,7 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
                         self.main_menu.draw(c,g);
 
                         self.input.draw_smooth(alpha,c,g);
-                        self.head.draw_smooth(alpha,c,g,&mut self.glyphs);
+                        self.head.draw_smooth(alpha,c,g,&self.glyphs);
                     }){
                         break
                     }

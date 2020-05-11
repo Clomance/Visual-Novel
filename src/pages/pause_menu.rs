@@ -17,8 +17,8 @@ impl<'a> PauseMenu<'a>{
         
         // Настройка меню
         let menu_settings=MenuSettings::new("Пауза",&["Продолжить","Главное меню","Настройки","Выход"])
-            .head_size([180f64,80f64])
-            .buttons_size([180f64,60f64]);
+            .head_size([180f32,80f32])
+            .buttons_size([180f32,60f32]);
 
         Self{
             menu:Menu::new(menu_settings,menu_glyphs),
@@ -77,6 +77,7 @@ impl<'a> PauseMenu<'a>{
 
                     GameWindowEvent::KeyboardReleased(button)=>{
                         match button{
+                            KeyboardButton::F5=>make_screenshot(window),
                             KeyboardButton::Escape=>return Game::ContinueGamePlay,
                             _=>{}
                         }
@@ -93,8 +94,8 @@ impl<'a> PauseMenu<'a>{
         let mut background=Background::new(background_color,[
             0f64,
             0f64,
-            window_width,
-            window_height
+            window_width as f64,
+            window_height as f64
         ]);
 
         while let Some(event)=window.next_event(){
@@ -112,6 +113,7 @@ impl<'a> PauseMenu<'a>{
 
                 GameWindowEvent::KeyboardReleased(button)=>{
                     match button{
+                        KeyboardButton::F5=>make_screenshot(window),
                         KeyboardButton::Escape=>return Game::ContinueGamePlay,
                         _=>{}
                     }

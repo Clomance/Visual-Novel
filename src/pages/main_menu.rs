@@ -48,8 +48,8 @@ impl<'a,'b> MainMenu<'a,'b>{
 
         // Настройка меню
         let menu_settings=MenuSettings::new(Settings.game_name.clone(),&buttons_text)
-                .head_size([180f64,80f64])
-                .buttons_size([180f64,60f64]);
+                .head_size([180f32,80f32])
+                .buttons_size([180f32,60f32]);
 
         Self{
             menu:Menu::new(menu_settings,menu_glyphs), // Создание меню
@@ -129,6 +129,12 @@ impl<'a,'b> MainMenu<'a,'b>{
                             }
                             // Отпущенные кнопки мыши
                             _=>{}
+                        }
+                    }
+
+                    GameWindowEvent::KeyboardReleased(button)=>{
+                        if button==KeyboardButton::F5{
+                            make_screenshot(window)
                         }
                     }
 

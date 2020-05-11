@@ -1,6 +1,6 @@
 use crate::{
     colors::*,
-    image_base::ImageBase,
+    ImageBase,
     traits::Drawable,
     Texture
 };
@@ -21,7 +21,7 @@ use glium::Display;
 
 use graphics::Context;
 
-pub const wallpaper_movement_scale:f64=16f64;
+pub const wallpaper_movement_scale:f32=16f32;
 
 pub struct Wallpaper{
     image:ImageBase,
@@ -31,13 +31,13 @@ pub struct Wallpaper{
 impl Wallpaper{
     pub fn new(image:&RgbaImage,display:&mut Display)->Wallpaper{
         unsafe{
-            let dx=window_width/(wallpaper_movement_scale*2f64);
-            let dy=window_height/(wallpaper_movement_scale*2f64);
+            let dx=window_width/(wallpaper_movement_scale*2f32);
+            let dy=window_height/(wallpaper_movement_scale*2f32);
             let rect=[
                 -dx,
                 -dy,
-                window_width+2f64*dx,
-                window_height+2f64*dy,
+                window_width+2f32*dx,
+                window_height+2f32*dy,
             ];
 
             let settings=TextureSettings::new();
@@ -48,7 +48,7 @@ impl Wallpaper{
         }
     }
 
-    pub fn mouse_shift(&mut self,dx:f64,dy:f64){
+    pub fn mouse_shift(&mut self,dx:f32,dy:f32){
         self.image.rect[0]+=dx/wallpaper_movement_scale;
         self.image.rect[1]+=dy/wallpaper_movement_scale;
     }

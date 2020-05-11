@@ -19,14 +19,8 @@ pub use colors::*;
 mod background;
 pub use background::Background;
 
-mod image_base;
-pub use image_base::ImageBase;
-
 pub mod game_engine;
-pub use game_engine::{
-    *,
-    GameGraphics,
-};
+pub use game_engine::*;
 
 pub mod user_interface;
 pub use user_interface::*;
@@ -46,18 +40,18 @@ impl Align{
         }
     }
 
-    pub fn position(&self,location:[f64;4],size:[f64;2])->(f64,f64){
+    pub fn position(&self,location:[f32;4],size:[f32;2])->(f32,f32){
         // Выравнивание по x
         let x=match self.x{
             AlignX::Left=>location[0],
-            AlignX::Center=>location[0]+(location[2]-size[0])/2f64,
+            AlignX::Center=>location[0]+(location[2]-size[0])/2f32,
             AlignX::Right=>location[0]+location[2]-size[0],
         };
         
         // Выравнивание по y
         let y=match self.y{
             AlignY::Up=>location[1],
-            AlignY::Center=>location[1]+(location[3]-size[1])/2f64,
+            AlignY::Center=>location[1]+(location[3]-size[1])/2f32,
             AlignY::Down=>location[1]+location[3]-size[1],
         };
 
@@ -65,18 +59,18 @@ impl Align{
     }
 
     // size - длина текста, максимальная высота текста
-    pub fn text_position(&self,location:[f64;4],size:[f64;2])->(f64,f64){
+    pub fn text_position(&self,location:[f32;4],size:[f32;2])->(f32,f32){
         // Выравнивание по x
         let x=match self.x{
             AlignX::Left=>location[0],
-            AlignX::Center=>location[0]+(location[2]-size[0])/2f64,
+            AlignX::Center=>location[0]+(location[2]-size[0])/2f32,
             AlignX::Right=>location[0]+location[2]-size[0],
         };
         
         // Выравнивание по y
         let y=match self.y{
             AlignY::Up=>location[1]+size[1],
-            AlignY::Center=>location[1]+(location[3]+size[1])/2f64,
+            AlignY::Center=>location[1]+(location[3]+size[1])/2f32,
             AlignY::Down=>location[1]+location[3],
         };
 

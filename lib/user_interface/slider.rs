@@ -1,7 +1,7 @@
 use super::*;
 
-const circle_radius:f64=16f64;
-const circle_diametr:f64=circle_radius*2f64;
+const circle_radius:f32=16f32;
+const circle_diametr:f32=circle_radius*2f32;
 
 const line_radius:f64=5f64;
 
@@ -19,8 +19,8 @@ impl<'a> Slider<'a>{
         let head_settings=TextViewSettings::new(settings.head.clone(),[
                     settings.position[0],
                     settings.position[1]-circle_diametr,
-                    100f64,
-                    0f64,
+                    100f32,
+                    0f32,
                 ])
                 .align_x(AlignX::Left)
                 .align_y(AlignY::Down)
@@ -30,7 +30,7 @@ impl<'a> Slider<'a>{
         let value_settings=TextViewSettings::new(format!("{:.2}",settings.current_value),[
                     settings.position[0]+settings.length,
                     settings.position[1]-circle_radius,
-                    100f64,
+                    100f32,
                     circle_diametr
                 ])
                 .text_color(settings.circle_color);
@@ -47,7 +47,7 @@ impl<'a> Slider<'a>{
         self.base.pressed();
     }
 
-    pub fn released(&mut self)->f64{
+    pub fn released(&mut self)->f32{
         let value=self.base.released();
         self.value.set_text(format!("{:.2}",value),&mut self.glyphs);
         value
@@ -77,13 +77,13 @@ impl<'a> Drawable for Slider<'a>{
 
 // Простой слайдер без текстовых блоков
 pub struct SimpleSlider{
-    min_value:f64,
-    step:f64,
-    current_value:f64,
+    min_value:f32,
+    step:f32,
+    current_value:f32,
     circle:Ellipse,
-    circle_rect:[f64;4], // x1, y1, width, height
+    circle_rect:[f32;4], // x1, y1, width, height
     line:Line,
-    line_rect:[f64;4], // x1, y1, x2, y2
+    line_rect:[f32;4], // x1, y1, x2, y2
     grab:bool,
 }
 
@@ -123,7 +123,7 @@ impl SimpleSlider{
         }
     }
 
-    pub fn current_value(&self)->f64{
+    pub fn current_value(&self)->f32{
         self.current_value
     }
 
@@ -148,7 +148,7 @@ impl SimpleSlider{
         }
     }
 
-    pub fn released(&mut self)->f64{
+    pub fn released(&mut self)->f32{
         self.grab=false;
         
         let circle_center=self.circle_rect[0]+circle_radius;
@@ -196,19 +196,33 @@ impl Drawable for SimpleSlider{
     }
 
     fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
-        self.line.draw(self.line_rect,&context.draw_state,context.transform,graphics);
-        self.circle.draw(self.circle_rect,&context.draw_state,context.transform,graphics);
+        let l_rect=[
+            self.line_rect[0] as f64,
+            self.line_rect[1] as f64,
+            self.line_rect[2] as f64,
+            self.line_rect[3] as f64,
+        ];
+
+        let c_rect=[
+            self.circle_rect[0] as f64,
+            self.circle_rect[1] as f64,
+            self.circle_rect[2] as f64,
+            self.circle_rect[3] as f64,
+        ];
+
+        self.line.draw(l_rect,&context.draw_state,context.transform,graphics);
+        self.circle.draw(c_rect,&context.draw_state,context.transform,graphics);
     }
 }
 
 pub struct SliderSettings{
     head:String,
     head_color:Color,
-    min_value:f64,
-    max_value:f64,
-    current_value:f64,
-    length:f64,
-    position:[f64;2],
+    min_value:f32,
+    max_value:f32,
+    current_value:f32,
+    length:f32, // Длина слайдер (width)
+    position:[f32;2],
     circle_color:Color,
     line_color:Color,
 }
@@ -218,11 +232,11 @@ impl SliderSettings{
         Self{
             head:String::new(),
             head_color:White,
-            min_value:0f64,
-            max_value:0f64,
-            current_value:0f64,
-            length:0f64,
-            position:[0f64;2],
+            min_value:0f32,
+            max_value:0f32,
+            current_value:0f32,
+            length:0f32,
+            position:[0f32;2],
             circle_color:Red,
             line_color:Red,
         }
@@ -233,27 +247,27 @@ impl SliderSettings{
         self
     }
 
-    pub fn min_value(mut self,value:f64)->SliderSettings{
+    pub fn min_value(mut self,value:f32)->SliderSettings{
         self.min_value=value;
         self
     }
 
-    pub fn max_value(mut self,value:f64)->SliderSettings{
+    pub fn max_value(mut self,value:f32)->SliderSettings{
         self.max_value=value;
         self
     }
 
-    pub fn current_value(mut self,value:f64)->SliderSettings{
+    pub fn current_value(mut self,value:f32)->SliderSettings{
         self.current_value=value;
         self
     }
 
-    pub fn length(mut self,len:f64)->SliderSettings{
+    pub fn length(mut self,len:f32)->SliderSettings{
         self.length=len;
         self
     }
 
-    pub fn position(mut self,position:[f64;2])->SliderSettings{
+    pub fn position(mut self,position:[f32;2])->SliderSettings{
         self.position=position;
         self
     }

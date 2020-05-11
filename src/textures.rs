@@ -19,11 +19,11 @@ impl Textures{
     #[inline(always)]
     pub fn load()->Textures{
         unsafe{
-            let dx=window_width/(wallpaper_movement_scale*2f64);
-            let dy=window_height/(wallpaper_movement_scale*2f64);
+            let dx=window_width/(wallpaper_movement_scale*2f32);
+            let dy=window_height/(wallpaper_movement_scale*2f32);
             let wallpaper_size=[
-                (window_width+2f64*dx),
-                (window_height+2f64*dy)
+                (window_width+2f32*dx),
+                (window_height+2f32*dy)
             ];
 
             let mut vec=Vec::with_capacity(3);
@@ -31,7 +31,7 @@ impl Textures{
             // Загрузка главных текстур
             let mut wallpaper_texture=load_wallpaper_image("./resources/images/wallpapers/main_menu_wallpaper.png",wallpaper_size[0],wallpaper_size[1]);
             vec.push(wallpaper_texture);
-            wallpaper_texture=load_image("./resources/images/dialogue_box.png",window_width as u32,(window_height/3f64) as u32);
+            wallpaper_texture=load_image("./resources/images/dialogue_box.png",window_width as u32,(window_height/3f32) as u32);
             vec.push(wallpaper_texture);
             wallpaper_texture=load_wallpaper_image("./resources/images/wallpapers/ending_wallpaper.png",wallpaper_size[0],wallpaper_size[1]);
             vec.push(wallpaper_texture);
@@ -84,7 +84,7 @@ fn load_image<P:AsRef<Path>>(path:P,width:u32,height:u32)->RgbaImage{
 }
 
 // Загрузка фонов
-fn load_wallpapers_textures<P:AsRef<Path>+Clone>(path:P,width:f64,height:f64)->Vec<RgbaImage>{
+fn load_wallpapers_textures<P:AsRef<Path>+Clone>(path:P,width:f32,height:f32)->Vec<RgbaImage>{
     let meta=metadata(path.clone()).unwrap();
     let mut textures=Vec::with_capacity(meta.len() as usize);
     let dir=read_dir(path).unwrap();
@@ -122,12 +122,12 @@ fn load_wallpapers_textures_paths<P:AsRef<Path>+Clone>(path:P)->Vec<PathBuf>{
 // высота картинки будет больше высоты экрана, поэтому её нужно обрезать.
 
 // Если наоборот, то приведении высоты картинки к высоте экрана, ширину картинки будеи больше, чем ширина экрана.
-pub fn load_wallpaper_image<P:AsRef<Path>>(path:P,width0:f64,height0:f64)->RgbaImage{
+pub fn load_wallpaper_image<P:AsRef<Path>>(path:P,width0:f32,height0:f32)->RgbaImage{
     let mut image=image::open(path).unwrap();
     let k0=width0/height0;
 
-    let image_width=image.width() as f64;
-    let image_height=image.height() as f64;
+    let image_width=image.width() as f32;
+    let image_height=image.height() as f32;
 
 
     let k=image_width/image_height;
@@ -144,7 +144,7 @@ pub fn load_wallpaper_image<P:AsRef<Path>>(path:P,width0:f64,height0:f64)->RgbaI
     else{
         let width=image_height*k0;
 
-        let x=(image_width-width)/2f64;
+        let x=(image_width-width)/2f32;
 
         (x as u32,0u32,width as u32,image_height as u32)
     };
@@ -160,7 +160,7 @@ pub fn load_wallpaper_image<P:AsRef<Path>>(path:P,width0:f64,height0:f64)->RgbaI
     }
 }
 
-fn load_characters_textutres(height:f64)->Vec<RgbaImage>{
+fn load_characters_textutres(height:f32)->Vec<RgbaImage>{
     let path="./resources/images/characters";
     let meta=metadata(path).unwrap();
 
@@ -187,10 +187,10 @@ use image::{
 };
 
 // Загрузка изображений
-fn load_character_image<P:AsRef<Path>>(path:P,height:f64)->RgbaImage{
+fn load_character_image<P:AsRef<Path>>(path:P,height:f32)->RgbaImage{
     let mut image=image::open(path).unwrap();
-    let image_height=image.height() as f64;
-    let image_width=image.width() as f64;
+    let image_height=image.height() as f32;
+    let image_width=image.width() as f32;
 
     let width=image_width*height/image_height;
 

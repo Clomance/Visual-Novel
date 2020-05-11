@@ -11,12 +11,12 @@ impl LoadingScreen{
 
         Self{
             logo_base:ImageBase::new(White,[
-                0f64,
-                0f64,
-                200f64,
-                200f64
+                0f32,
+                0f32,
+                200f32,
+                200f32
             ]),
-            logo:Texture::from_path(window.display(),"./resources/images/logo.png",Flip::None,&texture_settings).unwrap(),
+            logo:Texture::from_path(window.display(),"./resources/images/logo.png",&texture_settings).unwrap(),
         }
     }
 
@@ -25,7 +25,7 @@ impl LoadingScreen{
                 F:Send+'static,
                 T:Send+'static{
         let half_size=100f64;
-        let (x,y)=(window_width/2f64,window_height/2f64);
+        let (x,y)=(window_width as f64/2f64,window_height as f64/2f64);
         let mut rotation=0f64;
 
         let thead=std::thread::spawn(background);
@@ -49,6 +49,12 @@ impl LoadingScreen{
                     });
                     rotation+=0.1f64;
                 }
+
+                GameWindowEvent::KeyboardReleased(button)=>{
+                    if button==KeyboardButton::F5{
+                        make_screenshot(window)
+                    }
+                }
                 _=>{}
             }
         }
@@ -66,6 +72,12 @@ impl LoadingScreen{
                     frames-=1;
                     if frames==0{
                         break
+                    }
+                }
+
+                GameWindowEvent::KeyboardReleased(button)=>{
+                    if button==KeyboardButton::F5{
+                        make_screenshot(window)
                     }
                 }
                 _=>{}

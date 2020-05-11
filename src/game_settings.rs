@@ -7,9 +7,9 @@ pub struct GameSettings{
     pub saved_page:usize, // Страница на которой остановился пользователь (page_table)
     pub saved_dialogue:usize, // Место в диалоге на котором остановился пользователь (dialogue_box)
     pub pages:usize, // Количество страниц в игре
-    pub signs_per_frame:f64, // Знаков на кадр
-    pub volume:f64, // Громкость игры
-    pub screenshot_number:usize, // номер следующего скришота
+    pub signs_per_frame:f32, // Знаков на кадр
+    pub volume:f32, // Громкость игры
+    pub screenshot:usize, // номер следующего скришота
 }
 
 impl GameSettings{
@@ -22,9 +22,9 @@ impl GameSettings{
             pages:0,
             saved_page:0,
             saved_dialogue:0,
-            signs_per_frame:0.25f64,
-            volume:0.5f64,
-            screenshot_number:0usize,
+            signs_per_frame:0.25f32,
+            volume:0.5f32,
+            screenshot:0usize,
         }
     }
     // Загрузка настроек
@@ -52,11 +52,13 @@ impl GameSettings{
         settings_file.read_exact(&mut buffer).unwrap();
         self.saved_dialogue=usize::from_be_bytes(buffer);
         //
-        settings_file.read_exact(&mut buffer).unwrap();
-        self.signs_per_frame=f64::from_be_bytes(buffer);
+        let mut buffer=[0u8;4];
         //
         settings_file.read_exact(&mut buffer).unwrap();
-        self.volume=f64::from_be_bytes(buffer);
+        self.signs_per_frame=f32::from_be_bytes(buffer);
+        //
+        settings_file.read_exact(&mut buffer).unwrap();
+        self.volume=f32::from_be_bytes(buffer);
 
         // Название игры
         settings_file=OpenOptions::new().read(true).open("resources/game_name.txt").unwrap();
@@ -90,7 +92,7 @@ impl GameSettings{
         buffer=self.saved_dialogue.to_be_bytes();
         settings_file.write_all(&buffer).unwrap();
         //
-        buffer=self.signs_per_frame.to_be_bytes();
+        let mut buffer=self.signs_per_frame.to_be_bytes();
         settings_file.write_all(&buffer).unwrap();
         //
         buffer=self.volume.to_be_bytes();

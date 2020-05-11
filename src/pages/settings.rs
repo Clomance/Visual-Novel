@@ -18,10 +18,10 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
     pub unsafe fn new()->SettingsPage<'a,'b,'d>{
         let mut glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
         let head_settings=TextViewSettings::new("Настройки",[
-                    0f64,
-                    0f64,
-                    window_width,
-                    80f64,
+                    0f32,
+                    0f32,
+                    window_width as f32,
+                    80f32,
                 ])
                 .font_size(40f32)
                 .text_color(White);
@@ -29,30 +29,30 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
 
         let signs_per_sec_slider_sets=SliderSettings::new()
                 .head("Количество символов в секунду")
-                .position([window_center[0],160f64])
-                .length(250f64)
-                .min_value(15f64)
-                .max_value(120f64)
-                .current_value(Settings.signs_per_frame*60f64);
+                .position([window_center[0],160f32])
+                .length(250f32)
+                .min_value(15f32)
+                .max_value(120f32)
+                .current_value(Settings.signs_per_frame*60f32);
         let slider_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
 
 
         let volume_settings=SliderSettings::new()
                 .head("Громкость")
-                .position([window_center[0],250f64])
-                .length(250f64)
-                .min_value(0f64)
-                .max_value(100f64)
-                .current_value(Settings.volume*100f64);
+                .position([window_center[0],250f32])
+                .length(250f32)
+                .min_value(0f32)
+                .max_value(100f32)
+                .current_value(Settings.volume*100f32);
         let volume_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
         let volume=Slider::new(volume_settings,volume_glyphs);
 
         // Настройки кнопки выхода
         let button_settings=ButtonSettings::new("Назад",[
-                    40f64,
-                    window_height-80f64,
-                    120f64,
-                    60f64
+                    40f32,
+                    window_height-80f32,
+                    120f32,
+                    60f32
                 ]);
 
 
@@ -109,10 +109,10 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                 GameWindowEvent::MouseReleased(button)=>{
                     match button{
                         MouseButton::Left=>{
-                            Settings.signs_per_frame=self.signs_per_sec.released()/60f64;
+                            Settings.signs_per_frame=self.signs_per_sec.released()/60f32;
 
-                            Settings.volume=self.volume.released()/100f64;
-                            music::set_volume(Settings.volume); // Установка громкости
+                            Settings.volume=self.volume.released()/100f32;
+                            music::set_volume(Settings.volume as f64); // Установка громкости
 
 
                             if self.back_button.released(){ // Кнопка "Назад"
@@ -125,6 +125,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
 
                 GameWindowEvent::KeyboardReleased(button)=>{
                     match button{
+                        KeyboardButton::F5=>make_screenshot(window),
                         KeyboardButton::Escape=>return Game::Back,
                         _=>{}
                     }
@@ -143,8 +144,8 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
         let mut background=Background::new(Settings_page_color,[
             0f64,
             0f64,
-            window_width,
-            window_height
+            window_width as f64,
+            window_height as f64
         ]);
 
         // Плавное открытие
@@ -170,6 +171,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
 
                 GameWindowEvent::KeyboardReleased(button)=>{
                     match button{
+                        KeyboardButton::F5=>make_screenshot(window),
                         KeyboardButton::Escape=>return Game::Back,
                         _=>{}
                     }

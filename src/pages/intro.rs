@@ -14,14 +14,14 @@ pub struct Intro<'a,'b>{
 
 impl<'a,'b> Intro<'a,'b>{
     pub unsafe fn new(window:&'b mut GameWindow)->Intro<'a,'b>{
-        let mut glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
+        let glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
 
         let text="Прогресс сохраняется автоматически";
 
         let settings=TextViewSettings::new(text,
                 [
-                    0f64,
-                    window_center[1]/2f64,
+                    0f32,
+                    window_center[1]/2f32,
                     window_width,
                     window_center[1]
                 ])
@@ -29,7 +29,7 @@ impl<'a,'b> Intro<'a,'b>{
                 .text_color(White);
 
         Self{
-            text_view:TextViewStaticLinedDependent::new(settings,&mut glyphs),
+            text_view:TextViewStaticLinedDependent::new(settings,&glyphs),
             glyphs:glyphs,
             window:window
         }
@@ -52,9 +52,15 @@ impl<'a,'b> Intro<'a,'b>{
                     if 1f32<(*window).draw_smooth(|alpha,c,g|{
                         g.clear_color(background_color);
                         self.text_view.set_alpha_channel(alpha);
-                        self.text_view.draw(c,g,&mut self.glyphs);
+                        self.text_view.draw(c,g,&self.glyphs);
                     }){
                         break
+                    }
+                }
+
+                GameWindowEvent::KeyboardReleased(button)=>{
+                    if button==KeyboardButton::F5{
+                        make_screenshot(&*window)
                     }
                 }
                 _=>{}
@@ -70,9 +76,15 @@ impl<'a,'b> Intro<'a,'b>{
                     if 0f32>(*window).draw_smooth(|alpha,c,g|{
                         g.clear_color(background_color);
                         self.text_view.set_alpha_channel(alpha);
-                        self.text_view.draw(c,g,&mut self.glyphs);
+                        self.text_view.draw(c,g,&self.glyphs);
                     }){
                         break
+                    }
+                }
+
+                GameWindowEvent::KeyboardReleased(button)=>{
+                    if button==KeyboardButton::F5{
+                        make_screenshot(&*window)
                     }
                 }
                 _=>{}
@@ -89,8 +101,8 @@ impl<'a,'b> Intro<'a,'b>{
         let mut background=Background::new(background_color,[
             0f64,
             0f64,
-            window_width,
-            window_height
+            window_width as f64,
+            window_height as f64
         ]);
 
         while let Some(event)=self.window.next_event(){
@@ -103,6 +115,12 @@ impl<'a,'b> Intro<'a,'b>{
                         background.draw_smooth(alpha,c,g);
                     }){
                         break
+                    }
+                }
+                
+                GameWindowEvent::KeyboardReleased(button)=>{
+                    if button==KeyboardButton::F5{
+                        make_screenshot(&*window)
                     }
                 }
                 _=>{}

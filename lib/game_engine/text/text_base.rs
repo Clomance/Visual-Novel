@@ -30,7 +30,7 @@ use graphics::{
 };
 
 pub struct TextBase{
-    pub position:[f64;2],
+    pub position:[f32;2],
     pub font_size:f32,
     pub color:Color,
 }
@@ -40,32 +40,32 @@ impl TextBase{
         Self{
             font_size,
             color,
-            position:[0f64;2]
+            position:[0f32;2]
         }
     }
 
-    pub const fn position(mut self,position:[f64;2])->TextBase{
+    pub const fn position(mut self,position:[f32;2])->TextBase{
         self.position=position;
         self
     }
 
     #[inline(always)]
-    pub fn set_x(&mut self,x:f64){
+    pub fn set_x(&mut self,x:f32){
         self.position[0]=x
     }
 
     #[inline(always)]
-    pub fn set_position(&mut self,position:[f64;2]){
+    pub fn set_position(&mut self,position:[f32;2]){
         self.position=position
     }
 
     #[inline(always)]
-    pub fn shift_x(&mut self,dx:f64){
+    pub fn shift_x(&mut self,dx:f32){
         self.position[0]+=dx
     }
 
     #[inline(always)]
-    pub fn shift(&mut self,dx:f64,dy:f64){
+    pub fn shift(&mut self,dx:f32,dy:f32){
         self.position[0]+=dx;
         self.position[1]+=dy;
     }
@@ -79,7 +79,7 @@ impl TextBase{
     pub fn draw_char(&self,character:char,context:&Context,graphics:&mut GameGraphics,glyphs:Glyphs){
         let draw_parameters=convert_draw_state(&context.draw_state);
 
-        let position=[self.position[0] as f32,self.position[1] as f32];
+        let position=[self.position[0],self.position[1]];
 
         let character=glyphs.character_positioned(character,self.font_size,position);
 
@@ -93,7 +93,7 @@ impl TextBase{
 
     // Выодит весь текст
     pub fn draw(&self,text:&str,context:&Context,graphics:&mut GameGraphics,glyphs:&Glyphs){
-        let mut position=[self.position[0] as f32,self.position[1] as f32];
+        let mut position=[self.position[0],self.position[1]];
 
         let draw_parameters=convert_draw_state(&context.draw_state);
 
@@ -107,7 +107,7 @@ impl TextBase{
 
     // Выводит часть текста, если выведен весь текста, возвращает true
     pub fn draw_part(&self,text:&str,chars:usize,context:&Context,graphics:&mut GameGraphics,glyphs:&Glyphs)->bool{
-        let mut position=[self.position[0] as f32,self.position[1] as f32];
+        let mut position=[self.position[0],self.position[1]];
         let draw_parameters=convert_draw_state(&context.draw_state);
 
         let mut whole=true; // Флаг вывода всего текста

@@ -93,15 +93,15 @@ fn main(){
         let window_size=window.size();
         window_width=window_size[0];
         window_height=window_size[1];
-        window_center[0]=window_width/2f64;
-        window_center[1]=window_height/2f64;
+        window_center[0]=window_width/2f32;
+        window_center[1]=window_height/2f32;
 
         let wallpaper_size={
-            let dx=window_width/(wallpaper_movement_scale*2f64);
-            let dy=window_height/(wallpaper_movement_scale*2f64);
+            let dx=window_width/(wallpaper_movement_scale*2f32);
+            let dy=window_height/(wallpaper_movement_scale*2f32);
             [
-                (window_width+2f64*dx),
-                (window_height+2f64*dy)
+                (window_width+2f32*dx),
+                (window_height+2f32*dy)
             ]
         };
     
@@ -136,7 +136,7 @@ fn main(){
 
         music::start::<Melody,Sound,_>(16,||{
             music::bind_music_file(Melody::MainMenu,"./resources/music/audio.mp3");
-            music::set_volume(Settings.volume);
+            music::set_volume(Settings.volume as f64);
             music::play_music(&Melody::MainMenu,music::Repeat::Forever);
 
             // Полный цикл игры
@@ -197,6 +197,12 @@ fn main(){
                                         dialogue_box.draw_without_text(c,g);
                                     }){
                                         break 'opening_page
+                                    }
+                                }
+
+                                GameWindowEvent::KeyboardReleased(button)=>{
+                                    if button==KeyboardButton::F5{
+                                        make_screenshot(&window)
                                     }
                                 }
                                 _=>{}
@@ -275,6 +281,11 @@ fn main(){
                                                 _=>{}
                                             }
                                         }
+                                        KeyboardButton::F5=>{
+                                            let path=format!("screenshots/screenshot{}.png",Settings.screenshot);
+                                            Settings.screenshot+=1;
+                                            window.screenshot(path)
+                                        },
                                         _=>{}
                                     }
                                 }
@@ -304,6 +315,12 @@ fn main(){
                                         break 'page
                                     }
                                 }
+
+                                GameWindowEvent::KeyboardReleased(button)=>{
+                                    if button==KeyboardButton::F5{
+                                        make_screenshot(&window)
+                                    }
+                                }
                                 _=>{}
                             }
                         }
@@ -331,6 +348,13 @@ fn main(){
                                 break 'smooth_ending
                             }
                         }
+
+                        GameWindowEvent::KeyboardReleased(button)=>{
+                            if button==KeyboardButton::F5{
+                                make_screenshot(&window)
+                            }
+                        }
+
                         _=>{}
                     }
                 }
@@ -350,8 +374,12 @@ fn main(){
                         }
 
                         GameWindowEvent::MouseReleased(_button)=>break 'gameplay_ending,
-                        GameWindowEvent::KeyboardReleased(_button)=>break 'gameplay_ending,
-
+                        GameWindowEvent::KeyboardReleased(button)=>{
+                            if button==KeyboardButton::F5{
+                                make_screenshot(&window)
+                            }
+                            break 'gameplay_ending
+                        }
                         _=>{}
                     }
                 }
@@ -561,4 +589,11 @@ fn load_page_settings(reader:&mut BufReader<File>)->(String,String){
     }
 
     (wallpaper.unwrap(),dialogue.unwrap())
+}
+
+
+pub unsafe fn make_screenshot(window:&GameWindow){
+    let path=format!("screenshots/screenshot{}.png",Settings.screenshot);
+    Settings.screenshot+=1;
+    window.screenshot(path)
 }

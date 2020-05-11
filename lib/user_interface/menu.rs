@@ -1,10 +1,10 @@
 use super::*;
 
-const head_margin:f64=50f64; // Расстояние между заголовком и кнопками
-const button_margin:f64=10f64;
-const dmargin:f64=head_margin-button_margin; // Для расчёта высоты меню - чтобы не вычитать button_margin
+const head_margin:f32=50f32; // Расстояние между заголовком и кнопками
+const button_margin:f32=10f32;
+const dmargin:f32=head_margin-button_margin; // Для расчёта высоты меню - чтобы не вычитать button_margin
 
-const menu_movement_scale:f64=10f64; // Обратный коэфициент сдвига меню при движении мышью
+const menu_movement_scale:f32=10f32; // Обратный коэфициент сдвига меню при движении мышью
 
 // Меню, состоящее из заголовка и кнопок под ним
 pub struct Menu<'a>{
@@ -14,7 +14,7 @@ pub struct Menu<'a>{
 }
 
 impl<'a> Menu<'a>{
-    pub fn new<'b,S:Into<String>,B:Into<String>+Clone+'a>(settings:MenuSettings<'b,S,B>,mut glyphs:Glyphs<'a>)->Menu<'a>{
+    pub fn new<'b,S:Into<String>,B:Into<String>+Clone+'a>(settings:MenuSettings<'b,S,B>,glyphs:Glyphs<'a>)->Menu<'a>{
         let r=unsafe{mouse_cursor.center_radius()}; //
         let dx=r[0]/menu_movement_scale;            // Сдвиг относительно положения мыши
         let dy=r[1]/menu_movement_scale;            //
@@ -25,19 +25,19 @@ impl<'a> Menu<'a>{
         let height=settings.rect[3];    //
 
         // Полная высота меню
-        let menu_height=settings.head_size[1]+dmargin+(settings.buttons_size[1]+button_margin)*settings.buttons_text.len() as f64;
+        let menu_height=settings.head_size[1]+dmargin+(settings.buttons_size[1]+button_margin)*settings.buttons_text.len() as f32;
 
         // Положение заголовка по Y
         let mut y=match settings.align.y{
             AlignY::Up=>y0,
-            AlignY::Center=>y0+(height-menu_height)/2f64,
+            AlignY::Center=>y0+(height-menu_height)/2f32,
             AlignY::Down=>y0+height-menu_height,
         };
 
         // Положение заголовка по X
         let mut x=match settings.align.x{
             AlignX::Right=>x0+width-settings.head_size[0],
-            AlignX::Center=>x0+(width-settings.head_size[0])/2f64,
+            AlignX::Center=>x0+(width-settings.head_size[0])/2f32,
             AlignX::Left=>x0,
         };
 
@@ -62,7 +62,7 @@ impl<'a> Menu<'a>{
                 x0+window_width-settings.buttons_size[0]
             },
             AlignX::Center=>unsafe{
-                x0+(window_width-settings.buttons_size[0])/2f64
+                x0+(window_width-settings.buttons_size[0])/2f32
             },
             AlignX::Left=>x0,
         };
@@ -86,13 +86,13 @@ impl<'a> Menu<'a>{
                     .background_color(settings.buttons_color)
                     .font_size(settings.buttons_font_size);
 
-            let button=ButtonDependent::new(button_sets,&mut glyphs);
+            let button=ButtonDependent::new(button_sets,&glyphs);
             menu_buttons.push(button);
             button_rect[1]+=settings.buttons_size[1]+button_margin;
         }
 
         Self{
-            head:TextViewStaticLineDependent::new(head_settings,&mut glyphs),
+            head:TextViewStaticLineDependent::new(head_settings,&glyphs),
             buttons:menu_buttons,
             glyphs:glyphs,
         }
@@ -115,7 +115,7 @@ impl<'a> Menu<'a>{
         None
     }
 
-    pub fn mouse_shift(&mut self,dx:f64,dy:f64){
+    pub fn mouse_shift(&mut self,dx:f32,dy:f32){
         let dx=dx/menu_movement_scale;
         let dy=dy/menu_movement_scale;
         self.head.shift(dx,dy);
@@ -135,23 +135,23 @@ impl<'a> Drawable for Menu<'a>{
     }
 
     fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
-        self.head.draw(&context,graphics,&mut self.glyphs);
+        self.head.draw(&context,graphics,&self.glyphs);
 
         for button in &mut self.buttons{
-            button.draw(context,graphics,&mut self.glyphs);
+            button.draw(context,graphics,&self.glyphs);
         }
     }
 }
 
 // Настройки меню
 pub struct MenuSettings<'a,S:Into<String>,B:Into<String>+'a>{
-    rect:[f64;4], // [x1,y1,width,height] - сюда встроивается меню, по умочанию размер окна
+    rect:[f32;4], // [x1,y1,width,height] - сюда встроивается меню, по умочанию размер окна
     align:Align, // Выравнивание меню
     head_text:S, // Текст заголовка меню
-    head_size:[f64;2], // Ширина и высота заголовка
+    head_size:[f32;2], // Ширина и высота заголовка
     head_font_size:f32,
     head_text_color:Color,
-    buttons_size:[f64;2], // [width,height], по умолчанию [100, 60]
+    buttons_size:[f32;2], // [width,height], по умолчанию [100, 60]
     buttons_text:&'a [B],
     buttons_font_size:f32,
     buttons_color:Color,
@@ -160,25 +160,25 @@ pub struct MenuSettings<'a,S:Into<String>,B:Into<String>+'a>{
 impl<'a,S:Into<String>,B:Into<String>+'a> MenuSettings<'a,S,B>{
     pub fn new(head:S,buttons:&'a [B])->MenuSettings<'a,S,B>{
         Self{
-            rect:unsafe{[0f64,0f64,window_width,window_height]},
+            rect:unsafe{[0f32,0f32,window_width,window_height]},
             head_text:head,
-            head_size:[100f64,60f64],
+            head_size:[100f32,60f32],
             head_font_size:40f32,
             head_text_color:White,
             align:Align::center(),
-            buttons_size:[100f64,60f64],
+            buttons_size:[100f32,60f32],
             buttons_text:buttons,
-            buttons_font_size:20f32,
+            buttons_font_size:18f32,
             buttons_color:Light_blue,
         }
     }
 
-    pub fn rect(mut self,rect:[f64;4])->MenuSettings<'a,S,B>{
+    pub fn rect(mut self,rect:[f32;4])->MenuSettings<'a,S,B>{
         self.rect=rect;
         self
     }
 
-    pub fn head_size(mut self,size:[f64;2])->MenuSettings<'a,S,B>{
+    pub fn head_size(mut self,size:[f32;2])->MenuSettings<'a,S,B>{
         self.head_size=size;
         self
     }
@@ -193,7 +193,7 @@ impl<'a,S:Into<String>,B:Into<String>+'a> MenuSettings<'a,S,B>{
         self
     }
 
-    pub fn buttons_size(mut self,size:[f64;2])->MenuSettings<'a,S,B>{
+    pub fn buttons_size(mut self,size:[f32;2])->MenuSettings<'a,S,B>{
         self.buttons_size=size;
         self
     }
