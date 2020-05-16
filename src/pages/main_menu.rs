@@ -6,7 +6,7 @@ use engine::{
     // structs
     GameWindow,
     text::Glyphs,
-    game_graphics::GameGraphics,
+    graphics::GameGraphics,
     // enums
     GameWindowEvent,
     KeyboardButton,

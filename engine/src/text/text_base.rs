@@ -2,7 +2,7 @@ use crate::{
     // types
     Colour,
     // structs
-    game_graphics::GameGraphics
+    graphics::GameGraphics
 };
 
 use super::{
@@ -64,12 +64,12 @@ impl TextBase{
 
         let character=glyphs.character_positioned(character,self.font_size,position);
 
-        graphics.draw_character(self,&character,draw_parameters);
+        graphics.draw_character(self.colour,&character,draw_parameters);
     }
 
     #[inline(always)] // Выводит уже данный символ
     pub fn draw_character(&self,character:&Character,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
-        graphics.draw_character(self,character,&draw_parameters);
+        graphics.draw_character(self.colour,character,&draw_parameters);
     }
 
     // Выодит весь текст
@@ -78,7 +78,7 @@ impl TextBase{
 
         for c in text.chars(){
             let character=glyphs.character_positioned(c,self.font_size,position);
-            graphics.draw_character(self,&character,draw_parameters);
+            graphics.draw_character(self.colour,&character,draw_parameters);
 
             position[0]+=character.width();
         }
@@ -86,7 +86,7 @@ impl TextBase{
 
     // Выводит часть текста, если выведен весь текста, возвращает true
     pub fn draw_part(&self,text:&str,chars:usize,draw_parameters:&DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs)->bool{
-        let mut position=[self.position[0],self.position[1]];
+        let mut position=self.position;
 
         let mut whole=true; // Флаг вывода всего текста
 
@@ -97,7 +97,7 @@ impl TextBase{
             }
             let character=glyphs.character_positioned(c,self.font_size,position);
 
-            graphics.draw_character(self,&character,draw_parameters);
+            graphics.draw_character(self.colour,&character,draw_parameters);
 
             position[0]+=character.width();
         }

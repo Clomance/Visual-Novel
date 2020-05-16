@@ -4,7 +4,7 @@ use engine::{
     image_base::ImageBase,
     game_texture::Texture,
     text::{TextBase,Glyphs},
-    game_graphics::GameGraphics,
+    graphics::GameGraphics,
     glium::{Display,DrawParameters},
 };
 

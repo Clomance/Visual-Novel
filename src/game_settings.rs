@@ -8,7 +8,7 @@ pub struct GameSettings{
     pub saved_dialogue:usize, // Место в диалоге на котором остановился пользователь (dialogue_box)
     pub pages:usize, // Количество страниц в игре
     pub signs_per_frame:f32, // Знаков на кадр
-    pub volume:f32, // Громкость игры
+    pub volume:u8, // Громкость игры, 0 - 128
     pub screenshot:u32, // номер следующего скришота
 }
 
@@ -23,7 +23,7 @@ impl GameSettings{
             saved_page:0,
             saved_dialogue:0,
             signs_per_frame:0.25f32,
-            volume:0.5f32,
+            volume:64u8,
             screenshot:0u32,
         }
     }
@@ -56,8 +56,8 @@ impl GameSettings{
         settings_file.read_exact(&mut buffer).unwrap();
         self.signs_per_frame=f32::from_be_bytes(buffer);
         // Значение громкости
-        settings_file.read_exact(&mut buffer).unwrap();
-        self.volume=f32::from_be_bytes(buffer);
+        settings_file.read_exact(&mut buffer[0..1]).unwrap();
+        self.volume=buffer[0];
         // Количество сделанных скриншотов (номер следующего)
         settings_file.read_exact(&mut buffer).unwrap();
         self.screenshot=u32::from_be_bytes(buffer);
@@ -97,8 +97,7 @@ impl GameSettings{
         let mut buffer=self.signs_per_frame.to_be_bytes();
         settings_file.write_all(&buffer).unwrap();
         // Значение громкости
-        buffer=self.volume.to_be_bytes();
-        settings_file.write_all(&buffer).unwrap();
+        settings_file.write_all(&[self.volume]).unwrap();
         // Количество сделанных скриншотов (номер следующего)
         buffer=self.screenshot.to_be_bytes();
         settings_file.write_all(&buffer).unwrap();

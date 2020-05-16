@@ -3,7 +3,7 @@ use crate::*;
 use engine::{
     image_base::ImageBase,
     game_texture::Texture,
-    game_graphics::GameGraphics,
+    graphics::GameGraphics,
     glium::{Display,DrawParameters},
 };
 

@@ -6,7 +6,7 @@ use engine::{
     // types
     Colour,
     // structs
-    game_graphics::{
+    graphics::{
         RectangleWithBorder,
         GameGraphics
     },

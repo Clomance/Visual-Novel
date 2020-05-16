@@ -7,7 +7,7 @@ use engine::{
     // types
     Colour,
     // structs
-    game_graphics::GameGraphics,
+    graphics::GameGraphics,
     mouse_cursor,
     text::Glyphs,
     glium::DrawParameters,

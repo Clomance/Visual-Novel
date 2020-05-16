@@ -5,7 +5,7 @@ use engine::{
     Colour,
     // structs
     text::{TextBase,Glyphs},
-    game_graphics::GameGraphics,
+    graphics::GameGraphics,
     glium::DrawParameters,
 };
 

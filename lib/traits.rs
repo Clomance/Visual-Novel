@@ -1,4 +1,4 @@
-use engine::game_graphics::GameGraphics;
+use engine::graphics::GameGraphics;
 use engine::glium::DrawParameters;
 
 

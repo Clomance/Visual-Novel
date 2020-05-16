@@ -106,8 +106,8 @@ impl<'d,'s> GameGraphics<'d,'s>{
     }
 
     #[inline(always)] // Рисует один символ
-    pub fn draw_character(&mut self,text_base:&TextBase,character:&Character,draw_parameters:&DrawParameters){
-        self.system.text.draw_character(character,text_base.colour,self.surface,draw_parameters);
+    pub fn draw_character(&mut self,colour:Colour,character:&Character,draw_parameters:&DrawParameters){
+        self.system.text.draw_character(character,colour,self.surface,draw_parameters);
     }
 
     pub fn draw_texture(&mut self,image_base:&ImageBase,texture:&Texture,draw_parameters:&DrawParameters){

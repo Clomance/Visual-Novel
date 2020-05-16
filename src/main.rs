@@ -140,6 +140,7 @@ fn main(){
 
         let mut music=music::Music::new();
         music.add_music("./resources/music/audio.mp3");
+        music.set_volume(Settings.volume);
         music.start_music(0);
 
 

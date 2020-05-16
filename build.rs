@@ -1,5 +1,7 @@
 use std::env;
 use std::path::PathBuf;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 fn main(){
     let target=env::var("TARGET").unwrap();
@@ -29,4 +31,21 @@ fn main(){
             }
         }
     }
+
+    let mut game_settings=OpenOptions::new().truncate(true).write(true).open("settings/game_settings").unwrap();
+
+    game_settings.write_all(&[0]).unwrap(); // Новая игра
+
+    let buffer=[0u8;8];
+    // Текущая страница игры
+    game_settings.write_all(&buffer).unwrap();
+    // Текущее положение в диалоге на странице
+    game_settings.write_all(&buffer).unwrap();
+    // Количество символов в секунду
+    let buffer=0.25f32.to_be_bytes();
+    game_settings.write_all(&buffer).unwrap();
+    // Значение громкости
+    game_settings.write_all(&[64u8]).unwrap();
+    // Количество сделанных скриншотов (номер следующего)
+    game_settings.write_all(&[0u8;4]).unwrap();
 }

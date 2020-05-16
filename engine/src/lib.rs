@@ -19,7 +19,7 @@ pub use game_window::*;
 
 pub mod image_base;
 
-pub mod game_graphics;
+pub mod graphics;
 
 pub mod music;
 

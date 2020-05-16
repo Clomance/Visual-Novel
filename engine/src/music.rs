@@ -45,7 +45,7 @@ impl Music{
     }
 
     // 0 - 1.0
-    pub fn set_volume(&self,volume:f32){
+    pub fn set_volume(&self,volume:u8){
         SdlMusic::set_volume(volume as i32) // 0 - 128
     }
 }

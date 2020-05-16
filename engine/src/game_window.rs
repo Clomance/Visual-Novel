@@ -1,6 +1,5 @@
 use super::{
-    game_graphics::Graphics2D,
-    game_graphics::GameGraphics,
+    graphics::{Graphics2D,GameGraphics},
     mouse_cursor::*,
 };
 
@@ -627,6 +626,7 @@ pub fn load_window_icon()->Icon{
     Icon::from_rgba(vec,width,height).unwrap()
 }
 
+// Обычные параметры для рисования
 pub fn default_draw_parameters<'a>()->DrawParameters<'a>{
     let mut draw_parameters=DrawParameters::default();
 

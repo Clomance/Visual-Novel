@@ -7,7 +7,7 @@ use engine::{
     Colour,
     // structs
     text::Glyphs,
-    game_graphics::{
+    graphics::{
         Circle,
         Line,
         GameGraphics

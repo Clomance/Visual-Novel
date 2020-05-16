@@ -8,7 +8,7 @@ use engine::{
     window_width,
     window_height,
     // structs
-    game_graphics::GameGraphics,
+    graphics::GameGraphics,
     image_base::ImageBase,
     game_texture::Texture,
     glium::{Display,DrawParameters},

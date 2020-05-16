@@ -13,7 +13,7 @@ use engine::{
     Colour,
     // structs
     text::Glyphs,
-    game_graphics::{
+    graphics::{
         GameGraphics,
         Rectangle
     },

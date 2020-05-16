@@ -3,7 +3,7 @@ use super::{
     Colour,
     // structs
     game_texture::Texture,
-    game_graphics::GameGraphics,
+    graphics::GameGraphics,
 };
 
 use glium::draw_parameters::DrawParameters;

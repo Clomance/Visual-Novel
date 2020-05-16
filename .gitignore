@@ -1,6 +1,5 @@
 target/*
 Cargo.lock
 tmp/*
-local/*
 /*.dll
 .vscode/launch.json
