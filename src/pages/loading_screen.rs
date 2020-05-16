@@ -4,7 +4,7 @@ use crate::{
     Game,
 };
 
-use lib::White;
+use lib::colors::White;
 
 use engine::{
     // statics

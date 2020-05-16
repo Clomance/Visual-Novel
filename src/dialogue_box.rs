@@ -138,7 +138,7 @@ impl<'a,'b> Drawable for DialogueBox<'a,'b>{
         //self.lines.set_alpha_channel(alpha);
     }
 
-    fn draw(&mut self,draw_parameters:&DrawParameters,g:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
         let name=self.dialogue.get_name(self.dialogue_step);
 
         self.image.draw(&self.texture,draw_parameters,g); // Основа

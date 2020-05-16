@@ -6,8 +6,7 @@ pub use sync_raw_ptr::SyncRawPtr;
 mod traits;
 pub use traits::*;
 
-mod colors;
-pub use colors::*;
+pub mod colors;
 
 mod background;
 pub use background::Background;

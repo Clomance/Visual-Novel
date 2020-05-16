@@ -53,16 +53,17 @@ impl SimpleGraphics{
         }
     }
 
+    #[inline(always)]
     pub fn draw<O:SimpleObject>(
         &self,
         object:&O,
-        frame:&mut Frame,
-        draw_parameters:&DrawParameters
+        draw_parameters:&mut DrawParameters,
+        frame:&mut Frame
     ){
-        object.draw_simple(self,frame,draw_parameters)
+        object.draw_simple(draw_parameters,frame,self)
     }
 }
 
 pub trait SimpleObject{
-    fn draw_simple(&self,graphics:&SimpleGraphics,frame:&mut Frame,draw_parameters:&DrawParameters);
+    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics);
 }

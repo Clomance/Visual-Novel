@@ -29,7 +29,7 @@ impl Drawable for Background{
         self.base.colour[3]=alpha
     }
 
-    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         self.base.draw(draw_parameters,graphics)
     }
 }

@@ -111,7 +111,7 @@ impl Drawable for CharactersView{
         }
     }
 
-    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         for ch in &mut self.characters{
             ch.image.draw(&ch.texture,draw_parameters,graphics);
         }

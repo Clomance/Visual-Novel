@@ -50,17 +50,18 @@ impl Rectangle{
         }
     }
 
-    pub fn draw(&self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    #[inline(always)]
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         graphics.draw_simple(self,draw_parameters)
     }
 }
 
 impl SimpleObject for Rectangle{
-    fn draw_simple(&self,graphics:&SimpleGraphics,frame:&mut Frame,draw_parameters:&DrawParameters){
-        let slice=graphics.vertex_buffer.slice(0..6).unwrap();
-        let indices=NoIndices(PrimitiveType::TrianglesList);
+    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
+        let slice=graphics.vertex_buffer.slice(0..4).unwrap();
+        let indices=NoIndices(PrimitiveType::TriangleStrip);
 
-        let mut vec=Vec::with_capacity(6);
+        let mut vec=Vec::with_capacity(4);
         unsafe{
             let x1=self.x1/window_center[0]-1f32;
             let y1=1f32-self.y1/window_center[1];
@@ -70,12 +71,6 @@ impl SimpleObject for Rectangle{
 
             vec.push(Point2D{
                 position:[x1,y1]
-            });
-            vec.push(Point2D{
-                position:[x1,y2]
-            });
-            vec.push(Point2D{
-                position:[x2,y1]
             });
             vec.push(Point2D{
                 position:[x1,y2]
@@ -111,20 +106,21 @@ impl RectangleWithBorder{
         }
     }
 
-    pub fn border(mut self,radius:f32,colour:Colour)->RectangleWithBorder{
+    pub const fn border(mut self,radius:f32,colour:Colour)->RectangleWithBorder{
         self.border_radius=radius;
         self.border_colour=colour;
         self
     }
 
-    pub fn draw(&self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    #[inline(always)]
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         graphics.draw_simple(self,draw_parameters)
     }
 }
 
 impl SimpleObject for RectangleWithBorder{
-    fn draw_simple(&self,graphics:&SimpleGraphics,frame:&mut Frame,draw_parameters:&DrawParameters){
-        let mut vec=Vec::with_capacity(6);
+    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
+        let mut vec=Vec::with_capacity(4);
         let (x1,y1,x2,y2)=unsafe{(
             self.rect.x1/window_center[0]-1f32,
             1f32-self.rect.y1/window_center[1],
@@ -132,19 +128,13 @@ impl SimpleObject for RectangleWithBorder{
             self.rect.x2/window_center[0]-1f32,
             1f32-self.rect.y2/window_center[1]
         )};
-       
+
         // Закрашивание прямоугольника
-        let mut slice=graphics.vertex_buffer.slice(0..6).unwrap();
-        let mut indices=NoIndices(PrimitiveType::TrianglesList);
+        let mut slice=graphics.vertex_buffer.slice(0..4).unwrap();
+        let mut indices=NoIndices(PrimitiveType::TriangleStrip);
 
         vec.push(Point2D{
             position:[x1,y1]
-        });
-        vec.push(Point2D{
-            position:[x1,y2]
-        });
-        vec.push(Point2D{
-            position:[x2,y1]
         });
         vec.push(Point2D{
             position:[x1,y2]
@@ -180,6 +170,7 @@ impl SimpleObject for RectangleWithBorder{
 
         slice.write(&vec);
 
+        draw_parameters.line_width=Some(self.border_radius);
         frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.border_colour},draw_parameters);
     }
 }
@@ -195,7 +186,7 @@ pub struct Line{
 
 impl Line{
     // rect - [x1,y1,x2,y2]
-    pub fn new(rect:[f32;4],radius:f32,colour:Colour)->Line{
+    pub const fn new(rect:[f32;4],radius:f32,colour:Colour)->Line{
         Self{
             x1:rect[0],
             y1:rect[1],
@@ -206,14 +197,16 @@ impl Line{
         }
     }
 
-    pub fn draw(&self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
-        graphics.draw_simple(self,draw_parameters)
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+        let width=self.radius;
+        draw_parameters.line_width=Some(width);
+        graphics.draw_simple(self,draw_parameters);
     }
 }
 
 
 impl SimpleObject for Line{
-    fn draw_simple(&self,graphics:&SimpleGraphics,frame:&mut Frame,draw_parameters:&DrawParameters){
+    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
         let mut vec=Vec::with_capacity(2);
 
         let (x1,y1,x2,y2)=unsafe{(
@@ -252,7 +245,7 @@ pub struct Ellipse{
 
 impl Ellipse{
     // rect - [x1,x2,width,height]
-    pub fn rect(rect:[f32;4],colour:Colour)->Ellipse{
+    pub const fn rect(rect:[f32;4],colour:Colour)->Ellipse{
         Self{
             x1:rect[0],
             y1:rect[1],
@@ -284,13 +277,14 @@ impl Circle{
         }
     }
 
-    pub fn draw(&self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    #[inline(always)]
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         graphics.draw_simple(self,draw_parameters)
     }
 }
 
 impl SimpleObject for Circle{
-    fn draw_simple(&self,graphics:&SimpleGraphics,frame:&mut Frame,draw_parameters:&DrawParameters){
+    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
         unsafe{
             let k=window_center[0]/window_center[1];
             let r_x=self.radius/window_center[0];
@@ -303,8 +297,6 @@ impl SimpleObject for Circle{
 
             let dx=r_x/ellipse_points as f32;
             let mut x=dx;
-
-
 
             for c in 1..ellipse_points{
                 let y=((r_x-x)*(r_x+x)).sqrt()*k;

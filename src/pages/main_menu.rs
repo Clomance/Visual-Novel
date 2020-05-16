@@ -189,12 +189,12 @@ impl<'a,'b> MainMenu<'a,'b>{
         Game::Current
     }
 
-    pub fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         self.wallpaper.draw(draw_parameters,graphics);
         self.menu.draw(draw_parameters,graphics);
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         self.wallpaper.draw_smooth(alpha,draw_parameters,graphics);
         self.menu.draw_smooth(alpha,draw_parameters,graphics);
     }

@@ -1,4 +1,13 @@
-use super::*;
+use super::{
+    AlignX,
+    AlignY,
+    Drawable,
+    Red,
+    TextViewLineDependent,
+    TextViewSettings,
+    TextViewStaticLineDependent,
+    White
+};
 
 use engine::{
     // statics
@@ -83,7 +92,7 @@ impl<'a> Drawable for Slider<'a>{
         self.base.set_alpha_channel(alpha);
     }
 
-    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         self.head.draw(draw_parameters,graphics,&self.glyphs);
         self.value.draw(draw_parameters,graphics,&self.glyphs);
         self.base.draw(draw_parameters,graphics);
@@ -123,7 +132,7 @@ impl SimpleSlider{
             step:step,
             current_value:settings.current_value,
             circle:Circle::new(circle_rect,settings.circle_colour),
-            line:Line::new(line_rect,1f32,settings.line_colour),
+            line:Line::new(line_rect,5f32,settings.line_colour),
             grab:false,
         }
     }
@@ -204,7 +213,7 @@ impl Drawable for SimpleSlider{
         self.line.colour[3]=alpha;
     }
 
-    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         self.line.draw(draw_parameters,graphics);
         self.circle.draw(draw_parameters,graphics);
     }

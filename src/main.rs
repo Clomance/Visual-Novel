@@ -24,7 +24,10 @@ use std::{
     io::{Read,Write,BufReader,BufRead},
 };
 
-use lib::*;
+use lib::{
+    *,
+    colors::*,
+};
 
 mod game_settings;
 

@@ -143,7 +143,7 @@ impl<'a> Drawable for Menu<'a>{
         }
     }
 
-    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         self.head.draw(draw_parameters,graphics,&self.glyphs);
 
         for button in &mut self.buttons{

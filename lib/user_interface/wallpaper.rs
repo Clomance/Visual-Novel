@@ -1,5 +1,5 @@
 use crate::{
-    colors::*,
+    colors::White,
     traits::Drawable,
 };
 
@@ -57,7 +57,7 @@ impl Drawable for Wallpaper{
         self.image.colour[3]=alpha
     }
 
-    fn draw(&mut self,draw_parameters:&DrawParameters,g:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
         self.image.draw(&self.texture,draw_parameters,g)
     }
 }

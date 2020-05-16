@@ -1,4 +1,10 @@
-use super::*;
+use super::{
+    Align,
+    AlignX,
+    Black,
+    Drawable,
+    White
+};
 
 use engine::{
     // statics
@@ -11,10 +17,8 @@ use engine::{
         GameGraphics
     },
     text::{TextBase,Glyphs},
-
+    glium::DrawParameters,
 };
-
-use engine::glium::DrawParameters;
 
 // Изменяемый текстовый блок (возможность вписывать и удалять символы)
 pub struct EditTextView<'a>{
@@ -34,7 +38,7 @@ impl<'a> EditTextView<'a>{
         if let Some(colour)=settings.border_colour{
             background=background.border(2f32,colour);
         }
-        
+
         let line=settings.text.into();
         // Вычисление длины строки текста
         let mut text_len=0f32;
@@ -109,7 +113,7 @@ impl<'a> Drawable for EditTextView<'a>{
         self.background.border_colour[3]=alpha;
     }
 
-    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         self.background.draw(draw_parameters,graphics);
         self.base.draw(&self.line,draw_parameters,graphics,&mut self.glyphs)
     }

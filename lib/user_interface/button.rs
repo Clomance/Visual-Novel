@@ -54,7 +54,7 @@ impl<'a> Drawable for Button<'a>{
         self.base.set_alpha_channel(alpha);
     }
 
-    fn draw(&mut self,draw_parameters:&DrawParameters,g:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
         self.base.draw(draw_parameters,g,&mut self.glyphs)
     }
 }
@@ -95,7 +95,7 @@ impl ButtonDependent{
         self.base.released()
     }
     
-    pub fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
         self.base.draw(draw_parameters,graphics);
         self.text.draw(draw_parameters,graphics,glyphs);
     }
@@ -180,7 +180,7 @@ impl ButtonBase{
         }
     }
 
-    pub fn draw(&self,draw_parameters:&DrawParameters,g:&mut GameGraphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
         self.rect.draw(draw_parameters,g);
     }
 }
