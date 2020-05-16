@@ -1,9 +1,24 @@
 use super::*;
 
+use engine::{
+    // statics
+    mouse_cursor,
+    // types
+    Colour,
+    // structs
+    text::Glyphs,
+    game_graphics::{
+        Circle,
+        Line,
+        GameGraphics
+    },
+    glium::DrawParameters,
+};
+
 const circle_radius:f32=16f32;
 const circle_diametr:f32=circle_radius*2f32;
 
-const line_radius:f64=5f64;
+// const line_radius:f32=5f32;
 
 // Полная комплектация слайдера с надписью и выводом значения
 pub struct Slider<'a>{
@@ -14,7 +29,7 @@ pub struct Slider<'a>{
 }
 
 impl<'a> Slider<'a>{
-    pub fn new(settings:SliderSettings,mut glyphs:Glyphs<'a>)->Slider<'a>{
+    pub fn new(settings:SliderSettings,glyphs:Glyphs<'a>)->Slider<'a>{
         // Настройки заголовка слайдера
         let head_settings=TextViewSettings::new(settings.head.clone(),[
                     settings.position[0],
@@ -24,7 +39,7 @@ impl<'a> Slider<'a>{
                 ])
                 .align_x(AlignX::Left)
                 .align_y(AlignY::Down)
-                .text_color(settings.head_color);
+                .text_colour(settings.head_colour);
 
         // Настройки текстового блока со значением слайдера
         let value_settings=TextViewSettings::new(format!("{:.2}",settings.current_value),[
@@ -33,11 +48,11 @@ impl<'a> Slider<'a>{
                     100f32,
                     circle_diametr
                 ])
-                .text_color(settings.circle_color);
+                .text_colour(settings.circle_colour);
 
         Self{
-            head:TextViewStaticLineDependent::new(head_settings,&mut glyphs),
-            value:TextViewLineDependent::new(value_settings,&mut glyphs),
+            head:TextViewStaticLineDependent::new(head_settings,&glyphs),
+            value:TextViewLineDependent::new(value_settings,&glyphs),
             glyphs:glyphs,
             base:SimpleSlider::new(settings),
         }
@@ -49,14 +64,14 @@ impl<'a> Slider<'a>{
 
     pub fn released(&mut self)->f32{
         let value=self.base.released();
-        self.value.set_text(format!("{:.2}",value),&mut self.glyphs);
+        self.value.set_text(format!("{:.2}",value),&self.glyphs);
         value
     }
 
     pub fn grab(&mut self){
         if self.base.grab(){
             let value=self.base.current_value();
-            self.value.set_text(format!("{:.2}",value),&mut self.glyphs);
+            self.value.set_text(format!("{:.2}",value),&self.glyphs);
         }
     }
 }
@@ -68,10 +83,10 @@ impl<'a> Drawable for Slider<'a>{
         self.base.set_alpha_channel(alpha);
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
-        self.head.draw(context,graphics,&mut self.glyphs);
-        self.value.draw(context,graphics,&mut self.glyphs);
-        self.base.draw(context,graphics);
+    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+        self.head.draw(draw_parameters,graphics,&self.glyphs);
+        self.value.draw(draw_parameters,graphics,&self.glyphs);
+        self.base.draw(draw_parameters,graphics);
     }
 }
 
@@ -80,10 +95,8 @@ pub struct SimpleSlider{
     min_value:f32,
     step:f32,
     current_value:f32,
-    circle:Ellipse,
-    circle_rect:[f32;4], // x1, y1, width, height
+    circle:Circle,
     line:Line,
-    line_rect:[f32;4], // x1, y1, x2, y2
     grab:bool,
 }
 
@@ -92,16 +105,10 @@ impl SimpleSlider{
         let step=(settings.max_value-settings.min_value)/settings.length;
         let current_value_line=(settings.current_value-settings.min_value)/step;
 
-        let circle_border=Border{
-            color:Black,
-            radius:1f64,
-        };
-
         let circle_rect=[
-            settings.position[0]+current_value_line-circle_radius,
-            settings.position[1]-circle_radius,
-            circle_diametr,
-            circle_diametr
+            settings.position[0]+current_value_line,
+            settings.position[1],
+            circle_radius
         ];
 
         let line_rect=[
@@ -115,10 +122,8 @@ impl SimpleSlider{
             min_value:settings.min_value,
             step:step,
             current_value:settings.current_value,
-            circle:Ellipse::new(settings.circle_color).border(circle_border),
-            circle_rect:circle_rect,
-            line:Line::new_round(settings.line_color,line_radius),
-            line_rect:line_rect,
+            circle:Circle::new(circle_rect,settings.circle_colour),
+            line:Line::new(line_rect,1f32,settings.line_colour),
             grab:false,
         }
     }
@@ -132,17 +137,20 @@ impl SimpleSlider{
         let x=position[0];
         let y=position[1];
 
-        if self.circle_rect[0]<x && x<self.circle_rect[0]+circle_diametr &&
-                self.circle_rect[1]<y && y<self.circle_rect[1]+circle_diametr{
+        if self.circle.x-self.circle.radius<x
+            && x<self.circle.x+self.circle.radius
+            && self.circle.y-self.circle.radius<y
+            && y<self.circle.y+self.circle.radius
+        {
             // Сдвиг вслед за положением мышки
-            if x<self.line_rect[0]{
-                self.circle_rect[0]=self.line_rect[0]-circle_radius;
+            if x<self.line.x1{
+                self.circle.x=self.line.x1;
             }
-            else if x>self.line_rect[2]{
-                self.circle_rect[0]=self.line_rect[2]-circle_radius;
+            else if x>self.line.x2{
+                self.circle.x=self.line.x2;
             }
             else{
-                self.circle_rect[0]=x-circle_radius;
+                self.circle.x=x;
             }
             self.grab=true;
         }
@@ -151,9 +159,9 @@ impl SimpleSlider{
     pub fn released(&mut self)->f32{
         self.grab=false;
         
-        let circle_center=self.circle_rect[0]+circle_radius;
+        let circle_center=self.circle.x;
 
-        let line=circle_center-self.line_rect[0];
+        let line=circle_center-self.line.x1;
 
         self.current_value=line*self.step+self.min_value;
 
@@ -165,20 +173,21 @@ impl SimpleSlider{
         if self.grab{
             unsafe{
                 let x=mouse_cursor.position()[0];
-                if x<self.line_rect[0]{
-                    self.circle_rect[0]=self.line_rect[0]-circle_radius;
+                // Сдвиг вслед за положением мышки
+                if x<self.line.x1{
+                    self.circle.x=self.line.x1;
                 }
-                else if x>self.line_rect[2]{
-                    self.circle_rect[0]=self.line_rect[2]-circle_radius;
+                else if x>self.line.x2{
+                    self.circle.x=self.line.x2;
                 }
                 else{
-                    self.circle_rect[0]=x-circle_radius;
+                    self.circle.x=x;
                 }
             }
 
             // Вычисление текущего значения
-            let circle_center=self.circle_rect[0]+circle_radius;
-            let line=circle_center-self.line_rect[0];
+            let circle_center=self.circle.x;
+            let line=circle_center-self.line.x1;
             self.current_value=line*self.step+self.min_value;
 
             true
@@ -191,54 +200,40 @@ impl SimpleSlider{
 
 impl Drawable for SimpleSlider{
     fn set_alpha_channel(&mut self,alpha:f32){
-        self.circle.color[3]=alpha;
-        self.line.color[3]=alpha;
+        self.circle.colour[3]=alpha;
+        self.line.colour[3]=alpha;
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
-        let l_rect=[
-            self.line_rect[0] as f64,
-            self.line_rect[1] as f64,
-            self.line_rect[2] as f64,
-            self.line_rect[3] as f64,
-        ];
-
-        let c_rect=[
-            self.circle_rect[0] as f64,
-            self.circle_rect[1] as f64,
-            self.circle_rect[2] as f64,
-            self.circle_rect[3] as f64,
-        ];
-
-        self.line.draw(l_rect,&context.draw_state,context.transform,graphics);
-        self.circle.draw(c_rect,&context.draw_state,context.transform,graphics);
+    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+        self.line.draw(draw_parameters,graphics);
+        self.circle.draw(draw_parameters,graphics);
     }
 }
 
 pub struct SliderSettings{
     head:String,
-    head_color:Color,
+    head_colour:Colour,
     min_value:f32,
     max_value:f32,
     current_value:f32,
-    length:f32, // Длина слайдер (width)
+    length:f32, // Длина слайдера (width)
     position:[f32;2],
-    circle_color:Color,
-    line_color:Color,
+    circle_colour:Colour,
+    line_colour:Colour,
 }
 
 impl SliderSettings{
     pub fn new()->SliderSettings{
         Self{
             head:String::new(),
-            head_color:White,
+            head_colour:White,
             min_value:0f32,
             max_value:0f32,
             current_value:0f32,
             length:0f32,
             position:[0f32;2],
-            circle_color:Red,
-            line_color:Red,
+            circle_colour:Red,
+            line_colour:Red,
         }
     }
 

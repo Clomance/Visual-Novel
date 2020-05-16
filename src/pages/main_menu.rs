@@ -1,6 +1,20 @@
 use crate::*;
 
-use lib::game_engine::text::Glyphs;
+use engine::{
+    // statics
+    mouse_cursor,
+    // structs
+    GameWindow,
+    text::Glyphs,
+    game_graphics::GameGraphics,
+    // enums
+    GameWindowEvent,
+    KeyboardButton,
+    MouseButton,
+    glium::DrawParameters,
+    music::Music,
+};
+
 
 const page_smooth:f32=Main_menu_page_smooth; // Сглаживание переходов - 1 к количеству кадров перехода
 
@@ -57,7 +71,7 @@ impl<'a,'b> MainMenu<'a,'b>{
         }
     }
 
-    pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
+    pub unsafe fn start(&mut self,window:&mut GameWindow,music:&Music)->Game{
         let radius=mouse_cursor.center_radius();
         self.wallpaper.mouse_shift(radius[0],radius[1]);
         window.set_smooth(default_page_smooth);
@@ -110,7 +124,7 @@ impl<'a,'b> MainMenu<'a,'b>{
 
                                         MenuButtons::Settings=>{
                                             mouse_cursor.save_position(); // Сохранение текущей позиции мышки
-                                            match SettingsPage::new().start(window){
+                                            match SettingsPage::new().start(window,music){
                                                 Game::Exit=>return Game::Exit,
                                                 Game::Back=>{
                                                     let (dx,dy)=mouse_cursor.saved_movement();
@@ -175,13 +189,13 @@ impl<'a,'b> MainMenu<'a,'b>{
         Game::Current
     }
 
-    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
-        self.wallpaper.draw(context,graphics);
-        self.menu.draw(context,graphics);
+    pub fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+        self.wallpaper.draw(draw_parameters,graphics);
+        self.menu.draw(draw_parameters,graphics);
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,context:&Context,graphics:&mut GameGraphics){
-        self.wallpaper.draw_smooth(alpha,context,graphics);
-        self.menu.draw_smooth(alpha,context,graphics);
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+        self.wallpaper.draw_smooth(alpha,draw_parameters,graphics);
+        self.menu.draw_smooth(alpha,draw_parameters,graphics);
     }
 }

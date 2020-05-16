@@ -1,5 +1,17 @@
 use crate::*;
-use lib::game_engine::text::Glyphs;
+
+use engine::{
+    // statics
+    window_width,
+    window_height,
+    // structs
+    text::Glyphs,
+    GameWindow,
+    // enums
+    GameWindowEvent,
+    MouseButton,
+    KeyboardButton,
+};
 
 const page_smooth:f32=Enter_user_name_smooth;
 
@@ -32,8 +44,8 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
                     300f32,
                     150f32,
                 ])
-                .background_color(Light_blue)
-                .border_color(Some(Blue));
+                .background_colour(Light_blue)
+                .border_colour(Some(Blue));
 
         Self{
             head:TextViewStaticLineDependent::new(head_settings,&head_glyphs),

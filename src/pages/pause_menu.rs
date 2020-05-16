@@ -1,10 +1,24 @@
 use crate::*;
 
-use lib::game_engine::text::Glyphs;
+use engine::{
+    // statics
+    window_width,
+    window_height,
+    // types
+    Colour,
+    // structs
+    text::Glyphs,
+    GameWindow,
+    // enums
+    GameWindowEvent,
+    MouseButton,
+    KeyboardButton,
+    music::Music,
+};
 
 const page_smooth:f32=Pause_menu_smooth;
 
-const background_color:Color=Pause_menu_background_color;
+const background_color:Colour=Pause_menu_background_colour;
 
 pub struct PauseMenu<'a>{
     menu:Menu<'a>,
@@ -25,7 +39,7 @@ impl<'a> PauseMenu<'a>{
         }
     }
 
-    pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
+    pub unsafe fn start(&mut self,window:&mut GameWindow,music:&Music)->Game{
         'page:loop{
             match self.smooth(window){
                 Game::Exit=>return Game::Exit,
@@ -38,7 +52,7 @@ impl<'a> PauseMenu<'a>{
 
                     GameWindowEvent::Draw=>{ // Рендеринг
                         window.draw(|c,g|{
-                            g.clear_color(background_color);
+                            g.clear_colour(background_color);
                             self.menu.draw(c,g);
                         });
                     }
@@ -60,7 +74,7 @@ impl<'a> PauseMenu<'a>{
                                         0=>return Game::ContinueGamePlay, // Кнопка продолжить
                                         1=>return Game::MainMenu, // Кнопка главного меню
                                         2=>{ // Кнопка настроек
-                                            match SettingsPage::new().start(window){
+                                            match SettingsPage::new().start(window,music){
                                                 Game::Exit=>return Game::Exit,
                                                 Game::Back=>continue 'page,
                                                 _=>{}
@@ -92,10 +106,10 @@ impl<'a> PauseMenu<'a>{
         window.set_new_smooth(page_smooth);
 
         let mut background=Background::new(background_color,[
-            0f64,
-            0f64,
-            window_width as f64,
-            window_height as f64
+            0f32,
+            0f32,
+            window_width,
+            window_height
         ]);
 
         while let Some(event)=window.next_event(){

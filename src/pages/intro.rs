@@ -1,10 +1,23 @@
 use crate::*;
 
-use lib::game_engine::text::Glyphs;
+use engine::{
+    // statics
+    window_width,
+    window_height,
+    window_center,
+    // types
+    Colour,
+    // structs
+    text::Glyphs,
+    GameWindow,
+    // enums
+    GameWindowEvent,
+    KeyboardButton,
+};
 
 const page_smooth:f32=Intro_smooth;
 
-const background_color:Color=Black;
+const background_color:Colour=Black;
 
 pub struct Intro<'a,'b>{
     text_view:TextViewStaticLinedDependent,
@@ -26,7 +39,7 @@ impl<'a,'b> Intro<'a,'b>{
                     window_center[1]
                 ])
                 .font_size(40f32)
-                .text_color(White);
+                .text_colour(White);
 
         Self{
             text_view:TextViewStaticLinedDependent::new(settings,&glyphs),
@@ -50,7 +63,7 @@ impl<'a,'b> Intro<'a,'b>{
 
                 GameWindowEvent::Draw=>{ // Рендеринг
                     if 1f32<(*window).draw_smooth(|alpha,c,g|{
-                        g.clear_color(background_color);
+                        g.clear_colour(background_color);
                         self.text_view.set_alpha_channel(alpha);
                         self.text_view.draw(c,g,&self.glyphs);
                     }){
@@ -74,7 +87,7 @@ impl<'a,'b> Intro<'a,'b>{
 
                 GameWindowEvent::Draw=>{ //Рендеринг
                     if 0f32>(*window).draw_smooth(|alpha,c,g|{
-                        g.clear_color(background_color);
+                        g.clear_colour(background_color);
                         self.text_view.set_alpha_channel(alpha);
                         self.text_view.draw(c,g,&self.glyphs);
                     }){
@@ -99,10 +112,10 @@ impl<'a,'b> Intro<'a,'b>{
         let window=self.window as *mut GameWindow;
 
         let mut background=Background::new(background_color,[
-            0f64,
-            0f64,
-            window_width as f64,
-            window_height as f64
+            0f32,
+            0f32,
+            window_width,
+            window_height
         ]);
 
         while let Some(event)=self.window.next_event(){

@@ -1,14 +1,24 @@
 use super::*;
 
+use engine::{
+    // statics
+    mouse_cursor,
+    // types
+    Colour,
+    // structs
+    game_graphics::{
+        RectangleWithBorder,
+        GameGraphics
+    },
+    text::{TextBase,Glyphs},
+
+};
+
+use engine::glium::DrawParameters;
+
 // Изменяемый текстовый блок (возможность вписывать и удалять символы)
 pub struct EditTextView<'a>{
-    background:Rectangle,
-    x1:f32,
-    y1:f32,
-    x2:f32,
-    y2:f32,
-    width:f32,
-    height:f32,
+    background:RectangleWithBorder,
     base:TextBase,
     line:String,
     capacity:usize,
@@ -20,13 +30,9 @@ impl<'a> EditTextView<'a>{
     pub fn new<S:Into<String>>(settings:EditTextViewSettings<S>,glyphs:Glyphs<'a>)->EditTextView<'a>{
         // Создание заднего фона
         let rect=settings.rect;
-        let mut background=Rectangle::new(settings.background_color);
-        if let Some(color)=settings.border_color{
-            let border=graphics::rectangle::Border{
-                color,
-                radius:2f64,
-            };
-            background=background.border(border);
+        let mut background=RectangleWithBorder::new(rect,settings.background_colour);
+        if let Some(colour)=settings.border_colour{
+            background=background.border(2f32,colour);
         }
         
         let line=settings.text.into();
@@ -42,13 +48,7 @@ impl<'a> EditTextView<'a>{
 
         Self{
             background,
-            x1:rect[0],
-            y1:rect[1],
-            x2:rect[0]+rect[2],
-            y2:rect[1]+rect[3],
-            width:rect[2],
-            height:rect[3],
-            base:TextBase::new(settings.text_color,settings.font_size).position([x,y]),
+            base:TextBase::new(settings.text_colour,settings.font_size).position([x,y]),
             line,
             capacity:settings.capacity,
             align:settings.align,
@@ -61,7 +61,10 @@ impl<'a> EditTextView<'a>{
         let x=position[0];
         let y=position[1];
 
-        self.x1<x && self.x2>x && self.y1<y && self.y2>y
+        self.background.rect.x1<x &&
+         self.background.rect.x2>x &&
+          self.background.rect.y1<y &&
+           self.background.rect.y2>y
     }
 
     pub fn text(&mut self)->&mut String{
@@ -102,14 +105,13 @@ impl<'a> EditTextView<'a>{
 impl<'a> Drawable for EditTextView<'a>{
     fn set_alpha_channel(&mut self,alpha:f32){
         self.base.set_alpha_channel(alpha);
-        self.background.color[3]=alpha;
-        self.background.border.as_mut().unwrap().color[3]=alpha;
+        self.background.rect.colour[3]=alpha;
+        self.background.border_colour[3]=alpha;
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
-        let rect=[self.x1 as f64,self.y1 as f64,self.width as f64,self.height as f64];
-        self.background.draw(rect,&context.draw_state,context.transform,graphics);
-        self.base.draw(&self.line,context,graphics,&mut self.glyphs)
+    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+        self.background.draw(draw_parameters,graphics);
+        self.base.draw(&self.line,draw_parameters,graphics,&mut self.glyphs)
     }
 }
 
@@ -118,11 +120,11 @@ pub struct EditTextViewSettings<S:Into<String>>{
     text:S,
     capacity:usize,
     font_size:f32,
-    text_color:Color,
+    text_colour:Colour,
     align:Align,
     rect:[f32;4], // [x1,y1,width,height] - сюда вписывается текст
-    background_color:Color,
-    border_color:Option<Color>,
+    background_colour:Colour,
+    border_colour:Option<Colour>,
 }
 
 impl<S:Into<String>> EditTextViewSettings<S>{
@@ -131,21 +133,21 @@ impl<S:Into<String>> EditTextViewSettings<S>{
             text,
             capacity:20usize,
             font_size:20f32,
-            text_color:Black,
+            text_colour:Black,
             align:Align::center(),
             rect,
-            background_color:White,
-            border_color:Some(Black)
+            background_colour:White,
+            border_colour:Some(Black)
         }
     }
 
-    pub fn background_color(mut self,color:Color)->EditTextViewSettings<S>{
-        self.background_color=color;
+    pub fn background_colour(mut self,colour:Colour)->EditTextViewSettings<S>{
+        self.background_colour=colour;
         self
     }
 
-    pub fn border_color(mut self,color:Option<Color>)->EditTextViewSettings<S>{
-        self.border_color=color;
+    pub fn border_colour(mut self,colour:Option<Colour>)->EditTextViewSettings<S>{
+        self.border_colour=colour;
         self
     }
 } 

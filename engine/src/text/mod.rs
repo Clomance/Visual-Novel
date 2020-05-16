@@ -1,5 +1,5 @@
 mod text_base;
-pub use text_base::{TextBase,TextGraphics};
+pub use text_base::TextBase;
 
 use std::{
     fs,

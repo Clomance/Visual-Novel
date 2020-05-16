@@ -1,8 +1,12 @@
 use crate::*;
 
-use lib::game_engine::text::{TextBase,Glyphs};
-
-use glium::Display;
+use engine::{
+    image_base::ImageBase,
+    game_texture::Texture,
+    text::{TextBase,Glyphs},
+    game_graphics::GameGraphics,
+    glium::{Display,DrawParameters},
+};
 
 const k:f32=3.3f32; // Отношение размера окна игры к диалоговому окну
 
@@ -24,9 +28,8 @@ pub struct DialogueBox<'a,'b>{
 
 impl<'a,'b> DialogueBox<'a,'b>{
     pub fn new(texture:&RgbaImage,display:&mut Display)->DialogueBox<'a,'b>{
-        let texture_settings=TextureSettings::new();
         let glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
-        let texture=Texture::from_image(display,texture,&texture_settings).unwrap();
+        let texture=Texture::from_image(display,texture).unwrap();
 
         unsafe{
             let height=window_height/k; // Высота диалогового окна
@@ -52,7 +55,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
                     .font_size(24f32)
                     .align_x(AlignX::Left)
                     .align_y(AlignY::Up)
-                    .text_color(White);
+                    .text_colour(White);
 
             Self{
                 dialogue:DialogueFormatted::empty(),
@@ -124,34 +127,34 @@ impl<'a,'b> DialogueBox<'a,'b>{
         }
     }
 
-    pub fn draw_without_text(&mut self,c:&Context,g:&mut GameGraphics){
-        self.image.draw(&self.texture,&c.draw_state,c.transform,g);
+    pub fn draw_without_text(&mut self,draw_parameters:&DrawParameters,g:&mut GameGraphics){
+        self.image.draw(&self.texture,draw_parameters,g);
     }
 }
 
 impl<'a,'b> Drawable for DialogueBox<'a,'b>{
     fn set_alpha_channel(&mut self,alpha:f32){
-        self.image.color[3]=alpha;
+        self.image.colour[3]=alpha;
         //self.lines.set_alpha_channel(alpha);
     }
 
-    fn draw(&mut self,c:&Context,g:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&DrawParameters,g:&mut GameGraphics){
         let name=self.dialogue.get_name(self.dialogue_step);
 
-        self.image.draw(&self.texture,&c.draw_state,c.transform,g); // Основа
+        self.image.draw(&self.texture,draw_parameters,g); // Основа
 
-        self.name_base.draw(name,c,g,&mut self.glyphs); // Имя
+        self.name_base.draw(name,draw_parameters,g,&mut self.glyphs); // Имя
 
         // Реплика
         if self.whole_text{
-            self.lines.draw(c,g,&mut self.glyphs) // Вывод всего текста
+            self.lines.draw(draw_parameters,g,&mut self.glyphs) // Вывод всего текста
         }
         else{
             unsafe{
                 self.chars+=Settings.signs_per_frame; // Количество выводимых символов
             }
             // Вывод части текста
-            self.whole_text=self.lines.draw_part(self.chars as usize,c,g,&mut self.glyphs);
+            self.whole_text=self.lines.draw_part(self.chars as usize,draw_parameters,g,&mut self.glyphs);
         }
     }
 }

@@ -1,10 +1,25 @@
 use crate::*;
 
-use lib::game_engine::text::Glyphs;
+use engine::{
+    // statics
+    window_width,
+    window_height,
+    window_center,
+    // types
+    Colour,
+    // structs
+    text::Glyphs,
+    GameWindow,
+    // enums
+    GameWindowEvent,
+    MouseButton,
+    KeyboardButton,
+    music::Music,
+};
 
 const page_smooth:f32=Settings_page_smooth;
 
-const background_color:Color=Settings_page_color;
+const background_color:Colour=Settings_page_colour;
 
 pub struct SettingsPage<'a,'b,'d>{
     head:TextViewStaticLineDependent,
@@ -24,7 +39,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                     80f32,
                 ])
                 .font_size(40f32)
-                .text_color(White);
+                .text_colour(White);
 
 
         let signs_per_sec_slider_sets=SliderSettings::new()
@@ -65,7 +80,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
         }
     }
 
-    pub unsafe fn start(&mut self,window:&mut GameWindow)->Game{
+    pub unsafe fn start(&mut self,window:&mut GameWindow,music:&Music)->Game{
 
         match self.smooth(window){
             Game::Back=>return Game::Back,
@@ -84,7 +99,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                 
                 GameWindowEvent::Draw=>{ //Рендеринг
                     window.draw(|c,g|{
-                        g.clear_color(background_color);
+                        g.clear_colour(background_color);
 
                         self.head.draw(c,g,&mut self.glyphs);
 
@@ -111,8 +126,8 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                         MouseButton::Left=>{
                             Settings.signs_per_frame=self.signs_per_sec.released()/60f32;
 
-                            Settings.volume=self.volume.released()/100f32;
-                            music::set_volume(Settings.volume as f64); // Установка громкости
+                            Settings.volume=self.volume.released()/100f32*128f32;
+                            music.set_volume(Settings.volume); // Установка громкости
 
 
                             if self.back_button.released(){ // Кнопка "Назад"
@@ -141,11 +156,11 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
     pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
         window.set_new_smooth(page_smooth);
 
-        let mut background=Background::new(Settings_page_color,[
-            0f64,
-            0f64,
-            window_width as f64,
-            window_height as f64
+        let mut background=Background::new(Settings_page_colour,[
+            0f32,
+            0f32,
+            window_width,
+            window_height
         ]);
 
         // Плавное открытие
@@ -156,12 +171,9 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                 GameWindowEvent::Draw=>{ //Рендеринг
                     if 1f32<window.draw_smooth(|alpha,c,g|{
                         background.draw_smooth(alpha,c,g);
-
                         self.head.draw_smooth(alpha,c,g,&mut self.glyphs);
-
                         self.signs_per_sec.draw_smooth(alpha,c,g);
                         self.volume.draw_smooth(alpha,c,g);
-
                         self.back_button.set_alpha_channel(alpha);
                         self.back_button.draw(c,g,&mut self.glyphs);
                     }){

@@ -1,25 +1,10 @@
 use crate::{
-    // statics
-    mouse_cursor,
-    window_width,
-    window_height,
     //
     colors::*,
     Drawable,
-    GameGraphics,
-    text::{Glyphs,TextBase},
     Align,
     AlignX,
     AlignY,
-};
-
-use graphics::{
-    ellipse::Border,
-    ellipse::Ellipse,
-    line::Line,
-    types::Color,
-    rectangle::Rectangle,
-    Context,
 };
 
 mod text_views;

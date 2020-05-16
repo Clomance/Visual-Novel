@@ -1,12 +1,5 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use)]
 
-use graphics::{
-    types::Color,
-    rectangle::Rectangle,
-    Context,
-};
-
-
 mod sync_raw_ptr;
 pub use sync_raw_ptr::SyncRawPtr;
 
@@ -19,10 +12,7 @@ pub use colors::*;
 mod background;
 pub use background::Background;
 
-pub mod game_engine;
-pub use game_engine::*;
-
-pub mod user_interface;
+mod user_interface;
 pub use user_interface::*;
 
 // Выравнивание

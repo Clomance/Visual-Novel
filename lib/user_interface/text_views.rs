@@ -1,11 +1,14 @@
 use super::*;
 
-use crate::{
-    game_engine::{
-        draw_state::convert_draw_state,
-        text::{TextBase,Glyphs}
-    },
+use engine::{
+    // types
+    Colour,
+    // structs
+    text::{TextBase,Glyphs},
+    game_graphics::GameGraphics,
+    glium::DrawParameters,
 };
+
 
 const line_margin:f32=20f32; // Расстояние между строками
 
@@ -55,8 +58,8 @@ impl TextViewLineDependent{
         self.base.shift(dx,dy)
     }
 
-    pub fn draw(&mut self,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs){
-        self.base.base.draw(&self.base.line,c,g,glyphs);
+    pub fn draw(&mut self,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
+        self.base.base.draw(&self.base.line,draw_parameters,g,glyphs);
     }
 
     // Частичный вывод текста (Может пригодиться)
@@ -102,9 +105,9 @@ impl TextViewLineDependent{
     //     whole_text
     // }
 
-    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
         self.set_alpha_channel(alpha);
-        self.draw(c,g,glyphs)
+        self.draw(draw_parameters,g,glyphs)
     }
 }
 
@@ -204,13 +207,13 @@ impl TextViewLinedDependent{
         self.base.base.set_position([x,y]);
     }
 
-    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&Glyphs){
-       self.base.draw(context,graphics,glyphs)
+    pub fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
+       self.base.draw(draw_parameters,graphics,glyphs)
     }
 
     // Вывод части текста
-    pub fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs)->bool{
-        self.base.draw_part(chars,c,g,glyphs)
+    pub fn draw_part(&mut self,chars:usize,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs)->bool{
+        self.base.draw_part(chars,draw_parameters,g,glyphs)
     }
 }
 
@@ -237,7 +240,7 @@ impl TextViewStaticLineDependent{
         let (x,y)=settings.align.text_position(settings.rect,[line_len,font]);
 
         Self{
-            base:TextBase::new(settings.text_color,settings.font_size).position([x,y]),
+            base:TextBase::new(settings.text_colour,settings.font_size).position([x,y]),
             line:line
         }
     }
@@ -254,13 +257,13 @@ impl TextViewStaticLineDependent{
         self.base.shift(dx,dy)
     }
 
-    pub fn draw(&mut self,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs){
-        self.base.draw(&self.line,c,g,glyphs);
+    pub fn draw(&mut self,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
+        self.base.draw(&self.line,draw_parameters,g,glyphs);
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
         self.set_alpha_channel(alpha);
-        self.draw(c,g,glyphs)
+        self.draw(draw_parameters,g,glyphs)
     }
 }
 
@@ -351,7 +354,7 @@ impl TextViewStaticLinedDependent{
         };
 
         Self{
-            base:TextBase::new(settings.text_color,settings.font_size).position([x,y]),
+            base:TextBase::new(settings.text_colour,settings.font_size).position([x,y]),
             lines
         }
     }
@@ -360,7 +363,7 @@ impl TextViewStaticLinedDependent{
         self.base.set_alpha_channel(alpha);
     }
 
-    pub fn draw(&mut self,context:&Context,graphics:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
         let position=self.base.position; // Сохранение начальной позиции
 
         let dy=self.base.font_size+line_margin;
@@ -369,7 +372,7 @@ impl TextViewStaticLinedDependent{
             let dx=line.0; // Выравнивание строки
             self.base.shift_x(dx);
 
-            self.base.draw(&line.1,context,graphics,glyphs);
+            self.base.draw(&line.1,draw_parameters,graphics,glyphs);
 
             self.base.shift(-dx,dy);
         }
@@ -378,9 +381,7 @@ impl TextViewStaticLinedDependent{
     }
 
     // Вывод части текста
-    pub fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&Glyphs)->bool{
-        let draw_parameters=convert_draw_state(&c.draw_state);
-
+    pub fn draw_part(&mut self,chars:usize,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs)->bool{
         let mut position=[self.base.position[0] as f32,self.base.position[1] as f32];
 
         let dy=self.base.font_size+line_margin as f32;
@@ -401,7 +402,7 @@ impl TextViewStaticLinedDependent{
                 chars_passed+=1;
 
                 let character=glyphs.character_positioned(ch,self.base.font_size,position);
-                self.base.draw_character(&character,&draw_parameters,g);
+                self.base.draw_character(&character,draw_parameters,g);
 
                 // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
                 position[0]+=character.width();
@@ -421,7 +422,7 @@ pub struct TextViewSettings<S:Into<String>>{
     rect:[f32;4], // [x1,y1,width,height] - сюда вписывается текст
     text:S,
     font_size:f32,
-    text_color:Color,
+    text_colour:Colour,
     align:Align,
 }
 
@@ -431,7 +432,7 @@ impl<S:Into<String>> TextViewSettings<S>{
             rect:rect,
             text:text,
             font_size:20f32,
-            text_color:Black,
+            text_colour:Black,
             align:Align::center()
         }
     }
@@ -441,8 +442,8 @@ impl<S:Into<String>> TextViewSettings<S>{
         self
     }
 
-    pub fn text_color(mut self,color:Color)->TextViewSettings<S>{
-        self.text_color=color;
+    pub fn text_colour(mut self,colour:Colour)->TextViewSettings<S>{
+        self.text_colour=colour;
         self
     }
 

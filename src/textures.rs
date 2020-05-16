@@ -1,5 +1,18 @@
 use crate::*;
-use image::GenericImageView;
+
+use engine::{
+    // statics
+    window_width,
+    window_height,
+    // 
+    image::{
+        self,
+        GenericImageView,
+        DynamicImage,
+        RgbaImage,
+        imageops::FilterType,
+    }
+};
 
 pub struct Textures{
     game_wallpapers:Vec<PathBuf>,
@@ -178,13 +191,6 @@ fn load_characters_textutres(height:f32)->Vec<RgbaImage>{
 
     char_textures
 }
-
-use image::{
-    self,
-    DynamicImage,
-    RgbaImage,
-    imageops::FilterType,
-};
 
 // Загрузка изображений
 fn load_character_image<P:AsRef<Path>>(path:P,height:f32)->RgbaImage{

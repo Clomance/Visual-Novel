@@ -1,5 +1,18 @@
 use super::*;
 
+use engine::{
+    //statics
+    window_width,
+    window_height,
+    // types
+    Colour,
+    // structs
+    game_graphics::GameGraphics,
+    mouse_cursor,
+    text::Glyphs,
+    glium::DrawParameters,
+};
+
 const head_margin:f32=50f32; // Расстояние между заголовком и кнопками
 const button_margin:f32=10f32;
 const dmargin:f32=head_margin-button_margin; // Для расчёта высоты меню - чтобы не вычитать button_margin
@@ -51,19 +64,15 @@ impl<'a> Menu<'a>{
                 ])
                 .align_x(settings.align.x.clone())
                 .font_size(settings.head_font_size)
-                .text_color(settings.head_text_color);
+                .text_colour(settings.head_text_color);
 
         // Положение верней кнопки по Y
         y+=settings.head_size[1]+head_margin;
 
         // Положение кнопок по X
         x=match settings.align.x{
-            AlignX::Right=>unsafe{
-                x0+window_width-settings.buttons_size[0]
-            },
-            AlignX::Center=>unsafe{
-                x0+(window_width-settings.buttons_size[0])/2f32
-            },
+            AlignX::Right=>x0+width-settings.buttons_size[0],
+            AlignX::Center=>x0+(width-settings.buttons_size[0])/2f32,
             AlignX::Left=>x0,
         };
 
@@ -83,7 +92,7 @@ impl<'a> Menu<'a>{
             let text=text.clone();
             // Настройки кнопок (text.to_string() странно работает: требует fmt::Display без to_string)
             let button_sets=ButtonSettings::<String>::new(text.into(),button_rect)
-                    .background_color(settings.buttons_color)
+                    .background_colour(settings.buttons_color)
                     .font_size(settings.buttons_font_size);
 
             let button=ButtonDependent::new(button_sets,&glyphs);
@@ -134,11 +143,11 @@ impl<'a> Drawable for Menu<'a>{
         }
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
-        self.head.draw(&context,graphics,&self.glyphs);
+    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+        self.head.draw(draw_parameters,graphics,&self.glyphs);
 
         for button in &mut self.buttons{
-            button.draw(context,graphics,&self.glyphs);
+            button.draw(draw_parameters,graphics,&self.glyphs);
         }
     }
 }
@@ -150,11 +159,11 @@ pub struct MenuSettings<'a,S:Into<String>,B:Into<String>+'a>{
     head_text:S, // Текст заголовка меню
     head_size:[f32;2], // Ширина и высота заголовка
     head_font_size:f32,
-    head_text_color:Color,
+    head_text_color:Colour,
     buttons_size:[f32;2], // [width,height], по умолчанию [100, 60]
     buttons_text:&'a [B],
     buttons_font_size:f32,
-    buttons_color:Color,
+    buttons_color:Colour,
 }
 
 impl<'a,S:Into<String>,B:Into<String>+'a> MenuSettings<'a,S,B>{

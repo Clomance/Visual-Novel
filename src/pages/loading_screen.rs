@@ -1,4 +1,23 @@
-use crate::*;
+use crate::{
+    loading,
+    make_screenshot,
+    Game,
+};
+
+use lib::White;
+
+use engine::{
+    // statics
+    window_width,
+    window_height,
+    // structs
+    GameWindow,
+    image_base::ImageBase,
+    game_texture::Texture,
+    // enums
+    GameWindowEvent,
+    KeyboardButton,
+};
 
 pub struct LoadingScreen{
     logo_base:ImageBase,
@@ -7,16 +26,14 @@ pub struct LoadingScreen{
 
 impl LoadingScreen{
     pub fn new(window:&mut GameWindow)->LoadingScreen{
-        let texture_settings=TextureSettings::new();
-
         Self{
-            logo_base:ImageBase::new(White,[
-                0f32,
-                0f32,
+            logo_base:ImageBase::new(White,unsafe{[
+                (window_width-200f32)/2f32,
+                (window_height-200f32)/2f32,
                 200f32,
                 200f32
-            ]),
-            logo:Texture::from_path(window.display(),"./resources/images/logo.png",&texture_settings).unwrap(),
+            ]}),
+            logo:Texture::from_path(window.display(),"./resources/images/logo.png").unwrap(),
         }
     }
 
@@ -24,9 +41,6 @@ impl LoadingScreen{
             where F:FnOnce()->T,
                 F:Send+'static,
                 T:Send+'static{
-        let half_size=100f64;
-        let (x,y)=(window_width as f64/2f64,window_height as f64/2f64);
-        let mut rotation=0f64;
 
         let thead=std::thread::spawn(background);
 
@@ -44,10 +58,9 @@ impl LoadingScreen{
 
                 GameWindowEvent::Draw=>{
                     window.draw(|c,g|{
-                        g.clear_color(White);
-                        self.logo_base.draw(&self.logo,&c.draw_state,c.transform.trans(x,y).rot_rad(rotation).trans(-half_size,-half_size),g);
+                        g.clear_colour(White);
+                        self.logo_base.draw(&self.logo,c,g);
                     });
-                    rotation+=0.1f64;
                 }
 
                 GameWindowEvent::KeyboardReleased(button)=>{
@@ -67,7 +80,7 @@ impl LoadingScreen{
 
                 GameWindowEvent::Draw=>{
                     window.draw(|_context,g|{
-                        g.clear_color(White);
+                        g.clear_colour(White);
                     });
                     frames-=1;
                     if frames==0{

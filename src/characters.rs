@@ -1,6 +1,11 @@
 use crate::*;
 
-use glium::Display;
+use engine::{
+    image_base::ImageBase,
+    game_texture::Texture,
+    game_graphics::GameGraphics,
+    glium::{Display,DrawParameters},
+};
 
 const focused_resize:f32=4f32;
 const focused_movement:f32=focused_resize/2f32;
@@ -70,10 +75,9 @@ impl CharactersView{
             [x,y,width,height]
         };
 
-        let settings=TextureSettings::new();
         let character=Character{
             image:ImageBase::new(White,rect),
-            texture:Texture::from_image(display,character,&settings).unwrap(),
+            texture:Texture::from_image(display,character).unwrap(),
         };
 
         self.characters.push(character)
@@ -103,13 +107,13 @@ impl CharactersView{
 impl Drawable for CharactersView{
     fn set_alpha_channel(&mut self,alpha:f32){
         for ch in &mut self.characters{
-            ch.image.color[3]=alpha;
+            ch.image.colour[3]=alpha;
         }
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
+    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
         for ch in &mut self.characters{
-            ch.image.draw(&ch.texture,&context.draw_state,context.transform,graphics);
+            ch.image.draw(&ch.texture,draw_parameters,graphics);
         }
     }
 }

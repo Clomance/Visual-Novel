@@ -1,25 +1,35 @@
 use crate::*;
 
+use engine::{
+    // types
+    Colour,
+    // structs
+    game_graphics::{
+        GameGraphics,
+        Rectangle
+    },
+};
+
+use engine::glium::DrawParameters;
+
 pub struct Background{
-    rect:[f64;4],
     base:Rectangle,
 }
 
 impl Background{
-    pub fn new(color:Color,rect:[f64;4])->Background{
+    pub fn new(colour:Colour,rect:[f32;4])->Background{
         Self{
-            rect,
-            base:Rectangle::new(color)
+            base:Rectangle::new(rect,colour)
         }
     }
 }
 
 impl Drawable for Background{
     fn set_alpha_channel(&mut self,alpha:f32){
-        self.base.color[3]=alpha
+        self.base.colour[3]=alpha
     }
 
-    fn draw(&mut self,context:&Context,graphics:&mut GameGraphics){
-        self.base.draw(self.rect,&context.draw_state,context.transform,graphics)
+    fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
+        self.base.draw(draw_parameters,graphics)
     }
 }

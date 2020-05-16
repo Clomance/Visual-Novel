@@ -1,16 +1,26 @@
-use std::path::Path;
-use std::collections::VecDeque;
-
 use super::{
-    Graphics2D,
+    game_graphics::Graphics2D,
+    game_graphics::GameGraphics,
     mouse_cursor::*,
-    GameGraphics,
+};
+
+use std::{
+    //default::Default,
+    collections::VecDeque,
+    path::Path,
 };
 
 use glium::{
     Display,
     Surface,
-    Frame
+    Frame,
+    draw_parameters::{
+        DrawParameters,
+        Blend,
+        BlendingFunction,
+        LinearBlendingFactor,
+        BackfaceCullingMode,
+    },
 };
 
 use glium::glutin::{
@@ -379,18 +389,14 @@ impl GameWindow{
         frame.finish();
     }
 
-    pub fn draw<F:FnOnce(&graphics::Context,&mut GameGraphics)>(&mut self,f:F){
-        let viewport=graphics::Viewport{
-            rect:[0,0,self.width as i32,self.height as i32],
-            draw_size:[self.width,self.height],
-            window_size:unsafe{[window_width as f64,window_height as f64]},
-        };
+    pub fn draw<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(&mut self,f:F){
+        let mut draw_parameters=default_draw_parameters();
 
         let mut frame=self.display().draw();
 
         let mut g=GameGraphics::new(&mut self.graphics,&mut frame);
-        let context=graphics::Context::new_viewport(viewport);
-        f(&context,&mut g);
+
+        f(&mut draw_parameters,&mut g);
 
         unsafe{
             let mouse_position=mouse_cursor.position();
@@ -404,18 +410,14 @@ impl GameWindow{
 
     // Рисует курсор и выполняет замыкание f
     // Выдаёт изменяющийся альфа-канал для рисования, возвращает следующее значение альфа-канала
-    pub fn draw_smooth<F:FnOnce(f32,&graphics::Context,&mut GameGraphics)>(&mut self,f:F)->f32{
-        let viewport=graphics::Viewport{
-            rect:[0,0,self.width as i32,self.height as i32],
-            draw_size:[self.width,self.height],
-            window_size:unsafe{[window_width as f64,window_height as f64]},
-        };
+    pub fn draw_smooth<F:FnOnce(f32,&mut DrawParameters,&mut GameGraphics)>(&mut self,f:F)->f32{
+        let mut draw_parameters=default_draw_parameters();
 
         let mut frame=self.display().draw();
 
         let mut g=GameGraphics::new(&mut self.graphics,&mut frame);
-        let context=graphics::Context::new_viewport(viewport);
-        f(self.alpha_channel,&context,&mut g);
+
+        f(self.alpha_channel,&mut draw_parameters,&mut g);
 
         unsafe{
             let mouse_position=mouse_cursor.position();
@@ -623,4 +625,24 @@ pub fn load_window_icon()->Icon{
     let height=image.height();
 
     Icon::from_rgba(vec,width,height).unwrap()
+}
+
+pub fn default_draw_parameters<'a>()->DrawParameters<'a>{
+    let mut draw_parameters=DrawParameters::default();
+
+    draw_parameters.blend=Blend{
+        color:BlendingFunction::Addition{
+            source:LinearBlendingFactor::SourceAlpha,
+            destination:LinearBlendingFactor::OneMinusSourceAlpha,
+        },
+        alpha:BlendingFunction::Addition{
+            source:LinearBlendingFactor::One,
+            destination:LinearBlendingFactor::One,
+        },
+        constant_value:(0.0,0.0,0.0,0.0),
+    };
+
+    draw_parameters.backface_culling=BackfaceCullingMode::CullingDisabled;
+
+    draw_parameters
 }
