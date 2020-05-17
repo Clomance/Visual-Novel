@@ -418,7 +418,7 @@ const paths:&[&str]=&[
     "./resources/images/characters",
     "./resources/images/wallpapers",
     "./resources/dialogues",
-    "./settings/page_table.txt"
+    "./resources/page_table.txt"
 ];
 
 // Формат файла
@@ -517,7 +517,7 @@ fn make_page_table_file(){
             dialogues_characters.push(dialogue_characters);
         }
 
-        let table_file=OpenOptions::new().read(true).open("settings/page_table.txt").unwrap();
+        let table_file=OpenOptions::new().read(true).open("resources/page_table.txt").unwrap();
 
         let mut reader=BufReader::new(table_file);
         let mut line=String::new();
