@@ -1,8 +1,7 @@
 use crate::*;
 
 use engine::{
-    image_base::ImageBase,
-    game_texture::Texture,
+    image::{ImageBase,Texture},
     graphics::GameGraphics,
     glium::{Display,DrawParameters},
 };
@@ -34,8 +33,10 @@ struct Character{
 
 impl Character{
     pub fn shift(&mut self,dx:f32,dy:f32){
-        self.image.rect[0]+=dx;
-        self.image.rect[1]+=dy;
+        self.image.x1+=dx/movement_scale;
+        self.image.y1+=dy/movement_scale;
+        self.image.x2+=dx/movement_scale;
+        self.image.y2+=dy/movement_scale;
     }
 }
 
@@ -85,14 +86,6 @@ impl CharactersView{
 
     pub fn clear(&mut self){
         self.characters.clear()
-    }
-
-    pub fn set_focus(&mut self,index:usize){
-        let rect=&mut self.characters[index].image.rect;
-        rect[0]-=focused_movement;
-        rect[1]-=focused_movement;
-        rect[2]+=focused_resize;
-        rect[3]+=focused_resize;
     }
 
     pub fn mouse_shift(&mut self,mut dx:f32,mut dy:f32){

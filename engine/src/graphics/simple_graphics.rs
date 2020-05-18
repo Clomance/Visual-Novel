@@ -25,27 +25,9 @@ pub struct SimpleGraphics{
 
 impl SimpleGraphics{
     pub fn new(display:&Display)->SimpleGraphics{
-        let vertex_shader=r#"
-            #version 140
+        let vertex_shader=include_str!("shaders/simple_vertex_shader.glsl");
 
-            in vec2 position;
-
-            void main() {
-                gl_Position = vec4(position, 0.0, 1.0);
-            }
-        "#;
-
-        let fragment_shader=r#"
-            #version 140
-
-            out vec4 color;
-
-            uniform vec4 colour;
-
-            void main() {
-                color = colour;
-            }
-        "#;
+        let fragment_shader=include_str!("shaders/simple_fragment_shader.glsl");
 
         Self{
             vertex_buffer:VertexBuffer::empty_dynamic(display,Points_limit).unwrap(),

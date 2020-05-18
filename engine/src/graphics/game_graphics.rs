@@ -2,8 +2,7 @@ use crate::{
     // types
     Colour,
     // structs
-    game_texture::Texture,
-    image_base::ImageBase,
+    image::{ImageBase,Texture},
     text::Character,
 };
 
@@ -100,5 +99,10 @@ impl<'d,'s> GameGraphics<'d,'s>{
     #[inline(always)] // Рисует тектстуру на основе image_base
     pub fn draw_texture(&mut self,image_base:&ImageBase,texture:&Texture,draw_parameters:&DrawParameters){
         self.graphics.texture.draw_texture(image_base,texture,self.frame,draw_parameters)
+    }
+
+    #[inline(always)] // Рисует тектстуру на основе image_base c поворотом в 'angle' градусов
+    pub fn draw_rotate_texture(&mut self,image_base:&ImageBase,texture:&Texture,angle:f32,draw_parameters:&mut DrawParameters){
+        self.graphics.texture.draw_rotate_texture(image_base,texture,angle,self.frame,draw_parameters)
     }
 }

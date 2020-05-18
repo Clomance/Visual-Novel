@@ -9,10 +9,8 @@ use engine::{
     window_height,
     // structs
     graphics::GameGraphics,
-    image_base::ImageBase,
-    game_texture::Texture,
+    image::{ImageBase,Texture,image::RgbaImage},
     glium::{Display,DrawParameters},
-    image::RgbaImage,
 };
 
 pub const wallpaper_movement_scale:f32=16f32;
@@ -42,8 +40,10 @@ impl Wallpaper{
     }
 
     pub fn mouse_shift(&mut self,dx:f32,dy:f32){
-        self.image.rect[0]+=dx/wallpaper_movement_scale;
-        self.image.rect[1]+=dy/wallpaper_movement_scale;
+        self.image.x1+=dx/wallpaper_movement_scale;
+        self.image.y1+=dy/wallpaper_movement_scale;
+        self.image.x2+=dx/wallpaper_movement_scale;
+        self.image.y2+=dy/wallpaper_movement_scale;
     }
 
     // Обновляет картинка (она должна быть такого же размера, как и предыдущая)

@@ -41,31 +41,9 @@ pub struct TextGraphics{
 impl TextGraphics{
     // 
     pub fn new(display:&Display)->TextGraphics{
-        let vertex_shader=r#"
-            #version 140
+        let vertex_shader=include_str!("shaders/text_vertex_shader.glsl");
 
-            in vec3 p;
-
-            out float alpha;
-
-            void main() {
-                alpha = p.z;
-                gl_Position = vec4(p.x, p.y, 0.0, 1.0);
-            }
-        "#;
-
-        let fragment_shader=r#"
-            #version 140
-
-            in float alpha;
-            out vec4 color;
-
-            uniform vec4 colour;
-
-            void main() {
-                color = vec4(colour.xyz, colour.w * alpha);
-            }
-        "#;
+        let fragment_shader=include_str!("shaders/text_fragment_shader.glsl");
 
         Self{
             vertex_buffer:VertexBuffer::empty_dynamic(display,Character_pixel_limit).unwrap(),

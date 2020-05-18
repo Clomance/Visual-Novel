@@ -1,5 +1,5 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,dead_code)]
-//#![windows_subsystem="windows"]
+#![windows_subsystem="windows"]
 
 use engine::{
     // statics
@@ -13,7 +13,7 @@ use engine::{
     GameWindowEvent,
     MouseButton,
     KeyboardButton,
-    image::RgbaImage,
+    image::image::RgbaImage,
     music
 };
 

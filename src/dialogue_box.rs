@@ -1,8 +1,7 @@
 use crate::*;
 
 use engine::{
-    image_base::ImageBase,
-    game_texture::Texture,
+    image::{ImageBase,Texture},
     text::{TextBase,Glyphs},
     graphics::GameGraphics,
     glium::{Display,DrawParameters},
@@ -127,7 +126,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
         }
     }
 
-    pub fn draw_without_text(&mut self,draw_parameters:&DrawParameters,g:&mut GameGraphics){
+    pub fn draw_without_text(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
         self.image.draw(&self.texture,draw_parameters,g);
     }
 }

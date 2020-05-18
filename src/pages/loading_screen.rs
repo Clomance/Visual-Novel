@@ -12,8 +12,7 @@ use engine::{
     window_height,
     // structs
     GameWindow,
-    image_base::ImageBase,
-    game_texture::Texture,
+    image::{ImageBase,Texture},
     // enums
     GameWindowEvent,
     KeyboardButton,
@@ -41,7 +40,8 @@ impl LoadingScreen{
             where F:FnOnce()->T,
                 F:Send+'static,
                 T:Send+'static{
-
+                
+        let mut t=0f32;
         let thead=std::thread::spawn(background);
 
         'loading:while let Some(event)=window.next_event(){
@@ -59,8 +59,12 @@ impl LoadingScreen{
                 GameWindowEvent::Draw=>{
                     window.draw(|c,g|{
                         g.clear_colour(White);
-                        self.logo_base.draw(&self.logo,c,g);
+                        self.logo_base.draw_rotate(&self.logo,t,c,g);
                     });
+                    t+=0.05f32;
+                    if t>360f32{
+                        t=0f32;
+                    }
                 }
 
                 GameWindowEvent::KeyboardReleased(button)=>{

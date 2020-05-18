@@ -2,8 +2,7 @@ use crate::{
     // statics
     window_center,
     // structs
-    image_base::ImageBase,
-    game_texture::Texture,
+    image::{ImageBase,Texture},
 };
 
 use glium::{
@@ -33,54 +32,40 @@ struct TexturedVertex{
 
 pub struct TextureGraphics{
     vertex_buffer:VertexBuffer<TexturedVertex>,
-    program:Program,
+    draw_program:Program,
+    draw_rotate:Program,
 }
 
 impl TextureGraphics{
     pub fn new(display:&Display)->TextureGraphics{
-        let vertex_shader=r#"
-            #version 140
+        let draw_rotate=include_str!("shaders/texture_rotation_vertex_shader.glsl");
 
-            in vec2 position;
-            in vec2 tex_coords;
+        let vertex_shader=include_str!("shaders/texture_vertex_shader.glsl");
 
-            out vec2 v_tex_coords;
-
-            void main() {
-                v_tex_coords = tex_coords;
-                gl_Position = vec4(position, 0.0, 1.0);
-            }
-        "#;
-
-        let fragment_shader=r#"
-            #version 140
-
-            in vec2 v_tex_coords;
-
-            out vec4 color;
-
-            uniform sampler2D tex;
-
-            void main() {
-                color = texture(tex, v_tex_coords);
-            }
-        "#;
+        let fragment_shader=include_str!("shaders/texture_fragment_shader.glsl");
 
         Self{
             vertex_buffer:VertexBuffer::empty_dynamic(display,4).unwrap(),
-            program:Program::from_source(display,vertex_shader,fragment_shader,None).unwrap(),
+            draw_program:Program::from_source(display,vertex_shader,fragment_shader,None).unwrap(),
+            draw_rotate:Program::from_source(display,draw_rotate,fragment_shader,None).unwrap(),
         }
     }
 
-    pub fn draw_texture(&self,image_base:&ImageBase,texture:&Texture,frame:&mut Frame,draw_parameters:&DrawParameters){
+    pub fn draw_texture(
+        &self,
+        image_base:&ImageBase,
+        texture:&Texture,
+        frame:&mut Frame,
+        draw_parameters:&DrawParameters
+    ){
         let indices=NoIndices(PrimitiveType::TriangleStrip);
         
         let (x1,y1,x2,y2)=unsafe{(
-            image_base.rect[0]/window_center[0]-1f32,
-            1f32-image_base.rect[1]/window_center[1],
+            image_base.x1/window_center[0]-1f32,
+            1f32-image_base.y1/window_center[1],
 
-            (image_base.rect[0]+image_base.rect[2])/window_center[0]-1f32,
-            1f32-(image_base.rect[1]+image_base.rect[3])/window_center[1]
+            image_base.x2/window_center[0]-1f32,
+            1f32-image_base.y2/window_center[1]
         )};
 
         let rect=[
@@ -107,8 +92,59 @@ impl TextureGraphics{
         frame.draw(
             &self.vertex_buffer,
             indices,
-            &self.program,
+            &self.draw_program,
             &uniform!{tex:&texture.0},
+            draw_parameters
+        );
+    }
+
+    pub fn draw_rotate_texture(
+        &self,
+        image_base:&ImageBase,
+        texture:&Texture,
+        angle:f32,
+        frame:&mut Frame,
+        draw_parameters:&mut DrawParameters
+    ){
+        let indices=NoIndices(PrimitiveType::TriangleStrip);
+        
+        let (x1,y1,x2,y2)=(
+            image_base.x1,
+            image_base.y1,
+            image_base.x2,
+            image_base.y2
+        );
+
+        let rect=[
+            TexturedVertex{
+                position:[x1,y1],
+                tex_coords:[0.0,1.0],
+            },
+            TexturedVertex{
+                position:[x1,y2],
+                tex_coords:[0.0,0.0],
+            },
+            TexturedVertex{
+                position:[x2,y1],
+                tex_coords:[1.0,1.0],
+            },
+            TexturedVertex{
+                position:[x2,y2],
+                tex_coords:[1.0,0.0],
+            }
+        ];
+
+        self.vertex_buffer.write(&rect);
+
+        frame.draw(
+            &self.vertex_buffer,
+            indices,
+            &self.draw_rotate,
+            &uniform!{
+                tex:&texture.0,
+                angle:angle,
+                window_center:unsafe{window_center}
+            },
             draw_parameters
         );
     }

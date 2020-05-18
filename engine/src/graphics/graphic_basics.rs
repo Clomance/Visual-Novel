@@ -50,6 +50,17 @@ impl Rectangle{
         }
     }
 
+    // rect - [x1,y1,x2,y2]
+    pub const fn raw(rect:[f32;4],colour:Colour)->Rectangle{
+        Self{
+            x1:rect[0],
+            y1:rect[1],
+            x2:rect[2],
+            y2:rect[3],
+            colour
+        }
+    }
+
     #[inline(always)]
     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         graphics.draw_simple(self,draw_parameters)
