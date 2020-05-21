@@ -1,4 +1,21 @@
-use crate::*;
+use crate::{
+    make_screenshot,
+    Game,
+    Settings,
+};
+
+use super::{
+    default_page_smooth,
+    EnterUserName,
+    SettingsPage,
+};
+
+use lib::{
+    Wallpaper,
+    Menu,
+    MenuSettings,
+    Drawable,
+};
 
 use engine::{
     // statics
@@ -8,15 +25,14 @@ use engine::{
     text::Glyphs,
     graphics::GameGraphics,
     // enums
-    GameWindowEvent,
+    WindowEvent,
     KeyboardButton,
     MouseButton,
     glium::DrawParameters,
     music::Music,
 };
 
-
-const page_smooth:f32=Main_menu_page_smooth; // Сглаживание переходов - 1 к количеству кадров перехода
+const page_smooth:f32=default_page_smooth; // Сглаживание переходов - 1 к количеству кадров перехода
 
 enum MenuButtons{
     Continue,
@@ -82,21 +98,21 @@ impl<'a,'b> MainMenu<'a,'b>{
             while let Some(event)=window.next_event(){
                 
                 match event{
-                    GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                    WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                    GameWindowEvent::Draw=>{ //Рендеринг
+                    WindowEvent::Draw=>{ //Рендеринг
                         window.draw(|c,g|{
                             self.wallpaper.draw(c,g);
                             self.draw(c,g);
                         });
                     }
 
-                    GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                    WindowEvent::MouseMovementDelta((dx,dy))=>{
                         self.wallpaper.mouse_shift(dx,dy);
                         self.menu.mouse_shift(dx,dy)
                     }
 
-                    GameWindowEvent::MousePressed(button)=>{
+                    WindowEvent::MousePressed(button)=>{
                         match button{
                             MouseButton::Left=>{
                                 self.menu.pressed();
@@ -105,7 +121,7 @@ impl<'a,'b> MainMenu<'a,'b>{
                         }
                     }
 
-                    GameWindowEvent::MouseReleased(button)=>{
+                    WindowEvent::MouseReleased(button)=>{
                         match button{
                             MouseButton::Left=>{
                                 // Нажата одна из кнопок меню
@@ -146,7 +162,7 @@ impl<'a,'b> MainMenu<'a,'b>{
                         }
                     }
 
-                    GameWindowEvent::KeyboardReleased(button)=>{
+                    WindowEvent::KeyboardReleased(button)=>{
                         if button==KeyboardButton::F5{
                             make_screenshot(window)
                         }
@@ -168,14 +184,14 @@ impl<'a,'b> MainMenu<'a,'b>{
         while let Some(event)=window.next_event(){
             
             match event{
-                GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                WindowEvent::MouseMovementDelta((dx,dy))=>{
                     self.wallpaper.mouse_shift(dx,dy);
                     self.menu.mouse_shift(dx,dy)
                 }
 
-                GameWindowEvent::Draw=>{
+                WindowEvent::Draw=>{
                     if 1f32<window.draw_smooth(|alpha,c,g|{
                         self.draw_smooth(alpha,c,g);
                     }){

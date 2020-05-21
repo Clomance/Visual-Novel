@@ -4,7 +4,7 @@ use crate::{
     Game,
 };
 
-use lib::colors::White;
+use lib::colours::White;
 
 use engine::{
     // statics
@@ -14,7 +14,7 @@ use engine::{
     GameWindow,
     image::{ImageBase,Texture},
     // enums
-    GameWindowEvent,
+    WindowEvent,
     KeyboardButton,
 };
 
@@ -50,13 +50,13 @@ impl LoadingScreen{
                 break 'loading
             }
             match event{
-                GameWindowEvent::Exit=>{ // Закрытие игры
+                WindowEvent::Exit=>{ // Закрытие игры
                     loading=false;
                     let _result=thead.join();
                     return Game::Exit
                 }
 
-                GameWindowEvent::Draw=>{
+                WindowEvent::Draw=>{
                     window.draw(|c,g|{
                         g.clear_colour(White);
                         self.logo_base.draw_rotate(&self.logo,t,c,g);
@@ -67,7 +67,7 @@ impl LoadingScreen{
                     }
                 }
 
-                GameWindowEvent::KeyboardReleased(button)=>{
+                WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
                         make_screenshot(window)
                     }
@@ -80,9 +80,9 @@ impl LoadingScreen{
         let mut frames=5;
         while let Some(event)=window.next_event(){
             match event{
-                GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::Draw=>{
+                WindowEvent::Draw=>{
                     window.draw(|_context,g|{
                         g.clear_colour(White);
                     });
@@ -92,7 +92,7 @@ impl LoadingScreen{
                     }
                 }
 
-                GameWindowEvent::KeyboardReleased(button)=>{
+                WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
                         make_screenshot(window)
                     }

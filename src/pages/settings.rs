@@ -1,4 +1,21 @@
-use crate::*;
+use crate::{
+    make_screenshot,
+    Game,
+    Settings,
+};
+
+use super::default_page_smooth;
+
+use lib::{
+    colours::{White,Settings_page_colour},
+    Drawable,
+    Slider,
+    SliderSettings,
+    TextViewSettings,
+    TextViewStaticLineDependent,
+    ButtonDependent,
+    ButtonSettings,
+};
 
 use engine::{
     // statics
@@ -7,17 +24,18 @@ use engine::{
     window_center,
     // types
     Colour,
-    // structs
-    text::Glyphs,
-    GameWindow,
     // enums
-    GameWindowEvent,
+    WindowEvent,
     MouseButton,
     KeyboardButton,
     music::Music,
+    // structs
+    text::Glyphs,
+    GameWindow,
+    graphics::Rectangle,
 };
 
-const page_smooth:f32=Settings_page_smooth;
+const page_smooth:f32=default_page_smooth;
 
 const background_color:Colour=Settings_page_colour;
 
@@ -90,14 +108,14 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
 
         while let Some(event)=window.next_event(){
             match event{
-                GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::MouseMovementDelta(_)=>{
+                WindowEvent::MouseMovementDelta(_)=>{
                     self.signs_per_sec.grab();
                     self.volume.grab();
                 }
                 
-                GameWindowEvent::Draw=>{ //Рендеринг
+                WindowEvent::Draw=>{ //Рендеринг
                     window.draw(|c,g|{
                         g.clear_colour(background_color);
 
@@ -110,7 +128,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                     });
                 }
             
-                GameWindowEvent::MousePressed(button)=>{
+                WindowEvent::MousePressed(button)=>{
                     match button{
                         MouseButton::Left=>{
                             self.back_button.pressed();
@@ -121,7 +139,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                     }
                 }
 
-                GameWindowEvent::MouseReleased(button)=>{
+                WindowEvent::MouseReleased(button)=>{
                     match button{
                         MouseButton::Left=>{
                             Settings.signs_per_frame=self.signs_per_sec.released()/60f32;
@@ -138,7 +156,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                     }
                 }
 
-                GameWindowEvent::KeyboardReleased(button)=>{
+                WindowEvent::KeyboardReleased(button)=>{
                     match button{
                         KeyboardButton::F5=>make_screenshot(window),
                         KeyboardButton::Escape=>return Game::Back,
@@ -156,21 +174,24 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
     pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
         window.set_new_smooth(page_smooth);
 
-        let mut background=Background::new(Settings_page_colour,[
-            0f32,
-            0f32,
-            window_width,
-            window_height
-        ]);
+        let mut background=Rectangle::new([
+                0f32,
+                0f32,
+                window_width,
+                window_height
+            ],
+            Settings_page_colour
+        );
 
         // Плавное открытие
         while let Some(event)=window.next_event(){
             match event{
-                GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::Draw=>{ //Рендеринг
+                WindowEvent::Draw=>{ //Рендеринг
                     if 1f32<window.draw_smooth(|alpha,c,g|{
-                        background.draw_smooth(alpha,c,g);
+                        background.colour[3]=alpha;
+                        background.draw(c,g);
                         self.head.draw_smooth(alpha,c,g,&mut self.glyphs);
                         self.signs_per_sec.draw_smooth(alpha,c,g);
                         self.volume.draw_smooth(alpha,c,g);
@@ -181,7 +202,7 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                     }
                 }
 
-                GameWindowEvent::KeyboardReleased(button)=>{
+                WindowEvent::KeyboardReleased(button)=>{
                     match button{
                         KeyboardButton::F5=>make_screenshot(window),
                         KeyboardButton::Escape=>return Game::Back,

@@ -1,7 +1,23 @@
-use crate::*;
+use crate::{
+    Dialogue,
+    DialogueFormatted,
+    Settings,
+};
+
+use lib::{
+    AlignX,
+    AlignY,
+    Drawable,
+    colours::White,
+    TextViewLinedDependent,
+    TextViewSettings
+};
 
 use engine::{
-    image::{ImageBase,Texture},
+    mouse_cursor,
+    window_height,
+    window_width,
+    image::{ImageBase,Texture,image::RgbaImage},
     text::{TextBase,Glyphs},
     graphics::GameGraphics,
     glium::{Display,DrawParameters},
@@ -9,7 +25,7 @@ use engine::{
 
 const k:f32=3.3f32; // Отношение размера окна игры к диалоговому окну
 
-const font_size:u32=24u32;
+const font_size:f32=24f32;
 
 
 pub struct DialogueBox<'a,'b>{
@@ -51,7 +67,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
                         (window_width-2f32*line_position[0]),
                         height*0.8f32,
                     ])
-                    .font_size(24f32)
+                    .font_size(font_size)
                     .align_x(AlignX::Left)
                     .align_y(AlignY::Up)
                     .text_colour(White);
@@ -65,7 +81,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
                 lines:TextViewLinedDependent::new(line_settings,&glyphs),
 
                 // Имя
-                name_base:TextBase::new(White,font_size as f32)
+                name_base:TextBase::new(White,font_size)
                         .position([name_position[0],name_position[1]]),
 
                 image:ImageBase::new(White,[
@@ -81,10 +97,12 @@ impl<'a,'b> DialogueBox<'a,'b>{
         }
     }
 
+    #[inline(always)]
     pub fn set_step(&mut self,step:usize){
         self.dialogue_step=step;
     }
 
+    #[inline(always)]
     pub fn current_step(&self)->usize{
         self.dialogue_step
     }
@@ -120,12 +138,14 @@ impl<'a,'b> DialogueBox<'a,'b>{
         }
     }
 
+    #[inline(always)]
     pub fn clicked(&mut self)->bool{
         unsafe{
             self.y1<mouse_cursor.position()[1] // Если курсор в нижней трети экрана
         }
     }
 
+    #[inline(always)]
     pub fn draw_without_text(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
         self.image.draw(&self.texture,draw_parameters,g);
     }
@@ -133,7 +153,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
 
 impl<'a,'b> Drawable for DialogueBox<'a,'b>{
     fn set_alpha_channel(&mut self,alpha:f32){
-        self.image.colour[3]=alpha;
+        self.image.colour_filter[3]=alpha;
         //self.lines.set_alpha_channel(alpha);
     }
 

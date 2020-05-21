@@ -1,10 +1,9 @@
 use super::{
     graphics::{Graphics2D,GameGraphics},
-    mouse_cursor::*,
+    mouse_cursor::{MouseCursor,MouseCursorIcon},
 };
 
 use std::{
-    //default::Default,
     collections::VecDeque,
     path::Path,
 };
@@ -25,7 +24,7 @@ use glium::{
 use glium::glutin::{
     event::{
         Event,
-        WindowEvent,
+        WindowEvent as GWindowEvent,
         MouseButton as GMouseButton,
         ElementState,
     },
@@ -62,16 +61,12 @@ pub static mut window_width:f32=0f32;
 pub static mut window_height:f32=0f32;
 pub static mut window_center:[f32;2]=[0f32;2];
 
-// Указатель на окно - для упрощения загрузки ресурсов
-pub static mut Game_display_ref:*const Display=std::ptr::null();
-pub static mut Game_display:Option<Display>=Option::None;
-
-
 pub struct GameWindow{
     event_loop:EventLoop<()>,
+    display:Display,
     graphics:Graphics2D,
     mouse_icon:MouseCursorIcon,
-    events:VecDeque<GameWindowEvent>,
+    events:VecDeque<WindowEvent>,
     events_handler:fn(&mut Self),
     width:u32,
     height:u32,
@@ -80,7 +75,7 @@ pub struct GameWindow{
 }
 
 #[derive(Clone)]
-pub enum GameWindowEvent{
+pub enum WindowEvent{
     None,
     Draw,
 
@@ -104,7 +99,7 @@ pub enum MouseButton{
     Right,
 }
 
-use GameWindowEvent::*;
+use WindowEvent::*;
 
 impl GameWindow{
     #[inline(always)]
@@ -147,31 +142,23 @@ impl GameWindow{
 
         display.gl_window().window().set_cursor_visible(false);
 
-        let window=Self{
+        Self{
             event_loop,
             graphics:Graphics2D::new(&display),
-            mouse_icon:MouseCursorIcon::new(&display,unsafe{[window_width as f32,window_height as f32]}),
+            mouse_icon:MouseCursorIcon::new(&display),
+            display:display,
             events:VecDeque::with_capacity(32),
             events_handler:GameWindow::event_listener,
             width:size.width,
             height:size.height,
             alpha_channel:0f32,
             smooth:0f32,
-        };
-
-        unsafe{
-            Game_display=Some(display);
-            Game_display_ref=Game_display.as_ref().unwrap() as *const Display;
         }
-
-        window
     }
 
     #[inline(always)]
-    pub fn display(&self)->&mut Display{
-        unsafe{
-            Game_display.as_mut().unwrap()
-        }
+    pub fn display(&mut self)->&mut Display{
+        &mut self.display
     }
 
     #[inline(always)]
@@ -180,7 +167,7 @@ impl GameWindow{
     }
 
     // Получение событий
-    pub fn next_event(&mut self)->Option<GameWindowEvent>{
+    pub fn next_event(&mut self)->Option<WindowEvent>{
         if self.events.is_empty(){
             (self.events_handler)(self); // Вызов функции обработки событий
         }
@@ -189,12 +176,12 @@ impl GameWindow{
 
     #[inline(always)]
     pub fn request_redraw(&self){
-        self.display().gl_window().window().request_redraw();
+        self.display.gl_window().window().request_redraw();
     }
 
     #[inline(always)]
     pub fn set_hide(&self,hide:bool){
-        self.display().gl_window().window().set_minimized(hide);
+        self.display.gl_window().window().set_minimized(hide);
     }
 }
 
@@ -202,11 +189,11 @@ impl GameWindow{
 impl GameWindow{
     // Обычная функция обработки событий
     fn event_listener(&mut self){
-        let vec=&mut self.events as *mut VecDeque<GameWindowEvent>;
+        let vec=&mut self.events as *mut VecDeque<WindowEvent>;
 
         let game_window=self as *mut GameWindow;
 
-        let display=unsafe{&*Game_display_ref}.gl_window();
+        let display=self.display.gl_window();
 
         let window:&Window=display.window();
 
@@ -220,10 +207,10 @@ impl GameWindow{
                 Event::WindowEvent{event,..}=>{
                     match event{
                         // Закрытие окна
-                        WindowEvent::CloseRequested=>Exit,
+                        GWindowEvent::CloseRequested=>Exit,
 
                         // Движение мыши (конечное положение)
-                        WindowEvent::CursorMoved{position,..}=>unsafe{
+                        GWindowEvent::CursorMoved{position,..}=>unsafe{
                             let last_position=mouse_cursor.position();
 
                             let position=[position.x as f32,position.y as f32];
@@ -235,7 +222,7 @@ impl GameWindow{
                         }
                         
                         // Обработка действий с кнопками мыши (только стандартные кнопки)
-                        WindowEvent::MouseInput{button,state,..}=>{
+                        GWindowEvent::MouseInput{button,state,..}=>{
                             if state==ElementState::Pressed{
                                 match button{
                                     GMouseButton::Left=>unsafe{
@@ -260,7 +247,7 @@ impl GameWindow{
                             }
                         }
 
-                        WindowEvent::KeyboardInput{input,..}=>{
+                        GWindowEvent::KeyboardInput{input,..}=>{
                             let key=if let Some(key)=input.virtual_keycode{
                                 unsafe{std::mem::transmute(key)}
                             }
@@ -276,7 +263,7 @@ impl GameWindow{
                         }
 
                         // Получение вводимых букв
-                        WindowEvent::ReceivedCharacter(character)=>{
+                        GWindowEvent::ReceivedCharacter(character)=>{
                             match character{
                                 '\u{7f}' | // Delete
                                 '\u{1b}' | // Escape
@@ -286,13 +273,13 @@ impl GameWindow{
                             }
                         }
 
-                        WindowEvent::Focused(_)=>unsafe{
+                        GWindowEvent::Focused(_)=>unsafe{
                             window.set_minimized(true); // Сворацивание окна
 
                             (*game_window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
                             *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
 
-                            GameWindowEvent::Hide(true) // Передача события во внешнее управление
+                            WindowEvent::Hide(true) // Передача события во внешнее управление
                         }
                         _=>None // Игнорирование остальных событий
                     }
@@ -327,11 +314,11 @@ impl GameWindow{
 
     // Функция ожидания получения фокуса - перехватывает управление до получения окном фокуса
     fn wait_until_focused(&mut self){
-        let vec=&mut self.events as *mut VecDeque<GameWindowEvent>;
+        let vec=&mut self.events as *mut VecDeque<WindowEvent>;
 
         let game_window=self as *mut GameWindow;
 
-        let display=unsafe{&*Game_display_ref}.gl_window();
+        let display=self.display.gl_window();
 
         let window:&Window=display.window();
 
@@ -341,12 +328,12 @@ impl GameWindow{
             match event{
                 Event::WindowEvent{event,..}=>{
                     match event{
-                        WindowEvent::CloseRequested=>unsafe{ // Остановка цикла обработки событий,
+                        GWindowEvent::CloseRequested=>unsafe{ // Остановка цикла обработки событий,
                             *control_flow=ControlFlow::Exit;
                             (*vec).push_back(Exit); // Передача события во внешнее управление
                         }
 
-                        WindowEvent::Focused(_)=>unsafe{
+                        GWindowEvent::Focused(_)=>unsafe{
                             (*game_window).events_handler=GameWindow::event_listener; // Смена фукции обработки событий
                             window.set_minimized(false);
 
@@ -401,7 +388,7 @@ impl GameWindow{
             let mouse_position=mouse_cursor.position();
             let dx=(mouse_position[0]/window_center[0])-1f32;
             let dy=1f32-(mouse_position[1]/window_center[1]);
-            self.mouse_icon.draw(g.frame(),(dx,dy));
+            self.mouse_icon.draw((dx,dy),&mut draw_parameters,g.frame());
         }
 
         frame.finish();
@@ -422,7 +409,7 @@ impl GameWindow{
             let mouse_position=mouse_cursor.position();
             let dx=(mouse_position[0]/window_center[0])-1f32;
             let dy=1f32-(mouse_position[1]/window_center[1]);
-            self.mouse_icon.draw(g.frame(),(dx,dy));
+            self.mouse_icon.draw((dx,dy),&mut draw_parameters,g.frame());
         }
 
         frame.finish();
@@ -434,18 +421,10 @@ impl GameWindow{
 
 impl GameWindow{
     pub fn screenshot<P:AsRef<Path>>(&self,path:P){
-        let image:glium::texture::RawImage2d<u8>=self.display().read_front_buffer().unwrap();
+        let image:glium::texture::RawImage2d<u8>=self.display.read_front_buffer().unwrap();
         let image=image::ImageBuffer::from_raw(image.width,image.height,image.data.into_owned()).unwrap();
         let image=image::DynamicImage::ImageRgba8(image).flipv();
         image.save(path).unwrap();
-    }
-}
-
-impl Drop for GameWindow{
-    fn drop(&mut self){
-        unsafe{
-            Game_display=Option::None;
-        }
     }
 }
 
@@ -616,7 +595,7 @@ pub enum KeyboardButton{
     Unknown,
 }
 
-#[inline]
+// Загрузка иконки окна
 pub fn load_window_icon()->Icon{
     let image=image::open("./resources/images/window_icon.png").unwrap();
     let vec=image.to_bytes();

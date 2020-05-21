@@ -1,4 +1,4 @@
-use crate::*;
+use lib::wallpaper_movement_scale;
 
 use engine::{
     // statics
@@ -12,6 +12,11 @@ use engine::{
         RgbaImage,
         imageops::FilterType,
     }
+};
+
+use std::{
+    fs::{metadata,read_dir},
+    path::{Path,PathBuf},
 };
 
 pub struct Textures{

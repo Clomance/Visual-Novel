@@ -63,7 +63,7 @@ impl TextViewLineDependent{
         self.base.shift(dx,dy)
     }
 
-    pub fn draw(&mut self,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
         self.base.base.draw(&self.base.line,draw_parameters,g,glyphs);
     }
 
@@ -110,7 +110,7 @@ impl TextViewLineDependent{
     //     whole_text
     // }
 
-    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
         self.set_alpha_channel(alpha);
         self.draw(draw_parameters,g,glyphs)
     }
@@ -212,7 +212,7 @@ impl TextViewLinedDependent{
         self.base.base.set_position([x,y]);
     }
 
-    pub fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
        self.base.draw(draw_parameters,graphics,glyphs)
     }
 
@@ -262,11 +262,11 @@ impl TextViewStaticLineDependent{
         self.base.shift(dx,dy)
     }
 
-    pub fn draw(&mut self,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
         self.base.draw(&self.line,draw_parameters,g,glyphs);
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
         self.set_alpha_channel(alpha);
         self.draw(draw_parameters,g,glyphs)
     }
@@ -368,7 +368,7 @@ impl TextViewStaticLinedDependent{
         self.base.set_alpha_channel(alpha);
     }
 
-    pub fn draw(&mut self,draw_parameters:&DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
         let position=self.base.position; // Сохранение начальной позиции
 
         let dy=self.base.font_size+line_margin;

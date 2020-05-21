@@ -16,7 +16,7 @@ use glium::{
     Frame,
     DrawParameters,
     index::{
-        PrimitiveType,
+        PrimitiveType, // enum
         NoIndices
     },
     Surface,
@@ -32,7 +32,7 @@ struct TexturedVertex{
 
 pub struct TextureGraphics{
     vertex_buffer:VertexBuffer<TexturedVertex>,
-    draw_program:Program,
+    draw:Program,
     draw_rotate:Program,
 }
 
@@ -46,7 +46,7 @@ impl TextureGraphics{
 
         Self{
             vertex_buffer:VertexBuffer::empty_dynamic(display,4).unwrap(),
-            draw_program:Program::from_source(display,vertex_shader,fragment_shader,None).unwrap(),
+            draw:Program::from_source(display,vertex_shader,fragment_shader,None).unwrap(),
             draw_rotate:Program::from_source(display,draw_rotate,fragment_shader,None).unwrap(),
         }
     }
@@ -86,14 +86,17 @@ impl TextureGraphics{
                 tex_coords:[1.0,0.0],
             }
         ];
-        
+
         self.vertex_buffer.write(&rect);
 
         frame.draw(
             &self.vertex_buffer,
             indices,
-            &self.draw_program,
-            &uniform!{tex:&texture.0},
+            &self.draw,
+            &uniform!{
+                tex:&texture.0,
+                colour_filter:image_base.colour_filter
+            },
             draw_parameters
         );
     }
@@ -143,7 +146,8 @@ impl TextureGraphics{
             &uniform!{
                 tex:&texture.0,
                 angle:angle,
-                window_center:unsafe{window_center}
+                window_center:unsafe{window_center},
+                colour_filter:image_base.colour_filter,
             },
             draw_parameters
         );

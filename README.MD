@@ -1,7 +1,7 @@
 # Визуальная новелла, написанная на Rust с помощью собственного игрового движка, основанного на [игровом движке Piston](https://github.com/PistonDevelopers/piston).
-## Версия 1.0.2
+## Версия 1.0.3
 
-Последняя версия Rust, минимальная версия OpenGL - `3.1`.
+Последняя стабильная версия Rust, минимальная версия OpenGL - `3.1`.
 
 Для работы со звуком используется [SDL2](https://github.com/Rust-SDL2/rust-sdl2).
 
@@ -146,7 +146,7 @@ O - Да, {}?
 Обои главного меню и конечная заставка игры находятся там же. Пути `./resources/images/wallpapers/main_menu_wallpaper.png` и `./resources/images/wallpapers/ending_wallpaper.png`соответственно.
 
 Обои для самой игры находятся в папке `./resources/images/wallpapers/game`.
-Имена обоев должны совпадать с теми, что записаны в вашем файле `./settings/page_table.txt`.
+Имена обоев должны совпадать с теми, что записаны в вашем файле `./resources/page_table.txt`.
 Пример: `Класс.png`.
 
 #### Парсонажи

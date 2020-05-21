@@ -6,7 +6,8 @@ use super::{
     TextViewLineDependent,
     TextViewSettings,
     TextViewStaticLineDependent,
-    White
+    White,
+    Black
 };
 
 use engine::{
@@ -17,7 +18,7 @@ use engine::{
     // structs
     text::Glyphs,
     graphics::{
-        Circle,
+        CircleWithBorder,
         Line,
         GameGraphics
     },
@@ -104,7 +105,7 @@ pub struct SimpleSlider{
     min_value:f32,
     step:f32,
     current_value:f32,
-    circle:Circle,
+    circle:CircleWithBorder,
     line:Line,
     grab:bool,
 }
@@ -131,7 +132,7 @@ impl SimpleSlider{
             min_value:settings.min_value,
             step:step,
             current_value:settings.current_value,
-            circle:Circle::new(circle_rect,settings.circle_colour),
+            circle:CircleWithBorder::new(circle_rect,settings.circle_colour).border(1.5f32,Black),
             line:Line::new(line_rect,5f32,settings.line_colour),
             grab:false,
         }

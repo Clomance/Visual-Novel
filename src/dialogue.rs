@@ -1,4 +1,11 @@
-use crate::*;
+use crate::CharacterLocation;
+
+use std::{
+    fmt::Debug,
+    path::Path,
+    io::{BufRead, BufReader},
+    fs::{File,OpenOptions},
+};
 
 pub struct DialogueFormatted<'a>{
     names:Vec<&'a str>,

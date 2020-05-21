@@ -1,6 +1,6 @@
 use crate::{
     //
-    colors::*,
+    colours::*,
     Drawable,
     Align,
     AlignX,

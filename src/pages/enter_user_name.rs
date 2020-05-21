@@ -1,4 +1,21 @@
-use crate::*;
+use crate::{
+    Game,
+    Settings,
+};
+
+use super::MainMenu;
+
+use lib::{
+    colours::{
+        Blue,
+        Light_blue,
+    },
+    Drawable,
+    EditTextView,
+    EditTextViewSettings,
+    TextViewSettings,
+    TextViewStaticLineDependent,
+};
 
 use engine::{
     // statics
@@ -8,12 +25,12 @@ use engine::{
     text::Glyphs,
     GameWindow,
     // enums
-    GameWindowEvent,
+    WindowEvent,
     MouseButton,
     KeyboardButton,
 };
 
-const page_smooth:f32=Enter_user_name_smooth;
+const page_smooth:f32=1f32/8f32;
 
 pub struct EnterUserName<'a,'b,'c,'d,'e>{
     head:TextViewStaticLineDependent,
@@ -66,14 +83,14 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
         // Полная отрисовка
         while let Some(event)=(*self.window).next_event(){
             match event{
-                GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                WindowEvent::MouseMovementDelta((dx,dy))=>{
                     self.main_menu.wallpaper.mouse_shift(dx,dy);
                     self.main_menu.menu.mouse_shift(dx,dy)
                 }
 
-                GameWindowEvent::MouseReleased(button)=>{
+                WindowEvent::MouseReleased(button)=>{
                     match button{
                         MouseButton::Left=>{
                             if !self.input.clicked(){
@@ -84,7 +101,7 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
                     }
                 }
 
-                GameWindowEvent::Draw=>{ // Рендеринг
+                WindowEvent::Draw=>{ // Рендеринг
                     (*self.window).draw(|c,g|{
                         self.main_menu.draw(c,g);
                         self.input.draw(c,g);
@@ -92,16 +109,16 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
                     })
                 }
 
-                GameWindowEvent::CharacterInput(character)=>self.input.push_char(character),
+                WindowEvent::CharacterInput(character)=>self.input.push_char(character),
 
-                GameWindowEvent::KeyboardPressed(button)=>{
+                WindowEvent::KeyboardPressed(button)=>{
                     match button{
                         KeyboardButton::Backspace=>self.input.pop_char(), // Удаление
                         _=>{}
                     }
                 }
 
-                GameWindowEvent::KeyboardReleased(button)=>{
+                WindowEvent::KeyboardReleased(button)=>{
                     match button{
                         KeyboardButton::Escape=>return Game::Back,
                         
@@ -127,11 +144,11 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
 
         while let Some(event)=(*self.window).next_event(){
             match event{
-                GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
+                WindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
 
-                GameWindowEvent::Draw=>{ // Рендеринг
+                WindowEvent::Draw=>{ // Рендеринг
                     if 1f32<(*self.window).draw_smooth(|alpha,c,g|{
                         self.main_menu.draw(c,g);
 
@@ -142,7 +159,7 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
                     }
                 }
 
-                GameWindowEvent::KeyboardReleased(button)=>{
+                WindowEvent::KeyboardReleased(button)=>{
                     match button{
                         KeyboardButton::Escape=>return Game::Back,
                         _=>{}

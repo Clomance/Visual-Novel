@@ -10,23 +10,20 @@ use engine::{
     // structs
     GameWindow,
     // enums
-    GameWindowEvent,
+    WindowEvent,
     MouseButton,
     KeyboardButton,
-    image::image::RgbaImage,
     music
 };
 
 use std::{
-    fmt::Debug,
-    path::{Path,PathBuf},
     fs::{File,OpenOptions,metadata,read_dir},
-    io::{Read,Write,BufReader,BufRead},
+    io::{Write,BufReader,BufRead},
 };
 
 use lib::{
     *,
-    colors::*,
+    colours::*,
 };
 
 mod game_settings;
@@ -190,13 +187,13 @@ fn main(){
                     // Сглаживание перехода
                     'opening_page:while let Some(event)=window.next_event(){
                         match event{
-                            GameWindowEvent::Exit=>break 'game, // Закрытие игры
+                            WindowEvent::Exit=>break 'game, // Закрытие игры
 
-                            GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                            WindowEvent::MouseMovementDelta((dx,dy))=>{
                                 wallpaper.mouse_shift(dx,dy);
                             }
 
-                            GameWindowEvent::Draw=>{ //Рендеринг
+                            WindowEvent::Draw=>{ //Рендеринг
                                 if 1f32<window.draw_smooth(|alpha,c,g|{
                                     g.clear_colour(White);
                                     wallpaper.draw_smooth(alpha,c,g);
@@ -208,7 +205,7 @@ fn main(){
                                 }
                             }
 
-                            GameWindowEvent::KeyboardReleased(button)=>{
+                            WindowEvent::KeyboardReleased(button)=>{
                                 if button==KeyboardButton::F5{
                                     make_screenshot(&window)
                                 }
@@ -220,16 +217,16 @@ fn main(){
                     // Цикл страницы 'page
                     'page_inner:while let Some(event)=window.next_event(){
                         match event{
-                            GameWindowEvent::Exit=>{ // Закрытие игры
+                            WindowEvent::Exit=>{ // Закрытие игры
                                 Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
                                 break 'game
                             }
 
-                            GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                            WindowEvent::MouseMovementDelta((dx,dy))=>{
                                 wallpaper.mouse_shift(dx,dy);
                             }
 
-                            GameWindowEvent::Draw=>{ //Рендеринг
+                            WindowEvent::Draw=>{ //Рендеринг
                                 window.draw(|c,g|{
                                     wallpaper.draw(c,g);
                                     characters_view.draw(c,g);
@@ -237,7 +234,7 @@ fn main(){
                                 });
                             }
 
-                            GameWindowEvent::MouseReleased(button)=>{
+                            WindowEvent::MouseReleased(button)=>{
                                 match button{
                                     MouseButton::Left=>{
                                         if dialogue_box.clicked(){
@@ -255,7 +252,7 @@ fn main(){
                                 }
                             }
 
-                            GameWindowEvent::KeyboardReleased(button)=>{
+                            WindowEvent::KeyboardReleased(button)=>{
                                 match button{
                                     KeyboardButton::Space=>{
                                         if dialogue_box.next_page(){
@@ -306,13 +303,13 @@ fn main(){
                     window.set_alpha(1f32);
                     while let Some(event)=window.next_event(){
                         match event{
-                            GameWindowEvent::Exit=>break 'game, // Закрытие игры
+                            WindowEvent::Exit=>break 'game, // Закрытие игры
 
-                            GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                            WindowEvent::MouseMovementDelta((dx,dy))=>{
                                 wallpaper.mouse_shift(dx,dy);
                             }
 
-                            GameWindowEvent::Draw=>{ //Рендеринг
+                            WindowEvent::Draw=>{ //Рендеринг
                                 if 0f32>window.draw_smooth(|alpha,c,g|{
                                     g.clear_colour(White);
                                     wallpaper.draw_smooth(alpha,c,g);
@@ -324,7 +321,7 @@ fn main(){
                                 }
                             }
 
-                            GameWindowEvent::KeyboardReleased(button)=>{
+                            WindowEvent::KeyboardReleased(button)=>{
                                 if button==KeyboardButton::F5{
                                     make_screenshot(&window)
                                 }
@@ -343,13 +340,13 @@ fn main(){
 
             'smooth_ending:while let Some(event)=window.next_event(){
                 match event{
-                    GameWindowEvent::Exit=>break 'game, // Закрытие игры
+                    WindowEvent::Exit=>break 'game, // Закрытие игры
 
-                    GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                    WindowEvent::MouseMovementDelta((dx,dy))=>{
                         wallpaper.mouse_shift(dx,dy);
                     }
 
-                    GameWindowEvent::Draw=>{ //Рендеринг
+                    WindowEvent::Draw=>{ //Рендеринг
                         if 1f32<window.draw_smooth(|alpha,c,g|{
                             wallpaper.draw_smooth(alpha,c,g)
                         }){
@@ -357,7 +354,7 @@ fn main(){
                         }
                     }
 
-                    GameWindowEvent::KeyboardReleased(button)=>{
+                    WindowEvent::KeyboardReleased(button)=>{
                         if button==KeyboardButton::F5{
                             make_screenshot(&window)
                         }
@@ -369,20 +366,20 @@ fn main(){
 
             'gameplay_ending:while let Some(event)=window.next_event(){
                 match event{
-                    GameWindowEvent::Exit=>break 'game, // Закрытие игры
+                    WindowEvent::Exit=>break 'game, // Закрытие игры
 
-                    GameWindowEvent::MouseMovementDelta((dx,dy))=>{
+                    WindowEvent::MouseMovementDelta((dx,dy))=>{
                         wallpaper.mouse_shift(dx,dy);
                     }
 
-                    GameWindowEvent::Draw=>{ // Рендеринг
+                    WindowEvent::Draw=>{ // Рендеринг
                         window.draw(|c,g|{
                             wallpaper.draw(c,g)
                         });
                     }
 
-                    GameWindowEvent::MouseReleased(_button)=>break 'gameplay_ending,
-                    GameWindowEvent::KeyboardReleased(button)=>{
+                    WindowEvent::MouseReleased(_button)=>break 'gameplay_ending,
+                    WindowEvent::KeyboardReleased(button)=>{
                         if button==KeyboardButton::F5{
                             make_screenshot(&window)
                         }
@@ -397,6 +394,7 @@ fn main(){
     }
 }
 
+// Загрузка всех диологов
 fn load_dialogues()->Vec<Dialogue>{
     let meta=metadata("./resources/dialogues").unwrap();
     let mut dialogues=Vec::with_capacity(meta.len() as usize);
@@ -422,10 +420,7 @@ const paths:&[&str]=&[
 ];
 
 // Формат файла
-/*
-номер фона, номер диалога, количество персонажей u8, номера персонажей...
-*/
-
+// Номер фона, номер диалога, количество персонажей u8, номера персонажей...
 fn make_page_table_file(){
     let mut changed=false; // Флаг изменения в папке ресурсов
 
@@ -458,6 +453,7 @@ fn make_page_table_file(){
         let char_meta=metadata("./resources/images/characters").unwrap();
         let mut char_names=Vec::with_capacity(char_meta.len() as usize); // Имена персонажей
 
+        // Сохранение имён персонажей
         let char_dir=read_dir("./resources/images/characters").unwrap();
         for character in char_dir{
             let file=character.unwrap();
@@ -537,11 +533,11 @@ fn make_page_table_file(){
             if let Some(_)=line_str.find("{"){
                 let (wallpaper,dialogue)=load_page_settings(&mut reader);
 
-                let wallpaper=search(&wall_names,&wallpaper); // Поиск фона по названию5
+                let wallpaper=search(&wall_names,&wallpaper); // Поиск фона по названию
 
                 page_table_file.write(&wallpaper.to_be_bytes()).unwrap();
                 
-                let dialogue=search(&dia_names,&dialogue);
+                let dialogue=search(&dia_names,&dialogue); // Поиск диалога по названию
                 page_table_file.write(&dialogue.to_be_bytes()).unwrap();
 
                 let len=dialogues_characters[dialogue].len() as u8;
@@ -565,6 +561,7 @@ fn search(vec:&Vec<String>,v:&str)->usize{
     panic!("search");
 }
 
+// Загрузка именён обоев и диалога одной страницы
 // (wallpaper, dialogue)
 fn load_page_settings(reader:&mut BufReader<File>)->(String,String){
     let mut wallpaper=None;

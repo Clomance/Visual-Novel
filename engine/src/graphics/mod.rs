@@ -1,12 +1,12 @@
 mod simple_graphics;
-use simple_graphics::Point2D;
 pub use simple_graphics::{
     SimpleGraphics,
     SimpleObject,
+    Point2D,
 };
 
-mod game_graphics;
-pub use game_graphics::*;
+mod graphics;
+pub use graphics::*;
 
 mod graphic_basics;
 pub use graphic_basics::*;

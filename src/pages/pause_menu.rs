@@ -1,4 +1,19 @@
-use crate::*;
+use crate::{
+    make_screenshot,
+    Game,
+};
+
+use super::{
+    SettingsPage,
+    default_page_smooth,
+};
+
+use lib::{
+    colours::Pause_menu_background_colour,
+    Drawable,
+    Menu,
+    MenuSettings,
+};
 
 use engine::{
     // statics
@@ -6,17 +21,18 @@ use engine::{
     window_height,
     // types
     Colour,
-    // structs
-    text::Glyphs,
-    GameWindow,
     // enums
-    GameWindowEvent,
+    WindowEvent,
     MouseButton,
     KeyboardButton,
     music::Music,
+    // structs
+    text::Glyphs,
+    GameWindow,
+    graphics::Rectangle,
 };
 
-const page_smooth:f32=Pause_menu_smooth;
+const page_smooth:f32=default_page_smooth;
 
 const background_color:Colour=Pause_menu_background_colour;
 
@@ -48,16 +64,16 @@ impl<'a> PauseMenu<'a>{
             }
             while let Some(event)=window.next_event(){
                 match event{
-                    GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                    WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                    GameWindowEvent::Draw=>{ // Рендеринг
+                    WindowEvent::Draw=>{ // Рендеринг
                         window.draw(|c,g|{
                             g.clear_colour(background_color);
                             self.menu.draw(c,g);
                         });
                     }
 
-                    GameWindowEvent::MousePressed(button)=>{
+                    WindowEvent::MousePressed(button)=>{
                         match button{
                             MouseButton::Left=>{
                                 self.menu.pressed();
@@ -66,7 +82,7 @@ impl<'a> PauseMenu<'a>{
                         }
                     }
 
-                    GameWindowEvent::MouseReleased(button)=>{
+                    WindowEvent::MouseReleased(button)=>{
                         match button{
                             MouseButton::Left=>{
                                 if let Some(button_id)=self.menu.clicked(){
@@ -89,7 +105,7 @@ impl<'a> PauseMenu<'a>{
                         }
                     }
 
-                    GameWindowEvent::KeyboardReleased(button)=>{
+                    WindowEvent::KeyboardReleased(button)=>{
                         match button{
                             KeyboardButton::F5=>make_screenshot(window),
                             KeyboardButton::Escape=>return Game::ContinueGamePlay,
@@ -105,27 +121,30 @@ impl<'a> PauseMenu<'a>{
     pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
         window.set_new_smooth(page_smooth);
 
-        let mut background=Background::new(background_color,[
-            0f32,
-            0f32,
-            window_width,
-            window_height
-        ]);
+        let mut background=Rectangle::new([
+                0f32,
+                0f32,
+                window_width,
+                window_height
+            ],
+            background_color
+        );
 
         while let Some(event)=window.next_event(){
             match event{
-                GameWindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                GameWindowEvent::Draw=>{ // Рендеринг
+                WindowEvent::Draw=>{ // Рендеринг
                     if 1f32<window.draw_smooth(|alpha,c,g|{
-                        background.draw_smooth(alpha,c,g);
+                        background.colour[3]=alpha;
+                        background.draw(c,g);
                         self.menu.draw_smooth(alpha,c,g);
                     }){
                         break
                     }
                 }
 
-                GameWindowEvent::KeyboardReleased(button)=>{
+                WindowEvent::KeyboardReleased(button)=>{
                     match button{
                         KeyboardButton::F5=>make_screenshot(window),
                         KeyboardButton::Escape=>return Game::ContinueGamePlay,

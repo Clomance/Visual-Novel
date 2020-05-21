@@ -16,18 +16,18 @@ pub struct ImageBase{
     pub y1:f32,
     pub x2:f32,
     pub y2:f32,
-    pub colour:Colour,
+    pub colour_filter:Colour,
 }
 
 impl ImageBase{
     // rect - [x,y,width,height]
-    pub fn new(colour:Colour,rect:[f32;4])->ImageBase{
+    pub fn new(colour_filter:Colour,rect:[f32;4])->ImageBase{
         Self{
             x1:rect[0],
             y1:rect[1],
             x2:rect[0]+rect[2],
             y2:rect[1]+rect[3],
-            colour,
+            colour_filter,
         }
     }
 

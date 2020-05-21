@@ -1,9 +1,11 @@
-use super::window_center; // statics
+use super::{
+    // statics
+    window_center,
+    window_width,
+    window_height,
+};
 
 use glium::{
-    BlendingFunction,
-    LinearBlendingFactor,
-    Blend,
     Frame,
     implement_vertex,
     uniform,
@@ -83,17 +85,18 @@ struct Vertex2DPoint{
 pub struct MouseCursorIcon{
     vertex_buffer:VertexBuffer<Vertex2DPoint>,
     vertex_buffer_pressed:VertexBuffer<Vertex2DPoint>,
-    indices:NoIndices,//IndexBuffer<u16>,
+    indices:NoIndices,
     program:Program,
-    draw_parameters:DrawParameters<'static>,
-    draw_function:fn(&Self,&mut Frame,(f32,f32))
+    draw_function:fn(&Self,(f32,f32),&mut DrawParameters,&mut Frame)
 }
 
 impl MouseCursorIcon{
-    pub fn new(display:&Display,window_size:[f32;2])->MouseCursorIcon{
-        let k=window_size[0]/window_size[1];
-        let mut r_x=radius/window_size[0];
-        let mut r_y=radius/window_size[1];
+    pub fn new(display:&Display)->MouseCursorIcon{
+        let (k,mut r_x, mut r_y)=unsafe{(
+                window_width/window_height,
+                radius/window_width,
+                radius/window_height
+        )};
 
         let mut shape=[Vertex2DPoint{position:[0f32;2]};4*points+2];
         let mut pressed_shape=[Vertex2DPoint{position:[0f32;2]};4*points+2];
@@ -139,10 +142,6 @@ impl MouseCursorIcon{
         pressed_shape[3*points].position=[-r_x,0f32];
         pressed_shape[4*points].position=[0f32,r_y];
 
-        // shape[points+1]=shape[1];
-        // pressed_shape[points+1]=pressed_shape[1];
-
-
         let vertex_buffer=VertexBuffer::new(display,&shape).unwrap();
 
         let vertex_buffer_pressed=VertexBuffer::new(display,&pressed_shape).unwrap();
@@ -175,25 +174,11 @@ impl MouseCursorIcon{
 
         let program=glium::Program::from_source(display,vertex_shader_src,fragment_shader_src,None).unwrap();
 
-        let mut draw_parameters:DrawParameters=Default::default();
-
-        draw_parameters.blend=Blend{
-            color:BlendingFunction::Addition{
-                source:LinearBlendingFactor::SourceAlpha,
-                destination:LinearBlendingFactor::OneMinusSourceAlpha,
-            },
-            alpha:BlendingFunction::Addition{
-                source:LinearBlendingFactor::One,
-                destination:LinearBlendingFactor::One,
-            },
-            constant_value:(0.0,0.0,0.0,0.0),
-        };
         Self{
             vertex_buffer,
             vertex_buffer_pressed,
-            indices:NoIndices(PrimitiveType::TriangleFan),//indices,
+            indices:NoIndices(PrimitiveType::TriangleFan),
             program:program,
-            draw_parameters,
             draw_function:Self::draw_common
         }
     }
@@ -212,17 +197,17 @@ impl MouseCursorIcon{
 
 // Функции отрисовки
 impl MouseCursorIcon{
-    pub fn draw(&self,frame:&mut Frame,position:(f32,f32)){
-        (self.draw_function)(self,frame,position)
+    pub fn draw(&self,position:(f32,f32),draw_parameters:&mut DrawParameters,frame:&mut Frame){
+        (self.draw_function)(self,position,draw_parameters,frame)
     }
 
-    fn draw_common(&self,frame:&mut Frame,position:(f32,f32)){
+    fn draw_common(&self,position:(f32,f32),draw_parameters:&mut DrawParameters,frame:&mut Frame){
         frame.draw(&self.vertex_buffer,&self.indices,&self.program,
-                &uniform!{dx:position.0,dy:position.1},&self.draw_parameters).unwrap();
+                &uniform!{dx:position.0,dy:position.1},draw_parameters).unwrap();
     }
 
-    fn draw_pressed(&self,frame:&mut Frame,position:(f32,f32)){
+    fn draw_pressed(&self,position:(f32,f32),draw_parameters:&mut DrawParameters,frame:&mut Frame){
         frame.draw(&self.vertex_buffer_pressed,&self.indices,&self.program,
-                &uniform!{dx:position.0,dy:position.1},&self.draw_parameters).unwrap();
+                &uniform!{dx:position.0,dy:position.1},draw_parameters).unwrap();
     }
 }

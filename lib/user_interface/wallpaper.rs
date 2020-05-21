@@ -1,5 +1,5 @@
 use crate::{
-    colors::White,
+    colours::White,
     traits::Drawable,
 };
 
@@ -39,6 +39,7 @@ impl Wallpaper{
         }
     }
 
+    #[inline(always)]
     pub fn mouse_shift(&mut self,dx:f32,dy:f32){
         self.image.x1+=dx/wallpaper_movement_scale;
         self.image.y1+=dy/wallpaper_movement_scale;
@@ -47,6 +48,7 @@ impl Wallpaper{
     }
 
     // Обновляет картинка (она должна быть такого же размера, как и предыдущая)
+    #[inline(always)]
     pub fn update_image(&mut self,image:&RgbaImage){
         self.texture.update(image);
     }
@@ -54,7 +56,7 @@ impl Wallpaper{
 
 impl Drawable for Wallpaper{
     fn set_alpha_channel(&mut self,alpha:f32){
-        self.image.colour[3]=alpha
+        self.image.colour_filter[3]=alpha
     }
 
     fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){

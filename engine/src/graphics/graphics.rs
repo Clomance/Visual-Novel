@@ -64,8 +64,9 @@ pub struct GameGraphics<'d,'s>{
 }
 
 impl<'d,'s> GameGraphics<'d,'s>{
+    #[inline(always)]
     pub fn new(graphics:&'d mut Graphics2D,frame:&'s mut Frame)->GameGraphics<'d,'s>{
-        GameGraphics{
+        Self{
             graphics,
             frame
         }
@@ -86,7 +87,7 @@ impl<'d,'s> GameGraphics<'d,'s>{
         self.frame.clear_stencil(value as i32);
     }
 
-    #[inline(always)]
+    #[inline(always)] // Рисует простой объект
     pub fn draw_simple<O:SimpleObject>(&mut self,object:&O,draw_parameters:&mut DrawParameters){
         self.graphics.draw_simple(object,draw_parameters,self.frame)
     }

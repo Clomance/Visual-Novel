@@ -1,7 +1,13 @@
-use crate::*;
+use lib::{
+    Drawable,
+    colours::White,
+};
 
 use engine::{
-    image::{ImageBase,Texture},
+    window_center,
+    window_height,
+    window_width,
+    image::{ImageBase,Texture,image::RgbaImage},
     graphics::GameGraphics,
     glium::{Display,DrawParameters},
 };
@@ -32,6 +38,18 @@ struct Character{
 }
 
 impl Character{
+    pub fn set_focused(&mut self){
+        self.image.x1+=focused_resize;
+        self.image.y1+=focused_resize;
+        self.image.x2+=focused_resize;
+        self.image.y2+=focused_resize;
+    }
+    pub fn set_unfocused(&mut self){
+        self.image.x1+=focused_resize;
+        self.image.y1+=focused_resize;
+        self.image.x2+=focused_resize;
+        self.image.y2+=focused_resize;
+    }
     pub fn shift(&mut self,dx:f32,dy:f32){
         self.image.x1+=dx/movement_scale;
         self.image.y1+=dy/movement_scale;
@@ -42,12 +60,14 @@ impl Character{
 
 pub struct CharactersView{
     characters:Vec<Character>,
+    focused:usize,
 }
 
 impl CharactersView{
-    pub fn new()->CharactersView{
+    pub const fn new()->CharactersView{
         Self{
             characters:Vec::new(),
+            focused:0usize,
         }
     }
 
@@ -100,7 +120,7 @@ impl CharactersView{
 impl Drawable for CharactersView{
     fn set_alpha_channel(&mut self,alpha:f32){
         for ch in &mut self.characters{
-            ch.image.colour[3]=alpha;
+            ch.image.colour_filter[3]=alpha;
         }
     }
 

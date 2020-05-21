@@ -279,7 +279,7 @@ pub struct Circle{
 
 impl Circle{
     // rect - [x,y,radius]
-    pub fn new(rect:[f32;3],colour:Colour)->Circle{
+    pub const fn new(rect:[f32;3],colour:Colour)->Circle{
         Self{
             x:rect[0],
             y:rect[1],
@@ -335,6 +335,94 @@ impl SimpleObject for Circle{
             let indices=NoIndices(PrimitiveType::TriangleFan);
 
             frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.colour},draw_parameters);
+        }
+    }
+}
+
+// Круг с центром в точке (x, y)
+// и радиусов 'radius',
+// который заполняется цветом 'colour'
+pub struct CircleWithBorder{
+    pub x:f32,
+    pub y:f32,
+    pub radius:f32,
+    pub colour:Colour,
+    pub border_radius:f32,
+    pub border_colour:Colour,
+}
+
+impl CircleWithBorder{
+    // rect - [x,y,radius]
+    pub const fn new(rect:[f32;3],colour:Colour)->CircleWithBorder{
+        Self{
+            x:rect[0],
+            y:rect[1],
+            radius:rect[2],
+            colour,
+            border_colour:colour,
+            border_radius:1f32,
+        }
+    }
+
+    pub fn border(mut self,radius:f32,colour:Colour)->CircleWithBorder{
+        self.border_colour=colour;
+        self.border_radius=radius;
+        self
+    }
+
+    #[inline(always)]
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+        graphics.draw_simple(self,draw_parameters)
+    }
+}
+
+impl SimpleObject for CircleWithBorder{
+    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
+        unsafe{
+            let k=window_center[0]/window_center[1];
+            let r_x=self.radius/window_center[0];
+            let r_y=self.radius/window_center[1];
+
+            let c_x=self.x/window_center[0]-1f32;
+            let c_y=1f32-self.y/window_center[1];
+
+            let mut shape=[Point2D{position:[c_x,c_y]};4*ellipse_points+2];
+
+            let dx=r_x/ellipse_points as f32;
+            let mut x=dx;
+
+            for c in 1..ellipse_points{
+                let y=((r_x-x)*(r_x+x)).sqrt()*k;
+                
+                shape[c].position=[c_x+x,c_y+y];
+
+                shape[2*ellipse_points-c].position=[c_x+x,c_y-y];
+
+                shape[2*ellipse_points+c].position=[c_x-x,c_y-y];
+
+                shape[4*ellipse_points-c].position=[c_x-x,c_y+y];
+
+                x+=dx;
+            }
+
+            shape[1].position=[c_x,c_y+r_y];
+            shape[ellipse_points].position=[c_x+r_x,c_y];
+            shape[2*ellipse_points].position=[c_x,c_y-r_y];
+            shape[3*ellipse_points].position=[c_x-r_x,c_y];
+            shape[4*ellipse_points].position=[c_x,c_y+r_y];
+
+            let slice=graphics.vertex_buffer.slice(0..4*ellipse_points+2).unwrap();
+            slice.write(&shape);
+
+            let mut indices=NoIndices(PrimitiveType::TriangleFan);
+
+            frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.colour},draw_parameters);
+
+            indices=NoIndices(PrimitiveType::LineLoop);
+
+            let slice=graphics.vertex_buffer.slice(1..4*ellipse_points+1).unwrap();
+            draw_parameters.line_width=Some(self.border_radius);
+            frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.border_colour},draw_parameters);
         }
     }
 }

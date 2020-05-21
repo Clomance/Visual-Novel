@@ -12,6 +12,8 @@ use super::{
 
 use glium::DrawParameters;
 
+const text_pixel_size:f32=1f32;
+
 pub struct TextBase{
     pub position:[f32;2],
     pub font_size:f32,
@@ -59,11 +61,12 @@ impl TextBase{
     }
 
     // Выводит один символ
-    pub fn draw_char(&self,character:char,draw_parameters:&DrawParameters,graphics:&mut GameGraphics,glyphs:Glyphs){
+    pub fn draw_char(&self,character:char,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:Glyphs){
         let position=self.position;
 
         let character=glyphs.character_positioned(character,self.font_size,position);
 
+        draw_parameters.point_size=Some(text_pixel_size);
         graphics.draw_character(self.colour,&character,draw_parameters);
     }
 
@@ -73,9 +76,9 @@ impl TextBase{
     }
 
     // Выодит весь текст
-    pub fn draw(&self,text:&str,draw_parameters:&DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&self,text:&str,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
         let mut position=self.position;
-
+        draw_parameters.point_size=Some(text_pixel_size);
         for c in text.chars(){
             let character=glyphs.character_positioned(c,self.font_size,position);
             graphics.draw_character(self.colour,&character,draw_parameters);
@@ -85,8 +88,9 @@ impl TextBase{
     }
 
     // Выводит часть текста, если выведен весь текста, возвращает true
-    pub fn draw_part(&self,text:&str,chars:usize,draw_parameters:&DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs)->bool{
+    pub fn draw_part(&self,text:&str,chars:usize,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs)->bool{
         let mut position=self.position;
+        draw_parameters.point_size=Some(text_pixel_size);
 
         let mut whole=true; // Флаг вывода всего текста
 

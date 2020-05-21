@@ -32,6 +32,7 @@ fn main(){
         }
     }
 
+    // Сброс настроек игры
     let mut game_settings=OpenOptions::new().truncate(true).write(true).open("settings/game_settings").unwrap();
 
     game_settings.write_all(&[0]).unwrap(); // Новая игра

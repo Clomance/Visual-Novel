@@ -1,4 +1,12 @@
-use crate::*;
+use crate::{CharacterLocation,Dialogue,Settings,Textures};
+
+use engine::image::image::RgbaImage;
+
+use std::{
+    fs::{File,OpenOptions},
+    io::{BufRead,BufReader,Read},
+    path::PathBuf,
+};
 
 // Таблица распределения ресурсов (картинок, диалогов, персонажей) по страницам
 pub struct PageTable<'a,'c>{

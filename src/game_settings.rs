@@ -1,4 +1,7 @@
-use crate::*;
+use std::{
+    io::{Read,Write,BufRead, BufReader},
+    fs::OpenOptions,
+};
 
 pub struct GameSettings{
     pub game_name:String,
