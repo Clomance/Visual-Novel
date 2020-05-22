@@ -32,7 +32,7 @@ impl MouseCursor{
 
     #[inline(always)]
     pub fn position(&self)->[f32;2]{
-        [self.position[0],self.position[1]]
+        self.position
     }
 
     // Расстояние от курсора до центра экрана
@@ -85,7 +85,6 @@ struct Vertex2DPoint{
 pub struct MouseCursorIcon{
     vertex_buffer:VertexBuffer<Vertex2DPoint>,
     vertex_buffer_pressed:VertexBuffer<Vertex2DPoint>,
-    indices:NoIndices,
     program:Program,
     draw_function:fn(&Self,(f32,f32),&mut DrawParameters,&mut Frame)
 }
@@ -177,7 +176,6 @@ impl MouseCursorIcon{
         Self{
             vertex_buffer,
             vertex_buffer_pressed,
-            indices:NoIndices(PrimitiveType::TriangleFan),
             program:program,
             draw_function:Self::draw_common
         }
@@ -202,12 +200,22 @@ impl MouseCursorIcon{
     }
 
     fn draw_common(&self,position:(f32,f32),draw_parameters:&mut DrawParameters,frame:&mut Frame){
-        frame.draw(&self.vertex_buffer,&self.indices,&self.program,
-                &uniform!{dx:position.0,dy:position.1},draw_parameters).unwrap();
+        frame.draw(
+            &self.vertex_buffer,
+            &NoIndices(PrimitiveType::TriangleFan),
+            &self.program,
+            &uniform!{dx:position.0,dy:position.1},
+            draw_parameters
+        ).unwrap();
     }
 
     fn draw_pressed(&self,position:(f32,f32),draw_parameters:&mut DrawParameters,frame:&mut Frame){
-        frame.draw(&self.vertex_buffer_pressed,&self.indices,&self.program,
-                &uniform!{dx:position.0,dy:position.1},draw_parameters).unwrap();
+        frame.draw(
+            &self.vertex_buffer_pressed,
+            &NoIndices(PrimitiveType::TriangleFan),
+            &self.program,
+            &uniform!{dx:position.0,dy:position.1},
+            draw_parameters
+        ).unwrap();
     }
 }

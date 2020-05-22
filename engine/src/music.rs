@@ -6,10 +6,11 @@ use sdl2::{
 
 use std::path::Path;
 
+// Основа для музыки
 pub struct Music{
     context:Sdl,
     audio:AudioSubsystem,
-    music:Vec<SdlMusic<'static>>,
+    music:Vec<SdlMusic<'static>>, // Музыкальные треки
 }
 
 impl Music{

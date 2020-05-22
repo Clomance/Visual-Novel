@@ -15,7 +15,7 @@ use engine::{
     text::Glyphs,
     graphics::{
         GameGraphics,
-        Rectangle
+        Rectangle,
     },
     glium::DrawParameters,
 };
@@ -35,15 +35,17 @@ impl<'a> Button<'a>{
         }
     }
 
+    #[inline(always)]
     pub fn shift(&mut self,dx:f32,dy:f32){
         self.base.shift(dx,dy)
     }
 
+    #[inline(always)]
     pub fn pressed(&mut self)->bool{
         self.base.pressed()
     }
 
-    // Проверка находится ли курсор на кнопке и локальные действия
+    #[inline(always)] // Проверка находится ли курсор на кнопке и локальные действия
     pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
         self.base.released()
     }
@@ -86,11 +88,12 @@ impl ButtonDependent{
         self.text.set_alpha_channel(alpha);
     }
 
+    #[inline(always)]
     pub fn pressed(&mut self)->bool{
         self.base.pressed()
     }
 
-    // Проверка находится ли курсор на кнопке и локальные действия
+    #[inline(always)] // Проверка находится ли курсор на кнопке и локальные действия
     pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
         self.base.released()
     }
@@ -123,7 +126,7 @@ impl ButtonBase{
         self.rect.y2+=dy;
     }
 
-    // Установка альфа-канала
+    #[inline(always)] // Установка альфа-канала
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.rect.colour[3]=alpha;
     }
@@ -158,8 +161,10 @@ impl ButtonBase{
         }
     }
 
-    // Проверка находится ли курсор на кнопке и локальные действия
-    pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
+    // Проверка находится ли курсор на кнопке при освобождении кнопки мыши
+    // и локальные действия
+    // Функции лучше подходит название "clicked"
+    pub fn released(&mut self)->bool{
         if self.pressed{
             self.release_colour();
             self.pressed=false;
@@ -180,12 +185,13 @@ impl ButtonBase{
         }
     }
 
+    #[inline(always)]
     pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
         self.rect.draw(draw_parameters,g);
     }
 }
 
-
+// Настройки для построения кнопок
 pub struct ButtonSettings<S:Into<String>>{
     rect:[f32;4],
     background_colour:Colour,

@@ -100,7 +100,7 @@ impl SimpleObject for Rectangle{
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone)] // Прямоугольник с рамкой
 pub struct RectangleWithBorder{
     pub rect:Rectangle,
     pub border_radius:f32,
@@ -209,8 +209,7 @@ impl Line{
     }
 
     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
-        let width=self.radius;
-        draw_parameters.line_width=Some(width);
+        draw_parameters.line_width=Some(self.radius);
         graphics.draw_simple(self,draw_parameters);
     }
 }
@@ -244,31 +243,10 @@ impl SimpleObject for Line{
     }
 }
 
-const ellipse_points:usize=15;
-
-pub struct Ellipse{
-    pub x1:f32,
-    pub y1:f32,
-    pub width:f32,
-    pub height:f32,
-    pub colour:Colour,
-}
-
-impl Ellipse{
-    // rect - [x1,x2,width,height]
-    pub const fn rect(rect:[f32;4],colour:Colour)->Ellipse{
-        Self{
-            x1:rect[0],
-            y1:rect[1],
-            width:rect[2],
-            height:rect[3],
-            colour
-        }
-    }
-}
+const ellipse_points:usize=15; // Количество точек для эллипса
 
 // Круг с центром в точке (x, y)
-// и радиусов 'radius',
+// и радиусом 'radius',
 // который заполняется цветом 'colour'
 pub struct Circle{
     pub x:f32,

@@ -14,6 +14,7 @@ use glium::DrawParameters;
 
 const text_pixel_size:f32=1f32;
 
+// Основа для текста
 pub struct TextBase{
     pub position:[f32;2],
     pub font_size:f32,

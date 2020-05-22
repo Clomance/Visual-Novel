@@ -1,21 +1,18 @@
 use std::path::Path;
 
 use glium::{
-    backend::Facade,
+    Display,
     texture::{RawImage2d,TextureCreationError,srgb_texture2d::SrgbTexture2d},
 };
 
-
 use image::{RgbaImage,DynamicImage};
 
-pub struct Texture(pub SrgbTexture2d); // Wrapper for 2D texture.
+// Обёртка для 2D текстуры
+pub struct Texture(pub SrgbTexture2d);
 
 impl Texture{
-    pub const fn new(texture:SrgbTexture2d)->Texture{
-        Texture(texture)
-    }
-
-    pub fn create<S:Into<[u32;2]>,F:Facade>(factory:&mut F,memory:&[u8],size:S)->Result<Self,TextureCreationError>{
+    // Создание текстуры из массива байт
+    pub fn create<S:Into<[u32;2]>>(factory:&mut Display,memory:&[u8],size:S)->Result<Self,TextureCreationError>{
         let size=size.into();
 
         let image=RawImage2d::from_raw_rgba_reversed(memory,(size[0],size[1]));
@@ -25,8 +22,8 @@ impl Texture{
         Ok(Texture(texture))
     }
 
-    /// Creates a texture from path.
-    pub fn from_path<F:Facade,P:AsRef<Path>>(factory:&mut F,path:P)->Result<Self,String>{
+    // Загрузка текстуры из файла
+    pub fn from_path<P:AsRef<Path>>(factory:&mut Display,path:P)->Result<Self,String>{
         let img=image::open(path).map_err(|e|e.to_string())?;
 
         let img=match img{
@@ -37,9 +34,8 @@ impl Texture{
         Texture::from_image(factory,&img).map_err(|e|format!("{:?}", e))
     }
 
-    /// Creates a texture from image.
-
-    pub fn from_image<F:Facade>(factory:&mut F,img:&RgbaImage)->Result<Self,TextureCreationError>{
+    // Создание текстуры из изображения
+    pub fn from_image(factory:&mut Display,img:&RgbaImage)->Result<Self,TextureCreationError>{
         let (width,height)=img.dimensions();
         Texture::create(factory,img,[width,height])
     }

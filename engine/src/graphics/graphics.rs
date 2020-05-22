@@ -83,7 +83,7 @@ impl<'d,'s> GameGraphics<'d,'s>{
     }
 
     #[inline(always)]
-    fn clear_stencil(&mut self, value: u8) {
+    fn clear_stencil(&mut self,value: u8){
         self.frame.clear_stencil(value as i32);
     }
 

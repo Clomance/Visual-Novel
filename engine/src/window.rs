@@ -36,9 +36,10 @@ use glium::glutin::{
     window::Icon
 };
 
-use image::GenericImageView;
+use image::{GenericImageView,ImageFormat};
 
-
+// Окно с вписанными в него графическими функциями,
+// а также обработчиками событий
 /*
     EventLoop - минимум четыре шага для моей схемы с мгновенным закрытием цикла обработки событий:
     1) NewEvent
@@ -55,7 +56,7 @@ use image::GenericImageView;
     При получении фокуса игра возвращается в исходное состояние
 */
 
-pub static mut mouse_cursor:MouseCursor=MouseCursor::new();
+pub static mut mouse_cursor:MouseCursor=MouseCursor::new(); // Положение курсора мыши
 
 pub static mut window_width:f32=0f32;
 pub static mut window_height:f32=0f32;
@@ -70,18 +71,18 @@ pub struct GameWindow{
     events_handler:fn(&mut Self),
     width:u32,
     height:u32,
-    alpha_channel:f32,
-    smooth:f32,
+    alpha_channel:f32,  // Для плавных
+    smooth:f32,         // переходов
 }
 
-#[derive(Clone)]
+#[derive(Clone)] // Внешние события окна
 pub enum WindowEvent{
     None,
     Draw,
 
-    Hide(bool),
+    Hide(bool), // 
 
-    MouseMovementDelta((f32,f32)),
+    MouseMovementDelta((f32,f32)), // Сдвиг мышки (сдвиг за пределы экрана игнорируется)
     MousePressed(MouseButton),
     MouseReleased(MouseButton),
 
@@ -102,8 +103,8 @@ pub enum MouseButton{
 use WindowEvent::*;
 
 impl GameWindow{
-    #[inline(always)]
-    pub fn new(title:&String)->GameWindow{
+    #[inline(always)] // Создание окна с данным заголовком
+    pub fn new(title:&str)->GameWindow{
         let event_loop=EventLoop::new();
         let monitor=event_loop.primary_monitor();
         let size=monitor.size();
@@ -127,19 +128,19 @@ impl GameWindow{
             .with_window_icon(Some(icon))
             .with_fullscreen(Some(fullscreen));
 
-
         let context_builder=ContextBuilder::new()
             .with_vsync(true)
             .with_srgb(true);
 
-        // Создание окна
+        // Создание окна и привязывание графической библиотеки
         let display=Display::new(window_builder,context_builder,&event_loop).unwrap();
 
         let mut frame=display.draw();       //
         frame.clear_color(1.0,1.0,1.0,1.0); // Заполнение окна
         frame.finish().unwrap();            //
-
-
+ 
+        // Отлючение курсора системы
+        // Заменил его своим
         display.gl_window().window().set_cursor_visible(false);
 
         Self{
@@ -420,11 +421,12 @@ impl GameWindow{
 }
 
 impl GameWindow{
+    // Сохраняет скриншот в формате png
     pub fn screenshot<P:AsRef<Path>>(&self,path:P){
         let image:glium::texture::RawImage2d<u8>=self.display.read_front_buffer().unwrap();
         let image=image::ImageBuffer::from_raw(image.width,image.height,image.data.into_owned()).unwrap();
         let image=image::DynamicImage::ImageRgba8(image).flipv();
-        image.save(path).unwrap();
+        image.save_with_format(path,ImageFormat::Png).unwrap();
     }
 }
 
@@ -599,8 +601,7 @@ pub enum KeyboardButton{
 pub fn load_window_icon()->Icon{
     let image=image::open("./resources/images/window_icon.png").unwrap();
     let vec=image.to_bytes();
-    let width=image.width();
-    let height=image.height();
+    let (width,height)=image.dimensions();
 
     Icon::from_rgba(vec,width,height).unwrap()
 }

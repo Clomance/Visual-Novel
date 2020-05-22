@@ -22,6 +22,7 @@ pub struct Glyphs<'a>{
 }
 
 impl<'a> Glyphs<'a>{
+    // Загрузка шрифта из файла
     pub fn load<P:AsRef<Path>>(path:P)->Glyphs<'a>{
         let data=fs::read(&path).unwrap();
         let font=Font::try_from_vec(data).unwrap();
