@@ -90,12 +90,11 @@ impl<'a,'c> PageTable<'a,'c>{
     }
 }
 
-// (wallpaper, dialogue, character)
-fn load_page_settings(reader:&mut BufReader<File>)->(usize,usize,usize){
-    // Проверка трёх полей
+// Загрузка именён обоев и диалога одной страницы
+// (wallpaper, dialogue)
+pub fn load_page_settings(reader:&mut BufReader<File>)->(String,String){
     let mut wallpaper=None;
     let mut dialogue=None;
-    let mut character=None;
 
     let mut line=String::new();
     let mut line_str;
@@ -112,20 +111,14 @@ fn load_page_settings(reader:&mut BufReader<File>)->(usize,usize,usize){
         if split_line.len()!=2{
             panic!("LoadingPageTableError");
         }
-        // Проверка номера
-        let index=match split_line[1].parse::<usize>(){
-            Ok(num)=>num,
-            Err(_)=>panic!("LoadingPageTableError: not a number"),
-        };
         match split_line[0]{
-            "wallpaper"=>wallpaper=Some(index),
-            "dialogue"=>dialogue=Some(index),
-            "character"=>character=Some(index),
+            "wallpaper"=>wallpaper=Some(split_line[1].to_string()),
+            "dialogue"=>dialogue=Some(split_line[1].to_string()),
             _=>panic!("LoadingPageTableError: no such field"),
         }
 
         line.clear();
     }
 
-    (wallpaper.unwrap(),dialogue.unwrap(),character.unwrap())
+    (wallpaper.unwrap(),dialogue.unwrap())
 }

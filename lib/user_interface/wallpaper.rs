@@ -15,6 +15,7 @@ use engine::{
 
 pub const wallpaper_movement_scale:f32=16f32;
 
+// Подвижные обои
 pub struct Wallpaper{
     image:ImageBase,
     texture:Texture,

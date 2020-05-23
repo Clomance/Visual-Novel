@@ -102,22 +102,6 @@ fn load_image<P:AsRef<Path>>(path:P,width:u32,height:u32)->RgbaImage{
 }
 
 // Загрузка фонов
-fn load_wallpapers_textures<P:AsRef<Path>+Clone>(path:P,width:f32,height:f32)->Vec<RgbaImage>{
-    let meta=metadata(path.clone()).unwrap();
-    let mut textures=Vec::with_capacity(meta.len() as usize);
-    let dir=read_dir(path).unwrap();
-
-    for r in dir{
-        let file=r.unwrap();
-        let path=file.path();
-        let image=load_wallpaper_image(path,width,height);
-        textures.push(image)
-    }
-
-    textures
-}
-
-// Загрузка фонов
 fn load_wallpapers_textures_paths<P:AsRef<Path>+Clone>(path:P)->Vec<PathBuf>{
     let meta=metadata(path.clone()).unwrap();
     let mut textures=Vec::with_capacity(meta.len() as usize);

@@ -12,7 +12,7 @@ pub struct Texture(pub SrgbTexture2d);
 
 impl Texture{
     // Создание текстуры из массива байт
-    pub fn create<S:Into<[u32;2]>>(factory:&mut Display,memory:&[u8],size:S)->Result<Self,TextureCreationError>{
+    pub fn create<S:Into<[u32;2]>>(factory:&Display,memory:&[u8],size:S)->Result<Self,TextureCreationError>{
         let size=size.into();
 
         let image=RawImage2d::from_raw_rgba_reversed(memory,(size[0],size[1]));
@@ -23,7 +23,7 @@ impl Texture{
     }
 
     // Загрузка текстуры из файла
-    pub fn from_path<P:AsRef<Path>>(factory:&mut Display,path:P)->Result<Self,String>{
+    pub fn from_path<P:AsRef<Path>>(factory:&Display,path:P)->Result<Self,String>{
         let img=image::open(path).map_err(|e|e.to_string())?;
 
         let img=match img{
@@ -35,7 +35,7 @@ impl Texture{
     }
 
     // Создание текстуры из изображения
-    pub fn from_image(factory:&mut Display,img:&RgbaImage)->Result<Self,TextureCreationError>{
+    pub fn from_image(factory:&Display,img:&RgbaImage)->Result<Self,TextureCreationError>{
         let (width,height)=img.dimensions();
         Texture::create(factory,img,[width,height])
     }

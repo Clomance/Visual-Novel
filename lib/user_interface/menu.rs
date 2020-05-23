@@ -14,7 +14,7 @@ use engine::{
 };
 
 const head_margin:f32=50f32; // Расстояние между заголовком и кнопками
-const button_margin:f32=10f32;
+const button_margin:f32=10f32; // Расстояние между кнопками
 const dmargin:f32=head_margin-button_margin; // Для расчёта высоты меню - чтобы не вычитать button_margin
 
 const menu_movement_scale:f32=10f32; // Обратный коэфициент сдвига меню при движении мышью
@@ -107,14 +107,17 @@ impl<'a> Menu<'a>{
         }
     }
 
-    pub fn pressed(&mut self){
-        for button in &mut self.buttons{
+    // Проверка: нажата ли кнопка в меню
+    pub fn pressed(&mut self)->Option<usize>{
+        for (c,button) in self.buttons.iter_mut().enumerate(){
             if button.pressed(){
-                return
+                return Some(c)
             }
         }
+        None
     }
 
+    // Проверка: завершён ли клик по кнопке
     pub fn clicked(&mut self)->Option<usize>{
         for (c,button) in self.buttons.iter_mut().enumerate(){
             if button.released(){
@@ -124,6 +127,7 @@ impl<'a> Menu<'a>{
         None
     }
 
+    // Сдвиг с коэффициентом
     pub fn mouse_shift(&mut self,dx:f32,dy:f32){
         let dx=dx/menu_movement_scale;
         let dy=dy/menu_movement_scale;

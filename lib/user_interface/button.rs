@@ -22,6 +22,7 @@ use engine::{
 
 const dcolour:f32=0.125; // На столько измененяется цвет при нажитии/освобождении
 
+// Обычная кнопка с собственным шрифтом
 pub struct Button<'a>{
     base:ButtonDependent,
     glyphs:Glyphs<'a>
@@ -76,6 +77,15 @@ impl ButtonDependent{
             base:ButtonBase::new(settings.rect,settings.background_colour),
             text:TextViewStaticLineDependent::new(text_view_settings,glyphs),
         }
+    }
+
+    pub fn position(&self)->[f32;4]{
+        [
+            self.base.rect.x1,
+            self.base.rect.y1,
+            self.base.rect.x2,
+            self.base.rect.y2
+        ]
     }
 
     pub fn shift(&mut self,dx:f32,dy:f32){

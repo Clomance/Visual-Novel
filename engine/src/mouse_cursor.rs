@@ -1,19 +1,13 @@
 use super::{
     // statics
     window_center,
-    window_width,
-    window_height,
+    graphics::{GameGraphics},
+    image::{ImageBase,Texture},
+
 };
 
 use glium::{
-    Frame,
-    implement_vertex,
-    uniform,
     Display,
-    Program,
-    Surface,
-    VertexBuffer,
-    index::{NoIndices,PrimitiveType},
     DrawParameters,
 };
 
@@ -65,157 +59,56 @@ impl MouseCursor{
 
 // Иконка курсора мыши
 // Сделана для прямого вывода на кадр
-// Полностью ручкая настройка
 // Требуется доработка
 
 const radius:f32=30f32;
+const d_radius:f32=5f32;
 
-const points:usize=16usize; // Количество точек для иконки
-
-//const d_angle:f32=(std::f32::consts::PI)/(2f32*points as f32);
-
-const mouse_icon_color:(f32,f32,f32,f32)=(0.15,0.25,0.9,0.85);
-
-implement_vertex!(Vertex2DPoint,position);
-#[derive(Clone,Copy)]
-struct Vertex2DPoint{
-    position:[f32;2]
-}
-
+// Иконка курсора мышки
+// Загружает картинку их папки ресурсов
 pub struct MouseCursorIcon{
-    vertex_buffer:VertexBuffer<Vertex2DPoint>,
-    vertex_buffer_pressed:VertexBuffer<Vertex2DPoint>,
-    program:Program,
-    draw_function:fn(&Self,(f32,f32),&mut DrawParameters,&mut Frame)
+    image_base:ImageBase,
+    texture:Texture,
+    radius:f32
 }
 
 impl MouseCursorIcon{
     pub fn new(display:&Display)->MouseCursorIcon{
-        let (k,mut r_x, mut r_y)=unsafe{(
-                window_width/window_height,
-                radius/window_width,
-                radius/window_height
-        )};
-
-        let mut shape=[Vertex2DPoint{position:[0f32;2]};4*points+2];
-        let mut pressed_shape=[Vertex2DPoint{position:[0f32;2]};4*points+2];
-
-        let dx=r_x/points as f32;
-        let mut x=dx;
-
-        for c in 1..points{
-            let y=((r_x-x)*(r_x+x)).sqrt()*k;
-            shape[c].position=[x,y];
-
-            shape[2*points-c].position=[x,-y];
-
-            shape[2*points+c].position=[-x,-y];
-
-            shape[4*points-c].position=[-x,y];
-
-            let (x_p,y_p)=(x*0.8f32,y*0.8f32);
-
-            pressed_shape[c].position=[x_p,y_p];
-
-            pressed_shape[2*points-c].position=[x_p,-y_p];
-
-            pressed_shape[2*points+c].position=[-x_p,-y_p];
-
-            pressed_shape[4*points-c].position=[-x_p,y_p];
-
-            x+=dx;
-        }
-
-        shape[1].position=[0f32,r_y];
-        shape[points].position=[r_x,0f32];
-        shape[2*points].position=[0f32,-r_y];
-        shape[3*points].position=[-r_x,0f32];
-        shape[4*points].position=[0f32,r_y];
-
-        r_x*=0.8f32;
-        r_y*=0.8f32;
-
-        pressed_shape[1].position=[0f32,r_y];
-        pressed_shape[points].position=[r_x,0f32];
-        pressed_shape[2*points].position=[0f32,-r_y];
-        pressed_shape[3*points].position=[-r_x,0f32];
-        pressed_shape[4*points].position=[0f32,r_y];
-
-        let vertex_buffer=VertexBuffer::new(display,&shape).unwrap();
-
-        let vertex_buffer_pressed=VertexBuffer::new(display,&pressed_shape).unwrap();
-
-        let vertex_shader_src=r#"
-                #version 140
-
-                in vec2 position;
-
-                uniform float dx;
-                uniform float dy;
-
-                void main() {
-                    vec2 pos = position;
-                    pos.x += dx;
-                    pos.y += dy;
-                    gl_Position = vec4(pos, 0.0, 1.0);
-                }
-            "#;
-
-        let fragment_shader_src=&format!(r#"
-                #version 140
-
-                out vec4 color;
-
-                void main() {{
-                    color = vec4{:?};
-                }}
-            "#,mouse_icon_color);
-
-        let program=glium::Program::from_source(display,vertex_shader_src,fragment_shader_src,None).unwrap();
-
         Self{
-            vertex_buffer,
-            vertex_buffer_pressed,
-            program:program,
-            draw_function:Self::draw_common
+            image_base:ImageBase::new([1f32;4],[0f32,0f32,radius,radius]),
+            texture:Texture::from_path(display,"resources/images/mouse_icon.png").unwrap(),
+            radius:radius/2f32,
         }
     }
 
-    // При нажатии левой кнопки мыши
+    pub fn set_position(&mut self,position:[f32;2]){
+        self.image_base.x1=position[0]-self.radius;
+        self.image_base.y1=position[1]-self.radius;
+        self.image_base.x2=position[0]+self.radius;
+        self.image_base.y2=position[1]+self.radius;
+    }
+
+
+    // При нажатии кнопки мыши
     pub fn pressed(&mut self){
-        self.draw_function=Self::draw_pressed;
+        self.image_base.x1+=d_radius;
+        self.image_base.y1+=d_radius;
+        self.image_base.x2-=d_radius;
+        self.image_base.y2-=d_radius;
+        self.radius-=d_radius;
     }
 
-    // При освобождении левой кнопки мыши
+    // При освобождении кнопки мыши
     pub fn released(&mut self){
-        self.draw_function=Self::draw_common;
-    }
-}
-
-
-// Функции отрисовки
-impl MouseCursorIcon{
-    pub fn draw(&self,position:(f32,f32),draw_parameters:&mut DrawParameters,frame:&mut Frame){
-        (self.draw_function)(self,position,draw_parameters,frame)
+        self.image_base.x1-=d_radius;
+        self.image_base.y1-=d_radius;
+        self.image_base.x2+=d_radius;
+        self.image_base.y2+=d_radius;
+        self.radius+=d_radius;
     }
 
-    fn draw_common(&self,position:(f32,f32),draw_parameters:&mut DrawParameters,frame:&mut Frame){
-        frame.draw(
-            &self.vertex_buffer,
-            &NoIndices(PrimitiveType::TriangleFan),
-            &self.program,
-            &uniform!{dx:position.0,dy:position.1},
-            draw_parameters
-        ).unwrap();
-    }
-
-    fn draw_pressed(&self,position:(f32,f32),draw_parameters:&mut DrawParameters,frame:&mut Frame){
-        frame.draw(
-            &self.vertex_buffer_pressed,
-            &NoIndices(PrimitiveType::TriangleFan),
-            &self.program,
-            &uniform!{dx:position.0,dy:position.1},
-            draw_parameters
-        ).unwrap();
+    #[inline(always)]
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+        self.image_base.draw(&self.texture,draw_parameters,graphics)
     }
 }

@@ -90,7 +90,7 @@ impl<'a,'b> MainMenu<'a,'b>{
     pub unsafe fn start(&mut self,window:&mut GameWindow,music:&Music)->Game{
         let radius=mouse_cursor.center_radius();
         self.wallpaper.mouse_shift(radius[0],radius[1]);
-        window.set_smooth(default_page_smooth);
+        window.set_smooth(page_smooth);
 
         'main:while self.smooth(window)!=Game::Exit{
 
@@ -179,7 +179,7 @@ impl<'a,'b> MainMenu<'a,'b>{
     }
 
     pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
-        window.set_alpha(0f32);
+        window.set_new_smooth(page_smooth);
 
         while let Some(event)=window.next_event(){
             

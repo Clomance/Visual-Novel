@@ -33,6 +33,7 @@ impl TextViewLineDependent{
         }
     }
 
+    #[inline(always)]
     pub fn font_size(&self)->f32{
         self.base.font_size()
     }
@@ -55,60 +56,20 @@ impl TextViewLineDependent{
         self.base.base.set_x(x);
     }
 
+    #[inline(always)]
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.base.set_alpha_channel(alpha)
     }
 
+    #[inline(always)]
     pub fn shift(&mut self,dx:f32,dy:f32){
         self.base.shift(dx,dy)
     }
 
+    #[inline(always)]
     pub fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
         self.base.base.draw(&self.base.line,draw_parameters,g,glyphs);
     }
-
-    // Частичный вывод текста (Может пригодиться)
-    // fn draw_part(&mut self,chars:usize,c:&Context,g:&mut GameGraphics,glyphs:&mut Glyphs)->bool{
-    //     let (x,y)=(self.base.image.rect[0],self.base.image.rect[1]); // Сохранение начального положения
-
-    //     let mut chars_passed=0; // Символов выведенно
-    //     let mut whole_text=true;
-
-    //     // Перебор символов
-    //     for ch in self.line.chars(){
-    //         if chars_passed==chars{
-    //             whole_text=false;
-    //             break
-    //         }
-    //         chars_passed+=1;
-    //         let character=glyphs.character(self.base.font_size,ch).unwrap();
-
-    //         { // Установка положения и размер символа
-    //             self.base.image.rect[0]+=character.left();
-    //             self.base.image.rect[1]-=character.top();
-    //             self.base.image.rect[2]=character.atlas_size[0];
-    //             self.base.image.rect[3]=character.atlas_size[1];
-    //         }
-
-    //         { // Обрезка символа
-    //             self.base.image.src_rect[0]=character.atlas_offset[0];
-    //             self.base.image.src_rect[1]=character.atlas_offset[1];
-    //             self.base.image.src_rect[2]=character.atlas_size[0];
-    //             self.base.image.src_rect[3]=character.atlas_size[1];
-    //         }
-
-    //         self.base.image.draw(character.texture,&c.draw_state,c.transform,g);
-
-    //         // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
-    //         self.base.image.rect[0]+=character.width() as f64-character.left();
-    //         self.base.image.rect[1]+=character.advance_height()+character.top();
-    //     }
-    //     // Возвращение в начальное положение
-    //     self.base.image.rect[0]=x;
-    //     self.base.image.rect[1]=y;
-
-    //     whole_text
-    // }
 
     pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
         self.set_alpha_channel(alpha);
@@ -250,18 +211,22 @@ impl TextViewStaticLineDependent{
         }
     }
 
+    #[inline(always)]
     pub fn font_size(&self)->f32{
         self.base.font_size
     }
 
+    #[inline(always)]
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.base.set_alpha_channel(alpha)
     }
 
+    #[inline(always)]
     pub fn shift(&mut self,dx:f32,dy:f32){
         self.base.shift(dx,dy)
     }
 
+    #[inline(always)]
     pub fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
         self.base.draw(&self.line,draw_parameters,g,glyphs);
     }
@@ -364,6 +329,7 @@ impl TextViewStaticLinedDependent{
         }
     }
 
+    #[inline(always)]
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.base.set_alpha_channel(alpha);
     }

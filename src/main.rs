@@ -18,7 +18,7 @@ use engine::{
 };
 
 use std::{
-    fs::{File,OpenOptions,metadata,read_dir},
+    fs::{OpenOptions,metadata,read_dir},
     io::{Write,BufReader,BufRead},
 };
 
@@ -33,7 +33,7 @@ mod pages;
 use pages::*;
 
 mod page_table;
-use page_table::PageTable;
+use page_table::*;
 
 mod characters;
 use characters::*;
@@ -73,17 +73,6 @@ impl Drop for LoadingFlag{
             loading=false
         }
     }
-}
-
-#[derive(Copy,Clone,Hash,PartialEq,Eq)]
-enum Melody{
-    None,
-    MainMenu
-}
-
-#[derive(Copy,Clone,Hash,PartialEq,Eq)]
-enum Sound{
-    None
 }
 
 fn main(){
@@ -560,39 +549,6 @@ fn search(vec:&Vec<String>,v:&str)->usize{
         }
     }
     panic!("search");
-}
-
-// Загрузка именён обоев и диалога одной страницы
-// (wallpaper, dialogue)
-fn load_page_settings(reader:&mut BufReader<File>)->(String,String){
-    let mut wallpaper=None;
-    let mut dialogue=None;
-
-    let mut line=String::new();
-    let mut line_str;
-
-    while let Ok(bytes)=reader.read_line(&mut line){
-        line_str=line.trim();
-        if line_str=="}" || bytes==0{
-            break
-        }
-
-        let split_line:Vec<&str>=line.split("=").map(|s|s.trim()).collect();
-
-        // Проверка форматирования
-        if split_line.len()!=2{
-            panic!("LoadingPageTableError");
-        }
-        match split_line[0]{
-            "wallpaper"=>wallpaper=Some(split_line[1].to_string()),
-            "dialogue"=>dialogue=Some(split_line[1].to_string()),
-            _=>panic!("LoadingPageTableError: no such field"),
-        }
-
-        line.clear();
-    }
-
-    (wallpaper.unwrap(),dialogue.unwrap())
 }
 
 

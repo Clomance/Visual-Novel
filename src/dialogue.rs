@@ -1,12 +1,13 @@
-use crate::CharacterLocation;
+use super::CharacterLocation;
 
 use std::{
-    fmt::Debug,
     path::Path,
     io::{BufRead, BufReader},
     fs::{File,OpenOptions},
 };
 
+// Диалог со вставленным именем пользователя
+// и распределёнными именами
 pub struct DialogueFormatted<'a>{
     names:Vec<&'a str>,
     dialogues:Vec<String>,
@@ -39,14 +40,15 @@ impl<'a> DialogueFormatted<'a>{
     }
 }
 
+// Диалог
 pub struct Dialogue{
-    names_cache:Vec<String>,
-    dialogues:Vec<String>,
-    names:Vec<usize>
+    names_cache:Vec<String>, // Все имена в диалоге
+    dialogues:Vec<String>, // Диалоги
+    names:Vec<usize> // Индексы имён
 }
 
 impl Dialogue{
-    pub fn new<P:AsRef<Path>+Debug+Clone>(path:P)->Dialogue{
+    pub fn new<P:AsRef<Path>+Clone>(path:P)->Dialogue{
         let dialogue_file=OpenOptions::new().read(true).open(path.clone()).unwrap();
 
         let mut dialogues=Vec::<String>::with_capacity(10);
@@ -193,7 +195,7 @@ pub fn read_characters(reader:&mut BufReader<File>)->Vec<(String,CharacterLocati
     names
 }
 
-// Чтение заголовка (краткие имена, полные имена имён)
+// Чтение заголовка -> (краткие имена, полные имена имён)
 // Формат заголовка:
 /*
 {

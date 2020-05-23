@@ -28,7 +28,7 @@ use engine::{
 const circle_radius:f32=16f32;
 const circle_diametr:f32=circle_radius*2f32;
 
-// const line_radius:f32=5f32;
+const line_radius:f32=5f32;
 
 // Полная комплектация слайдера с надписью и выводом значения
 pub struct Slider<'a>{
@@ -133,7 +133,7 @@ impl SimpleSlider{
             step:step,
             current_value:settings.current_value,
             circle:CircleWithBorder::new(circle_rect,settings.circle_colour).border(1.5f32,Black),
-            line:Line::new(line_rect,5f32,settings.line_colour),
+            line:Line::new(line_rect,line_radius,settings.line_colour),
             grab:false,
         }
     }

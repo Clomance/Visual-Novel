@@ -73,6 +73,10 @@ pub struct GameWindow{
     height:u32,
     alpha_channel:f32,  // Для плавных
     smooth:f32,         // переходов
+
+    // Поля для отладки
+    #[cfg(debug_assertions)]
+    focusable_option:bool, // Включение/отключение возможности сворачивания во время отладки
 }
 
 #[derive(Clone)] // Внешние события окна
@@ -80,10 +84,11 @@ pub enum WindowEvent{
     None,
     Draw,
 
-    Hide(bool), // 
+    // Получение/потеря фокуса, true/false
+    Hide(bool), // При потере фокуса игра сворачивается
 
     MouseMovementDelta((f32,f32)), // Сдвиг мышки (сдвиг за пределы экрана игнорируется)
-    MousePressed(MouseButton),
+    MousePressed(MouseButton), 
     MouseReleased(MouseButton),
 
     KeyboardPressed(KeyboardButton),
@@ -93,6 +98,7 @@ pub enum WindowEvent{
     Exit,
 }
 
+// Кнопки мыши, без дополнительных кнопок
 #[derive(Clone)]
 pub enum MouseButton{
     Left,
@@ -154,6 +160,9 @@ impl GameWindow{
             height:size.height,
             alpha_channel:0f32,
             smooth:0f32,
+
+            #[cfg(debug_assertions)]
+            focusable_option:true,
         }
     }
 
@@ -218,7 +227,8 @@ impl GameWindow{
 
                             let dx=position[0]-last_position[0];
                             let dy=position[1]-last_position[1];
-                            mouse_cursor.set_position([position[0],position[1]]);
+                            mouse_cursor.set_position(position);
+                            (*game_window).mouse_icon.set_position(position);
                             MouseMovementDelta((dx,dy))
                         }
                         
@@ -255,10 +265,17 @@ impl GameWindow{
                             else{
                                 KeyboardButton::Unknown
                             };
+
                             if input.state==ElementState::Pressed{
+                                
                                 KeyboardPressed(key)
                             }
                             else{
+                                // Отключение/включение возможности сворачивания окна
+                                #[cfg(debug_assertions)]unsafe{
+                                if key==KeyboardButton::F10{
+                                    {(*game_window).focusable_option=!(*game_window).focusable_option;}
+                                }}
                                 KeyboardReleased(key)
                             }
                         }
@@ -274,10 +291,21 @@ impl GameWindow{
                             }
                         }
 
-                        GWindowEvent::Focused(_)=>unsafe{
-                            window.set_minimized(true); // Сворацивание окна
+                        GWindowEvent::Focused(_)=>{
+                            #[cfg(debug_assertions)]
+                            unsafe{
+                                if (*game_window).focusable_option{
+                                    window.set_minimized(true); // Сворацивание окна
+                                    (*game_window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+                                }
+                            }
 
-                            (*game_window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+                            #[cfg(not(debug_assertions))]
+                            unsafe{
+                                window.set_minimized(true); // Сворацивание окна
+                                (*game_window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+                            }
+
                             *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
 
                             WindowEvent::Hide(true) // Передача события во внешнее управление
@@ -385,12 +413,7 @@ impl GameWindow{
 
         f(&mut draw_parameters,&mut g);
 
-        unsafe{
-            let mouse_position=mouse_cursor.position();
-            let dx=(mouse_position[0]/window_center[0])-1f32;
-            let dy=1f32-(mouse_position[1]/window_center[1]);
-            self.mouse_icon.draw((dx,dy),&mut draw_parameters,g.frame());
-        }
+        self.mouse_icon.draw(&mut draw_parameters,&mut g);
 
         frame.finish();
     }
@@ -406,12 +429,7 @@ impl GameWindow{
 
         f(self.alpha_channel,&mut draw_parameters,&mut g);
 
-        unsafe{
-            let mouse_position=mouse_cursor.position();
-            let dx=(mouse_position[0]/window_center[0])-1f32;
-            let dy=1f32-(mouse_position[1]/window_center[1]);
-            self.mouse_icon.draw((dx,dy),&mut draw_parameters,g.frame());
-        }
+        self.mouse_icon.draw(&mut draw_parameters,&mut g);
 
         frame.finish();
 
