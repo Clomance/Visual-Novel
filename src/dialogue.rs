@@ -1,5 +1,3 @@
-use super::CharacterLocation;
-
 use std::{
     path::Path,
     io::{BufRead, BufReader},
@@ -123,76 +121,6 @@ impl Dialogue{
 
         DialogueFormatted::new(names,dialogues)
     }
-}
-
-// Получение имён персонажей диалога
-pub fn read_characters(reader:&mut BufReader<File>)->Vec<(String,CharacterLocation)>{
-    let mut names=Vec::with_capacity(5);
-    let mut line=String::new();
-
-    // Поиск заголовка
-    while let Ok(bytes)=reader.read_line(&mut line){
-        if bytes==0{
-            break
-        }
-        // Пропуск пустых строк
-        let line_str=line.trim();
-        if line_str.is_empty(){
-            continue
-        }
-        // Проверка начала заголовка
-        if line_str=="{"{
-            break
-        }
-        line.clear()
-    }
-
-    line.clear();
-
-    // Чтение заголовка
-    while let Ok(bytes)=reader.read_line(&mut line){
-        if bytes==0{
-            panic!("Ошибка в диалоге: нет конца заголовка");
-        }
-        // Проверка на завершение заголовка
-        let line_str=line.trim();
-        if line_str=="}"{
-            return names
-        }
-        // Проверка формата
-        let split_line:Vec<&str>=line_str.split("=").collect();
-        if split_line.len()!=2{
-            panic!("Ошибка в диалоге: неверный формат");
-        }
-        // Перевод в строку
-        let name=split_line[1];
-        if let Some(start)=name.find('('){
-            let end=name.find(')').unwrap();
-            let location=match &name[start+1..end]{
-                "Left"=>CharacterLocation::Left,
-                "LeftCenter"=>CharacterLocation::LeftCenter,
-                "CenterLeft"=>CharacterLocation::CenterLeft,
-                "Center"=>CharacterLocation::Center,
-                "CenterRight"=>CharacterLocation::CenterRight,
-                "RightCenter"=>CharacterLocation::RightCenter,
-                "Right"=>CharacterLocation::Right,
-                _=>panic!()
-            };
-            let name=name[..start].trim().to_string();
-            
-            names.push((name,location));
-        }
-        else{
-            let location=CharacterLocation::Center;
-            let name=split_line[1].split("(").next().unwrap().trim().to_string();
-            names.push((name,location));
-        };
-        // Сохранение
-        
-        line.clear()
-    }
-
-    names
 }
 
 // Чтение заголовка -> (краткие имена, полные имена имён)

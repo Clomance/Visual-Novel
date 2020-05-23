@@ -3,8 +3,8 @@ use crate::{CharacterLocation,Dialogue,Settings,Textures};
 use engine::image::image::RgbaImage;
 
 use std::{
-    fs::{File,OpenOptions},
-    io::{BufRead,BufReader,Read},
+    fs::OpenOptions,
+    io::Read,
     path::PathBuf,
 };
 
@@ -88,37 +88,4 @@ impl<'a,'c> PageTable<'a,'c>{
     pub fn current_dialogue(&self)->&'c Dialogue{
         &self.dialogues[self.page]
     }
-}
-
-// Загрузка именён обоев и диалога одной страницы
-// (wallpaper, dialogue)
-pub fn load_page_settings(reader:&mut BufReader<File>)->(String,String){
-    let mut wallpaper=None;
-    let mut dialogue=None;
-
-    let mut line=String::new();
-    let mut line_str;
-
-    while let Ok(bytes)=reader.read_line(&mut line){
-        line_str=line.trim();
-        if line_str=="}" || bytes==0{
-            break
-        }
-
-        let split_line:Vec<&str>=line.split("=").map(|s|s.trim()).collect();
-
-        // Проверка форматирования
-        if split_line.len()!=2{
-            panic!("LoadingPageTableError");
-        }
-        match split_line[0]{
-            "wallpaper"=>wallpaper=Some(split_line[1].to_string()),
-            "dialogue"=>dialogue=Some(split_line[1].to_string()),
-            _=>panic!("LoadingPageTableError: no such field"),
-        }
-
-        line.clear();
-    }
-
-    (wallpaper.unwrap(),dialogue.unwrap())
 }
