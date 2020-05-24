@@ -104,7 +104,9 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                     })
                 }
 
-                WindowEvent::CharacterInput(character)=>self.input.push_char(character),
+                WindowEvent::CharacterInput(character)=>{
+                    self.input.push_char(character);
+                },
 
                 WindowEvent::KeyboardPressed(button)=>{
                     match button{

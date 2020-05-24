@@ -1,10 +1,9 @@
 use std::{
-    io::{Read,Write,BufRead, BufReader},
+    io::{Read,Write},
     fs::OpenOptions,
 };
 
 pub struct GameSettings{
-    pub game_name:String,
     pub continue_game:bool, // Флаг продолжения игры
     pub user_name:String,
     pub saved_page:usize, // Страница на которой остановился пользователь (page_table)
@@ -19,7 +18,6 @@ impl GameSettings{
     //
     pub const fn new()->GameSettings{
         Self{
-            game_name:String::new(),
             continue_game:false,
             user_name:String::new(),
             pages:0,
@@ -64,12 +62,6 @@ impl GameSettings{
         // Количество сделанных скриншотов (номер следующего)
         settings_file.read_exact(&mut buffer).unwrap();
         self.screenshot=u32::from_be_bytes(buffer);
-
-        // Название игры
-        settings_file=OpenOptions::new().read(true).open("resources/game_name.txt").unwrap();
-        let mut reader=BufReader::new(settings_file);
-
-        reader.read_line(&mut self.game_name).unwrap();
     }
     // Установка позиций для сохранения
     pub fn set_saved_position(&mut self,page:usize,dialogue:usize){

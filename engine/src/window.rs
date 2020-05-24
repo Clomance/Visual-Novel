@@ -296,12 +296,11 @@ impl GameWindow{
 
                         // Получение вводимых букв
                         GWindowEvent::ReceivedCharacter(character)=>{
-                            match character{
-                                '\u{7f}' | // Delete
-                                '\u{1b}' | // Escape
-                                '\u{8}'  | // Backspace
-                                '\r' | '\n' | '\t'=>None,
-                                ch=>CharacterInput(ch),
+                            if character.is_ascii_control(){
+                                None
+                            }
+                            else{
+                                CharacterInput(character)
                             }
                         }
 

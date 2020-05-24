@@ -14,7 +14,6 @@ use lib::{
 
 use engine::{
     // statics
-    mouse_cursor,
     window_height,
     window_width,
     // structs
@@ -137,13 +136,6 @@ impl<'b,'c> DialogueBox<'b,'c>{
         else{
             self.whole_text=true; // Установка флага для вывода всего текста
             false
-        }
-    }
-
-    #[inline(always)]
-    pub fn clicked(&self)->bool{
-        unsafe{
-            self.y1<mouse_cursor.position()[1] // Если курсор в нижней трети экрана
         }
     }
 

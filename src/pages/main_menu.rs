@@ -1,4 +1,5 @@
 use crate::{
+    game_name,
     Calibri,
     make_screenshot,
     Game,
@@ -79,7 +80,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
         buttons_text.push("Выход".to_string());
 
         // Настройка меню
-        let menu_settings=MenuSettings::new(unsafe{Settings.game_name.clone()},&buttons_text)
+        let menu_settings=MenuSettings::new(game_name,&buttons_text)
                 .head_size([180f32,80f32])
                 .buttons_size([180f32,60f32]);
 

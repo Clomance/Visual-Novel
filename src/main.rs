@@ -1,5 +1,5 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,dead_code,unused_unsafe)]
-#![windows_subsystem="windows"]
+//#![windows_subsystem="windows"]
 
 use lib::{
     *,
@@ -56,6 +56,16 @@ macro_rules! Calibri {
     };
 }
 
+#[macro_export]
+macro_rules! Dialogue_font {
+    () => {
+        unsafe{
+            &crate::glyph_cache[1]
+        }
+    };
+}
+
+
 #[derive(Eq,PartialEq)]
 pub enum Game{
     Current,
@@ -68,7 +78,11 @@ pub enum Game{
     Exit
 }
 
+pub const game_name:&'static str="Visual Novel by Clomance";
+
 const page_smooth:f32=1f32/32f32;
+
+
 
 pub static mut Settings:game_settings::GameSettings=game_settings::GameSettings::new();
 
@@ -78,7 +92,10 @@ pub static mut glyph_cache:Vec<Glyphs>=Vec::new();
 
 fn main(){
     unsafe{
-        let glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
+        let mut glyphs=Glyphs::load("./resources/fonts/CALIBRI.font");
+        glyph_cache.push(glyphs);
+
+        glyphs=Glyphs::load("./resources/fonts/dialogue_box.font");
         glyph_cache.push(glyphs);
     }
 
@@ -86,7 +103,7 @@ fn main(){
 
     unsafe{
         Settings.load(); // Загрузка настроек
-        let mut window:GameWindow=GameWindow::new(&Settings.game_name); // Создание окна и загрузка функций OpenGL
+        let mut window:GameWindow=GameWindow::new(game_name); // Создание окна и загрузка функций OpenGL
 
         let wallpaper_size={
             let dx=window_width/(wallpaper_movement_scale*2f32);
@@ -159,7 +176,7 @@ fn main(){
         let mut wallpaper=Wallpaper::new(texture_base.main_menu_wallpaper(),window.display());
         let mut characters_view=CharactersView::new(); // "Сцена" для персонажей
 
-        let mut dialogue_box=DialogueBox::new(texture_base.dialogue_box(),window.display(),Calibri!()); // Диалоговое окно
+        let mut dialogue_box=DialogueBox::new(texture_base.dialogue_box(),window.display(),Dialogue_font!()); // Диалоговое окно
 
         let mut music=music::Music::new();
         music.add_music("./resources/music/audio.mp3");
@@ -259,14 +276,12 @@ fn main(){
                             WindowEvent::MouseReleased(button)=>{
                                 match button{
                                     MouseButton::Left=>{
-                                        if dialogue_box.clicked(){
-                                            if dialogue_box.next_page(){
-                                                if page_table.next_page(){
-                                                    break 'page_inner // Переход к следующей странице (break 'page)
-                                                }
-                                                else{
-                                                    break 'gameplay
-                                                }
+                                        if dialogue_box.next_page(){
+                                            if page_table.next_page(){
+                                                break 'page_inner // Переход к следующей странице (break 'page)
+                                            }
+                                            else{
+                                                break 'gameplay
                                             }
                                         }
                                     }
