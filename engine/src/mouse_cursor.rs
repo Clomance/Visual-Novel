@@ -1,9 +1,11 @@
 use super::{
     // statics
     window_center,
+    // structs
     graphics::{GameGraphics},
     image::{ImageBase,Texture},
-
+    // types
+    Colour,
 };
 
 use glium::{
@@ -69,7 +71,8 @@ const d_radius:f32=5f32;
 pub struct MouseCursorIcon{
     image_base:ImageBase,
     texture:Texture,
-    radius:f32
+    radius:f32,
+    visible:bool,
 }
 
 impl MouseCursorIcon{
@@ -78,6 +81,7 @@ impl MouseCursorIcon{
             image_base:ImageBase::new([1f32;4],[0f32,0f32,radius,radius]),
             texture:Texture::from_path(display,"resources/images/mouse_icon.png").unwrap(),
             radius:radius/2f32,
+            visible:true,
         }
     }
 
@@ -88,6 +92,17 @@ impl MouseCursorIcon{
         self.image_base.y2=position[1]+self.radius;
     }
 
+    pub fn set_filter(&mut self,filter:Colour){
+        self.image_base.colour_filter=filter;
+    }
+
+    pub fn set_visible(&mut self,visible:bool){
+        self.visible=visible
+    }
+
+    pub fn switch_visible(&mut self){
+        self.visible=!self.visible
+    }
 
     // При нажатии кнопки мыши
     pub fn pressed(&mut self){
@@ -109,6 +124,7 @@ impl MouseCursorIcon{
 
     #[inline(always)]
     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
-        self.image_base.draw(&self.texture,draw_parameters,graphics)
+        draw_parameters.color_mask=(self.visible,self.visible,self.visible,self.visible);
+        self.image_base.draw(&self.texture,draw_parameters,graphics);
     }
 }

@@ -1,4 +1,5 @@
 use crate::{
+    Calibri,
     make_screenshot,
     Game,
     Settings,
@@ -22,7 +23,6 @@ use engine::{
     mouse_cursor,
     // structs
     GameWindow,
-    text::Glyphs,
     graphics::GameGraphics,
     // enums
     WindowEvent,
@@ -34,6 +34,9 @@ use engine::{
 
 const page_smooth:f32=default_page_smooth; // Сглаживание переходов - 1 к количеству кадров перехода
 
+// Кнопки меню
+// Для упрощение определения нажатой кнопки,
+// так как меню может иметь ещё и кпопку "Продолжить"
 enum MenuButtons{
     Continue,
     New,
@@ -56,20 +59,19 @@ impl MenuButtons{
     }
 }
 
-pub struct MainMenu<'a,'b>{
+// Главное меню
+pub struct MainMenu<'a,'wallpaper>{
     pub menu:Menu<'a>,
-    pub wallpaper:&'b mut Wallpaper
+    pub wallpaper:&'wallpaper mut Wallpaper
 }
 
-impl<'a,'b> MainMenu<'a,'b>{
-    pub unsafe fn new(wallpaper:&'b mut Wallpaper)->MainMenu<'a,'b>{
+impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
+    pub fn new(wallpaper:&'wallpaper mut Wallpaper)->MainMenu<'a,'wallpaper>{
 
         // Настройка заголовка меню
-        let menu_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
-
         let mut buttons_text=Vec::with_capacity(4);
 
-        if Settings.continue_game{
+        if unsafe{Settings.continue_game}{
             buttons_text.push("Продолжить".to_string());
         }
         buttons_text.push("Новая игра".to_string());
@@ -77,18 +79,19 @@ impl<'a,'b> MainMenu<'a,'b>{
         buttons_text.push("Выход".to_string());
 
         // Настройка меню
-        let menu_settings=MenuSettings::new(Settings.game_name.clone(),&buttons_text)
+        let menu_settings=MenuSettings::new(unsafe{Settings.game_name.clone()},&buttons_text)
                 .head_size([180f32,80f32])
                 .buttons_size([180f32,60f32]);
 
         Self{
-            menu:Menu::new(menu_settings,menu_glyphs), // Создание меню
+            menu:Menu::new(menu_settings,Calibri!()), // Создание меню
             wallpaper,
         }
     }
 
-    pub unsafe fn start(&mut self,window:&mut GameWindow,music:&Music)->Game{
-        let radius=mouse_cursor.center_radius();
+    pub fn start(mut self,window:&mut GameWindow,music:&Music)->Game{
+        let radius=unsafe{mouse_cursor.center_radius()};
+
         self.wallpaper.mouse_shift(radius[0],radius[1]);
         window.set_smooth(page_smooth);
 
@@ -96,7 +99,7 @@ impl<'a,'b> MainMenu<'a,'b>{
 
             // Цикл самого меню
             while let Some(event)=window.next_event(){
-                
+
                 match event{
                     WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
@@ -131,14 +134,14 @@ impl<'a,'b> MainMenu<'a,'b>{
 
                                         MenuButtons::New=>{ // Кнопка начала нового игрового процесса
                                             // Окно ввода имени захватывает управление над меню
-                                            match EnterUserName::new(self,window).start(){
+                                            match EnterUserName::new(&mut self,window).start(){
                                                 Game::NewGamePlay=>return Game::NewGamePlay,
                                                 Game::Exit=>return Game::Exit,
                                                 _=>{}
                                             }
                                         }
 
-                                        MenuButtons::Settings=>{
+                                        MenuButtons::Settings=>unsafe{
                                             mouse_cursor.save_position(); // Сохранение текущей позиции мышки
                                             match SettingsPage::new().start(window,music){
                                                 Game::Exit=>return Game::Exit,
@@ -178,7 +181,7 @@ impl<'a,'b> MainMenu<'a,'b>{
         Game::Exit
     }
 
-    pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
+    pub fn smooth(&mut self,window:&mut GameWindow)->Game{
         window.set_new_smooth(page_smooth);
 
         while let Some(event)=window.next_event(){

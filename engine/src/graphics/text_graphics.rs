@@ -55,7 +55,7 @@ impl TextGraphics{
 
     // Выводит символ на позицию, которая записана в нём
     pub fn draw_character(
-        &mut self,
+        &self,
         character:&Character,
         colour:Colour,
         draw_parameters:&DrawParameters,

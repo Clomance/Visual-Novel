@@ -1,4 +1,5 @@
 use crate::{
+    Calibri,
     make_screenshot,
     Game,
     Settings,
@@ -12,8 +13,8 @@ use lib::{
     Slider,
     SliderSettings,
     TextViewSettings,
-    TextViewStaticLineDependent,
-    ButtonDependent,
+    TextViewStaticLine,
+    Button,
     ButtonSettings,
 };
 
@@ -30,7 +31,6 @@ use engine::{
     KeyboardButton,
     music::Music,
     // structs
-    text::Glyphs,
     GameWindow,
     graphics::Rectangle,
 };
@@ -39,17 +39,15 @@ const page_smooth:f32=default_page_smooth;
 
 const background_color:Colour=Settings_page_colour;
 
-pub struct SettingsPage<'a,'b,'d>{
-    head:TextViewStaticLineDependent,
-    signs_per_sec:Slider<'b>,
-    volume:Slider<'d>,
-    back_button:ButtonDependent,
-    glyphs:Glyphs<'a>,
+pub struct SettingsPage<'a>{
+    head:TextViewStaticLine<'a>,
+    signs_per_sec:Slider<'a>,
+    volume:Slider<'a>,
+    back_button:Button<'a>,
 }
 
-impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
-    pub unsafe fn new()->SettingsPage<'a,'b,'d>{
-        let mut glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
+impl<'a> SettingsPage<'a>{
+    pub unsafe fn new()->SettingsPage<'a>{
         let head_settings=TextViewSettings::new("Настройки",[
                     0f32,
                     0f32,
@@ -67,7 +65,6 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                 .min_value(15f32)
                 .max_value(120f32)
                 .current_value(Settings.signs_per_frame*60f32);
-        let slider_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
 
 
         let volume_settings=SliderSettings::new()
@@ -77,8 +74,9 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                 .min_value(0f32)
                 .max_value(100f32)
                 .current_value(Settings.volume as f32*100f32/128f32);
-        let volume_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
-        let volume=Slider::new(volume_settings,volume_glyphs);
+
+
+        let volume=Slider::new(volume_settings,Calibri!());
 
         // Настройки кнопки выхода
         let button_settings=ButtonSettings::new("Назад",[
@@ -90,11 +88,10 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
 
 
         Self{
-            head:TextViewStaticLineDependent::new(head_settings,&mut glyphs),
-            signs_per_sec:Slider::new(signs_per_sec_slider_sets,slider_glyphs),
+            head:TextViewStaticLine::new(head_settings,Calibri!()),
+            signs_per_sec:Slider::new(signs_per_sec_slider_sets,Calibri!()),
             volume:volume,
-            back_button:ButtonDependent::new(button_settings,&mut glyphs),
-            glyphs:glyphs,
+            back_button:Button::new(button_settings,Calibri!()),
         }
     }
 
@@ -119,12 +116,12 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                     window.draw(|c,g|{
                         g.clear_colour(background_color);
 
-                        self.head.draw(c,g,&mut self.glyphs);
+                        self.head.draw(c,g);
 
                         self.signs_per_sec.draw(c,g);
                         self.volume.draw(c,g);
 
-                        self.back_button.draw(c,g,&mut self.glyphs);
+                        self.back_button.draw(c,g);
                     });
                 }
             
@@ -192,11 +189,11 @@ impl<'a,'b,'d> SettingsPage<'a,'b,'d>{
                     if 1f32<window.draw_smooth(|alpha,c,g|{
                         background.colour[3]=alpha;
                         background.draw(c,g);
-                        self.head.draw_smooth(alpha,c,g,&mut self.glyphs);
+                        self.head.draw_smooth(alpha,c,g);
                         self.signs_per_sec.draw_smooth(alpha,c,g);
                         self.volume.draw_smooth(alpha,c,g);
                         self.back_button.set_alpha_channel(alpha);
-                        self.back_button.draw(c,g,&mut self.glyphs);
+                        self.back_button.draw(c,g);
                     }){
                         break
                     }

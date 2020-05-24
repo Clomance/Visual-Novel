@@ -71,7 +71,7 @@ impl CharactersView{
         }
     }
 
-    pub fn add_character(&mut self,character:&RgbaImage,location:CharacterLocation,display:&mut Display){
+    pub fn add_character(&mut self,character:&RgbaImage,location:CharacterLocation,display:&Display){
         let rect=unsafe{
             let height=character.height() as f32;
             let width=character.width() as f32;
@@ -124,8 +124,8 @@ impl Drawable for CharactersView{
         }
     }
 
-    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
-        for ch in &mut self.characters{
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+        for ch in &self.characters{
             ch.image.draw(&ch.texture,draw_parameters,graphics);
         }
     }

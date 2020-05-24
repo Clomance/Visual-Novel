@@ -3,9 +3,9 @@ use super::{
     AlignY,
     Drawable,
     Red,
-    TextViewLineDependent,
+    TextViewLine,
     TextViewSettings,
-    TextViewStaticLineDependent,
+    TextViewStaticLine,
     White,
     Black
 };
@@ -32,14 +32,14 @@ const line_radius:f32=5f32;
 
 // Полная комплектация слайдера с надписью и выводом значения
 pub struct Slider<'a>{
-    head:TextViewStaticLineDependent, // Надпись над слайдером
-    value:TextViewLineDependent, // Значение справа от слайдера
-    glyphs:Glyphs<'a>,
+    head:TextViewStaticLine<'a>, // Надпись над слайдером
+    value:TextViewLine<'a>, // Значение справа от слайдера
+    glyphs:&'a Glyphs,
     base:SimpleSlider,
 }
 
 impl<'a> Slider<'a>{
-    pub fn new(settings:SliderSettings,glyphs:Glyphs<'a>)->Slider<'a>{
+    pub fn new(settings:SliderSettings,glyphs:&'a Glyphs)->Slider<'a>{
         // Настройки заголовка слайдера
         let head_settings=TextViewSettings::new(settings.head.clone(),[
                     settings.position[0],
@@ -61,8 +61,8 @@ impl<'a> Slider<'a>{
                 .text_colour(settings.circle_colour);
 
         Self{
-            head:TextViewStaticLineDependent::new(head_settings,&glyphs),
-            value:TextViewLineDependent::new(value_settings,&glyphs),
+            head:TextViewStaticLine::new(head_settings,&glyphs),
+            value:TextViewLine::new(value_settings,&glyphs),
             glyphs:glyphs,
             base:SimpleSlider::new(settings),
         }
@@ -93,8 +93,8 @@ impl<'a> Drawable for Slider<'a>{
         self.base.set_alpha_channel(alpha);
     }
 
-    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
-        self.head.draw(draw_parameters,graphics,&self.glyphs);
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+        self.head.draw(draw_parameters,graphics);
         self.value.draw(draw_parameters,graphics,&self.glyphs);
         self.base.draw(draw_parameters,graphics);
     }
@@ -214,7 +214,7 @@ impl Drawable for SimpleSlider{
         self.line.colour[3]=alpha;
     }
 
-    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         self.line.draw(draw_parameters,graphics);
         self.circle.draw(draw_parameters,graphics);
     }

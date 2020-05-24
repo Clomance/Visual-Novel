@@ -1,4 +1,5 @@
 use crate::{
+    Calibri,
     make_screenshot,
     Game,
 };
@@ -10,13 +11,14 @@ use super::{
 use lib::{
     colours::{White,Black},
     TextViewSettings,
-    TextViewStaticLinedDependent,
+    TextViewStaticLined,
 };
 
 use engine::{
+    // fns
+    window_rect,
     // statics
     window_width,
-    window_height,
     window_center,
     // types
     Colour,
@@ -24,7 +26,6 @@ use engine::{
     WindowEvent,
     KeyboardButton,
     // structs
-    text::Glyphs,
     GameWindow,
     graphics::Rectangle,
 };
@@ -34,30 +35,26 @@ const page_smooth:f32=default_page_smooth;
 const background_color:Colour=Black;
 
 pub struct Intro<'a,'b>{
-    text_view:TextViewStaticLinedDependent,
-    glyphs:Glyphs<'a>,
-    window:&'b mut GameWindow,
+    text_view:TextViewStaticLined<'b>,
+    window:&'a mut GameWindow,
 }
 
 impl<'a,'b> Intro<'a,'b>{
-    pub unsafe fn new(window:&'b mut GameWindow)->Intro<'a,'b>{
-        let glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
-
+    pub fn new(window:&'a mut GameWindow)->Intro<'a,'b>{
         let text="Прогресс сохраняется автоматически";
 
         let settings=TextViewSettings::new(text,
-                [
+                unsafe{[
                     0f32,
                     window_center[1]/2f32,
                     window_width,
                     window_center[1]
-                ])
+                ]})
                 .font_size(40f32)
                 .text_colour(White);
 
         Self{
-            text_view:TextViewStaticLinedDependent::new(settings,&glyphs),
-            glyphs:glyphs,
+            text_view:TextViewStaticLined::new(settings,Calibri!()),
             window:window
         }
     }
@@ -79,7 +76,7 @@ impl<'a,'b> Intro<'a,'b>{
                     if 1f32<(*window).draw_smooth(|alpha,c,g|{
                         g.clear_colour(background_color);
                         self.text_view.set_alpha_channel(alpha);
-                        self.text_view.draw(c,g,&self.glyphs);
+                        self.text_view.draw(c,g);
                     }){
                         break
                     }
@@ -103,7 +100,7 @@ impl<'a,'b> Intro<'a,'b>{
                     if 0f32>(*window).draw_smooth(|alpha,c,g|{
                         g.clear_colour(background_color);
                         self.text_view.set_alpha_channel(alpha);
-                        self.text_view.draw(c,g,&self.glyphs);
+                        self.text_view.draw(c,g);
                     }){
                         break
                     }
@@ -125,14 +122,7 @@ impl<'a,'b> Intro<'a,'b>{
         self.window.set_new_smooth(page_smooth);
         let window=self.window as *mut GameWindow;
 
-        let mut background=Rectangle::new([
-                0f32,
-                0f32,
-                window_width,
-                window_height
-            ],
-            background_color
-        );
+        let mut background=Rectangle::new(window_rect(),background_color);
 
         while let Some(event)=self.window.next_event(){
 

@@ -27,17 +27,15 @@ pub struct EditTextView<'a>{
     line:String,
     capacity:usize,
     align:Align,
-    glyphs:Glyphs<'a>,
+    glyphs:&'a Glyphs,
 }
 
 impl<'a> EditTextView<'a>{
-    pub fn new<S:Into<String>>(settings:EditTextViewSettings<S>,glyphs:Glyphs<'a>)->EditTextView<'a>{
+    pub fn new<S:Into<String>>(settings:EditTextViewSettings<S>,glyphs:&'a Glyphs)->EditTextView<'a>{
         // Создание заднего фона
         let rect=settings.rect;
         let mut background=RectangleWithBorder::new(rect,settings.background_colour);
-        if let Some(colour)=settings.border_colour{
-            background=background.border(2f32,colour);
-        }
+        background=background.border(2f32,settings.border_colour);
 
         let line=settings.text.into();
         // Вычисление длины строки текста
@@ -113,9 +111,9 @@ impl<'a> Drawable for EditTextView<'a>{
         self.background.border_colour[3]=alpha;
     }
 
-    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         self.background.draw(draw_parameters,graphics);
-        self.base.draw(&self.line,draw_parameters,graphics,&mut self.glyphs)
+        self.base.draw(&self.line,draw_parameters,graphics,&self.glyphs)
     }
 }
 
@@ -128,7 +126,7 @@ pub struct EditTextViewSettings<S:Into<String>>{
     align:Align,
     rect:[f32;4], // [x1,y1,width,height] - сюда вписывается текст
     background_colour:Colour,
-    border_colour:Option<Colour>,
+    border_colour:Colour,
 }
 
 impl<S:Into<String>> EditTextViewSettings<S>{
@@ -141,7 +139,7 @@ impl<S:Into<String>> EditTextViewSettings<S>{
             align:Align::center(),
             rect,
             background_colour:White,
-            border_colour:Some(Black)
+            border_colour:Black
         }
     }
 
@@ -150,7 +148,7 @@ impl<S:Into<String>> EditTextViewSettings<S>{
         self
     }
 
-    pub fn border_colour(mut self,colour:Option<Colour>)->EditTextViewSettings<S>{
+    pub fn border_colour(mut self,colour:Colour)->EditTextViewSettings<S>{
         self.border_colour=colour;
         self
     }

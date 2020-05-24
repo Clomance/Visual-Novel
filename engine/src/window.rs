@@ -19,6 +19,7 @@ use glium::{
         LinearBlendingFactor,
         BackfaceCullingMode,
     },
+    texture::RawImage2d
 };
 
 use glium::glutin::{
@@ -33,10 +34,15 @@ use glium::glutin::{
     ContextBuilder,
     window::Window,
     platform::desktop::EventLoopExtDesktop,
-    window::Icon
+    window::Icon,
 };
 
-use image::{GenericImageView,ImageFormat};
+use image::{
+    GenericImageView,
+    ImageFormat,
+    ImageBuffer,
+    DynamicImage
+};
 
 // Окно с вписанными в него графическими функциями,
 // а также обработчиками событий
@@ -60,7 +66,7 @@ pub static mut mouse_cursor:MouseCursor=MouseCursor::new(); // Положени�
 
 pub static mut window_width:f32=0f32;
 pub static mut window_height:f32=0f32;
-pub static mut window_center:[f32;2]=[0f32;2];
+pub static mut window_center:[f32;2]=[0f32;2]; // Центр окна
 
 pub struct GameWindow{
     event_loop:EventLoop<()>,
@@ -69,8 +75,7 @@ pub struct GameWindow{
     mouse_icon:MouseCursorIcon,
     events:VecDeque<WindowEvent>,
     events_handler:fn(&mut Self),
-    width:u32,
-    height:u32,
+
     alpha_channel:f32,  // Для плавных
     smooth:f32,         // переходов
 
@@ -156,8 +161,6 @@ impl GameWindow{
             display:display,
             events:VecDeque::with_capacity(32),
             events_handler:GameWindow::event_listener,
-            width:size.width,
-            height:size.height,
             alpha_channel:0f32,
             smooth:0f32,
 
@@ -167,13 +170,8 @@ impl GameWindow{
     }
 
     #[inline(always)]
-    pub fn display(&mut self)->&mut Display{
-        &mut self.display
-    }
-
-    #[inline(always)]
-    pub fn size(&self)->[f32;2]{
-        [self.width as f32,self.height as f32]
+    pub fn display(&self)->&Display{
+        &self.display
     }
 
     // Получение событий
@@ -192,6 +190,16 @@ impl GameWindow{
     #[inline(always)]
     pub fn set_hide(&self,hide:bool){
         self.display.gl_window().window().set_minimized(hide);
+    }
+
+    #[inline(always)]
+    pub fn set_cursor_visible(&mut self,visible:bool){
+        self.mouse_icon.set_visible(visible);
+    }
+
+    #[inline(always)]
+    pub fn switch_cursor_visible(&mut self){
+        self.mouse_icon.switch_visible()
     }
 }
 
@@ -219,7 +227,7 @@ impl GameWindow{
                         // Закрытие окна
                         GWindowEvent::CloseRequested=>Exit,
 
-                        // Движение мыши (конечное положение)
+                        // Сдвиг мыши (сдвиг за пределы окна игнорируется)
                         GWindowEvent::CursorMoved{position,..}=>unsafe{
                             let last_position=mouse_cursor.position();
 
@@ -271,10 +279,16 @@ impl GameWindow{
                                 KeyboardPressed(key)
                             }
                             else{
+                                if key==KeyboardButton::F8{
+                                    unsafe{
+                                        (*game_window).switch_cursor_visible();
+                                    }
+                                }
+
                                 // Отключение/включение возможности сворачивания окна
                                 #[cfg(debug_assertions)]unsafe{
                                 if key==KeyboardButton::F10{
-                                    {(*game_window).focusable_option=!(*game_window).focusable_option;}
+                                    (*game_window).focusable_option=!(*game_window).focusable_option;
                                 }}
                                 KeyboardReleased(key)
                             }
@@ -314,13 +328,13 @@ impl GameWindow{
                     }
                 }
 
-                // Создание кадра и запрос на его вывод на окно
+                // Запрос на рендеринг
                 Event::MainEventsCleared=>{
                     window.request_redraw();
                     None
                 }
 
-                // Вывод кадра на окно
+                // Рендеринг
                 Event::RedrawRequested(_)=>{
                     Draw
                 }
@@ -398,18 +412,18 @@ impl GameWindow{
 // Функции для рисования
 impl GameWindow{
     // Даёт прямое управление буфером кадра
-    pub fn draw_raw<F:FnOnce(&mut Frame)>(&mut self,f:F){
+    pub fn draw_raw<F:FnOnce(&mut Frame)>(&self,f:F){
         let mut frame=self.display().draw();
         f(&mut frame);
         frame.finish();
     }
 
-    pub fn draw<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(&mut self,f:F){
+    pub fn draw<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(&self,f:F){
         let mut draw_parameters=default_draw_parameters();
 
         let mut frame=self.display().draw();
 
-        let mut g=GameGraphics::new(&mut self.graphics,&mut frame);
+        let mut g=GameGraphics::new(&self.graphics,&mut frame);
 
         f(&mut draw_parameters,&mut g);
 
@@ -441,10 +455,22 @@ impl GameWindow{
 impl GameWindow{
     // Сохраняет скриншот в формате png
     pub fn screenshot<P:AsRef<Path>>(&self,path:P){
-        let image:glium::texture::RawImage2d<u8>=self.display.read_front_buffer().unwrap();
-        let image=image::ImageBuffer::from_raw(image.width,image.height,image.data.into_owned()).unwrap();
-        let image=image::DynamicImage::ImageRgba8(image).flipv();
-        image.save_with_format(path,ImageFormat::Png).unwrap();
+        // Копирование буфера окна
+        let image:RawImage2d<u8>=match self.display.read_front_buffer(){
+            Ok(t)=>t,
+            Err(_)=>return
+        };
+        // Перевод в буфер изображения
+        let image=match ImageBuffer::from_raw(image.width,image.height,image.data.into_owned()){
+            Option::Some(i)=>i,
+            Option::None=>return
+        };
+        // Перевод в изображение
+        let image=DynamicImage::ImageRgba8(image).flipv();
+        // Сохранение
+        if let Err(_)=image.save_with_format(path,ImageFormat::Png){
+            return
+        }
     }
 }
 
@@ -616,7 +642,7 @@ pub enum KeyboardButton{
 }
 
 // Загрузка иконки окна
-pub fn load_window_icon()->Icon{
+fn load_window_icon()->Icon{
     let image=image::open("./resources/images/window_icon.png").unwrap();
     let vec=image.to_bytes();
     let (width,height)=image.dimensions();
@@ -625,7 +651,7 @@ pub fn load_window_icon()->Icon{
 }
 
 // Обычные параметры для рисования
-pub fn default_draw_parameters<'a>()->DrawParameters<'a>{
+fn default_draw_parameters<'a>()->DrawParameters<'a>{
     let mut draw_parameters=DrawParameters::default();
 
     draw_parameters.blend=Blend{

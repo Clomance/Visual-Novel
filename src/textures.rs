@@ -1,4 +1,7 @@
-use lib::wallpaper_movement_scale;
+use lib::{
+    wallpaper_movement_scale,
+    load_wallpaper_image,
+};
 
 use engine::{
     // statics
@@ -57,7 +60,7 @@ impl Textures{
             Self{
                 game_wallpapers:load_wallpapers_textures_paths("./resources/images/wallpapers/game"),
                 main:vec,
-                characters:load_characters_textutres(window_height*0.75),
+                characters:load_characters_textures(window_height*0.75),
             }
         }
     }
@@ -116,53 +119,7 @@ fn load_wallpapers_textures_paths<P:AsRef<Path>+Clone>(path:P)->Vec<PathBuf>{
     textures
 }
 
-// Загрузка фона
-// Фон приводится к размеру экрана
-
-// Если соотношение ширины к высоте картинки меньше, чем у экрана,
-// то это значит, что при приведении ширины картинки к ширине экрана, сохраняя соотношение сторон,
-// высота картинки будет больше высоты экрана, поэтому её нужно обрезать.
-
-// Если наоборот, то приведении высоты картинки к высоте экрана, ширину картинки будеи больше, чем ширина экрана.
-pub fn load_wallpaper_image<P:AsRef<Path>>(path:P,width0:f32,height0:f32)->RgbaImage{
-    let mut image=image::open(path).unwrap();
-    let k0=width0/height0;
-
-    let image_width=image.width() as f32;
-    let image_height=image.height() as f32;
-
-
-    let k=image_width/image_height;
-
-    // Расчёт размеров обрезки изображения
-    let (x,y,width,height)=if k0>k{
-
-        let height=image_width/k0;
-        
-        let y=image_height-height;
-
-        (0u32,y as u32,image_width as u32,height as u32)
-    }
-    else{
-        let width=image_height*k0;
-
-        let x=(image_width-width)/2f32;
-
-        (x as u32,0u32,width as u32,image_height as u32)
-    };
-
-    // Обрезка и приведение к размеру экрана
-    image=image.crop_imm(x,y,width,height).resize_exact(width0 as u32,height0 as u32,FilterType::Gaussian);
-
-    if let DynamicImage::ImageRgba8(image)=image{
-        image
-    }
-    else{
-        image.into_rgba()
-    }
-}
-
-fn load_characters_textutres(height:f32)->Vec<RgbaImage>{
+fn load_characters_textures(height:f32)->Vec<RgbaImage>{
     let path="./resources/images/characters";
     let meta=metadata(path).unwrap();
 

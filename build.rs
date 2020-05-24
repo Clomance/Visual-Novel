@@ -38,7 +38,8 @@ fn main(){
         }
     }
 
-    { // Сброс настроек игры
+    #[cfg(not(debug_assertions))]
+    { // Сброс настроек игры при релизе
         let mut game_settings=OpenOptions::new().truncate(true).write(true).open("settings/game_settings").unwrap();
 
         game_settings.write_all(&[0]).unwrap(); // Новая игра
@@ -178,7 +179,7 @@ fn main(){
                     let wallpaper=search(&wall_names,&wallpaper); // Поиск фона по названию
 
                     page_table_file.write(&wallpaper.to_be_bytes()).unwrap();
-                    
+
                     let dialogue=search(&dia_names,&dialogue); // Поиск диалога по названию
                     page_table_file.write(&dialogue.to_be_bytes()).unwrap();
 

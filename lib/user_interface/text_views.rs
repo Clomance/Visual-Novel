@@ -18,18 +18,18 @@ use engine::{
 const line_margin:f32=20f32; // Расстояние между строками
 
 // Изменяемый зависимый текстовой блок с одной линией текста
-pub struct TextViewLineDependent{
-    base:TextViewStaticLineDependent,
+pub struct TextViewLine<'a>{
+    base:TextViewStaticLine<'a>,
     rect:[f32;4],
     align:Align,
 }
 
-impl TextViewLineDependent{
-    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&Glyphs)->TextViewLineDependent{
+impl<'a> TextViewLine<'a>{
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&'a Glyphs)->TextViewLine{
         Self{
             rect:settings.rect,
             align:settings.align.clone(),
-            base:TextViewStaticLineDependent::new(settings,glyphs),
+            base:TextViewStaticLine::new(settings,glyphs),
         }
     }
 
@@ -67,7 +67,7 @@ impl TextViewLineDependent{
     }
 
     #[inline(always)]
-    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
         self.base.base.draw(&self.base.line,draw_parameters,g,glyphs);
     }
 
@@ -77,22 +77,22 @@ impl TextViewLineDependent{
     }
 }
 
-pub struct TextViewLinedDependent{
-    base:TextViewStaticLinedDependent,
+pub struct TextViewLined<'a>{
+    base:TextViewStaticLined<'a>,
     rect:[f32;4],
     align:Align,
 }
 
-impl TextViewLinedDependent{
-    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&Glyphs)->TextViewLinedDependent{
+impl<'a> TextViewLined<'a>{
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&'a Glyphs)->TextViewLined<'a>{
         Self{
             rect:settings.rect,
             align:settings.align.clone(),
-            base:TextViewStaticLinedDependent::new(settings,glyphs)
+            base:TextViewStaticLined::new(settings,glyphs)
         }
     }
 
-    pub fn set_text<S:Into<String>>(&mut self,text:S,glyphs:&Glyphs){
+    pub fn set_text<S:Into<String>>(&mut self,text:S){
         self.base.lines.clear(); // Удаление старого текста
 
         let font_size=self.base.base.font_size;
@@ -107,14 +107,14 @@ impl TextViewLinedDependent{
         let mut line_len=0f32; // Длина строки текста
         let mut word_len=0f32; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
 
-        let whitespace_width=glyphs.character(' ',self.base.base.font_size).width();
-        let nl_whitespace_width=glyphs.character('\n',self.base.base.font_size).width();
+        let whitespace_width=self.base.glyphs.character(' ',self.base.base.font_size).width();
+        let nl_whitespace_width=self.base.glyphs.character('\n',self.base.base.font_size).width();
 
         let text=text.into();
 
         for (c,ch) in text.char_indices(){
 
-            let character=glyphs.character(ch,self.base.base.font_size);
+            let character=self.base.glyphs.character(ch,self.base.base.font_size);
 
             let char_width=character.width();
             line_len+=char_width;
@@ -173,25 +173,31 @@ impl TextViewLinedDependent{
         self.base.base.set_position([x,y]);
     }
 
-    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
-       self.base.draw(draw_parameters,graphics,glyphs)
+    #[inline(always)]
+    pub fn set_alpha_channel(&mut self,alpha:f32){
+        self.base.set_alpha_channel(alpha)
+    }
+
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+       self.base.draw(draw_parameters,graphics)
     }
 
     // Вывод части текста
-    pub fn draw_part(&mut self,chars:usize,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs)->bool{
-        self.base.draw_part(chars,draw_parameters,g,glyphs)
+    pub fn draw_part(&mut self,chars:usize,draw_parameters:&DrawParameters,g:&mut GameGraphics)->bool{
+        self.base.draw_part(chars,draw_parameters,g)
     }
 }
 
 // Неизменяемый зависимый текстовый блок с одной линией текста
 // Зависим от шрифта
-pub struct TextViewStaticLineDependent{
+pub struct TextViewStaticLine<'a>{
     base:TextBase,
     line:String,
+    glyphs:&'a Glyphs
 }
 
-impl TextViewStaticLineDependent{
-    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&Glyphs)->TextViewStaticLineDependent{
+impl<'a> TextViewStaticLine<'a>{
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&'a Glyphs)->TextViewStaticLine<'a>{
         let line=settings.text.into();
 
         let font=glyphs.glyph_height(settings.font_size);
@@ -207,7 +213,8 @@ impl TextViewStaticLineDependent{
 
         Self{
             base:TextBase::new(settings.text_colour,settings.font_size).position([x,y]),
-            line:line
+            line:line,
+            glyphs:glyphs
         }
     }
 
@@ -227,25 +234,26 @@ impl TextViewStaticLineDependent{
     }
 
     #[inline(always)]
-    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
-        self.base.draw(&self.line,draw_parameters,g,glyphs);
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
+        self.base.draw(&self.line,draw_parameters,g,self.glyphs);
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
         self.set_alpha_channel(alpha);
-        self.draw(draw_parameters,g,glyphs)
+        self.draw(draw_parameters,g)
     }
 }
 
 // Неизменяемый зависимый текстовый блок с множеством линий текста
 // Зависим от шрифта
-pub struct TextViewStaticLinedDependent{
+pub struct TextViewStaticLined<'a>{
     base:TextBase,
+    glyphs:&'a Glyphs,
     lines:Vec<(f32,String)>,
 }
 
-impl TextViewStaticLinedDependent{
-    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&Glyphs)->TextViewStaticLinedDependent{
+impl<'a> TextViewStaticLined<'a>{
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&'a Glyphs)->TextViewStaticLined<'a>{
         let mut lines=Vec::new();
 
         let font_size=settings.font_size;
@@ -325,7 +333,8 @@ impl TextViewStaticLinedDependent{
 
         Self{
             base:TextBase::new(settings.text_colour,settings.font_size).position([x,y]),
-            lines
+            lines,
+            glyphs:glyphs,
         }
     }
 
@@ -334,7 +343,7 @@ impl TextViewStaticLinedDependent{
         self.base.set_alpha_channel(alpha);
     }
 
-    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         let position=self.base.position; // Сохранение начальной позиции
 
         let dy=self.base.font_size+line_margin;
@@ -343,7 +352,7 @@ impl TextViewStaticLinedDependent{
             let dx=line.0; // Выравнивание строки
             self.base.shift_x(dx);
 
-            self.base.draw(&line.1,draw_parameters,graphics,glyphs);
+            self.base.draw(&line.1,draw_parameters,graphics,self.glyphs);
 
             self.base.shift(-dx,dy);
         }
@@ -352,7 +361,7 @@ impl TextViewStaticLinedDependent{
     }
 
     // Вывод части текста
-    pub fn draw_part(&mut self,chars:usize,draw_parameters:&DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs)->bool{
+    pub fn draw_part(&mut self,chars:usize,draw_parameters:&DrawParameters,g:&mut GameGraphics)->bool{
         let mut position=[self.base.position[0] as f32,self.base.position[1] as f32];
 
         let dy=self.base.font_size+line_margin as f32;
@@ -372,7 +381,7 @@ impl TextViewStaticLinedDependent{
                 }
                 chars_passed+=1;
 
-                let character=glyphs.character_positioned(ch,self.base.font_size,position);
+                let character=self.glyphs.character_positioned(ch,self.base.font_size,position);
                 self.base.draw_character(&character,draw_parameters,g);
 
                 // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали

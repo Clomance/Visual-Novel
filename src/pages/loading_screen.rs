@@ -40,19 +40,19 @@ impl LoadingScreen{
             where F:FnOnce()->T,
                 F:Send+'static,
                 T:Send+'static{
-                
+
         let mut t=0f32;
-        let thead=std::thread::spawn(background);
+        let thread=std::thread::spawn(background);
 
         'loading:while let Some(event)=window.next_event(){
             if !loading{
-                let _result=thead.join();
+                let _result=thread.join();
                 break 'loading
             }
             match event{
                 WindowEvent::Exit=>{ // Закрытие игры
                     loading=false;
-                    let _result=thead.join();
+                    let _result=thread.join();
                     return Game::Exit
                 }
 

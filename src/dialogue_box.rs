@@ -7,16 +7,17 @@ use crate::{
 use lib::{
     AlignX,
     AlignY,
-    Drawable,
     colours::White,
-    TextViewLinedDependent,
+    TextViewLined,
     TextViewSettings
 };
 
 use engine::{
+    // statics
     mouse_cursor,
     window_height,
     window_width,
+    // structs
     image::{ImageBase,Texture,image::RgbaImage},
     text::{TextBase,Glyphs},
     graphics::GameGraphics,
@@ -28,22 +29,21 @@ const k:f32=3.3f32; // Отношение размера окна игры к д
 const font_size:f32=24f32;
 
 
-pub struct DialogueBox<'a,'b>{
+pub struct DialogueBox<'b,'c>{
     dialogue:DialogueFormatted<'b>,
     whole_text:bool, // Флаг вывода всего текста
     chars:f32, // Количесво выводимых в данный момент символов диалога
     dialogue_step:usize,
     y1:f32, // Граница нижней трети экрана, где находится диалоговое окно
     name_base:TextBase,
-    lines:TextViewLinedDependent, // Текстовый блок для диалогов
+    lines:TextViewLined<'c>, // Текстовый блок для диалогов
     image:ImageBase,
     texture:Texture,
-    glyphs:Glyphs<'a>
+    glyphs:&'c Glyphs
 }
 
-impl<'a,'b> DialogueBox<'a,'b>{
-    pub fn new(texture:&RgbaImage,display:&mut Display)->DialogueBox<'a,'b>{
-        let glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
+impl<'b,'c> DialogueBox<'b,'c>{
+    pub fn new(texture:&RgbaImage,display:&Display,glyphs:&'c Glyphs)->DialogueBox<'b,'c>{
         let texture=Texture::from_image(display,texture).unwrap();
 
         unsafe{
@@ -78,7 +78,7 @@ impl<'a,'b> DialogueBox<'a,'b>{
                 chars:0f32,
                 dialogue_step:Settings.saved_dialogue,
                 y1:y1,
-                lines:TextViewLinedDependent::new(line_settings,&glyphs),
+                lines:TextViewLined::new(line_settings,&glyphs),
 
                 // Имя
                 name_base:TextBase::new(White,font_size)
@@ -107,24 +107,26 @@ impl<'a,'b> DialogueBox<'a,'b>{
         self.dialogue_step
     }
 
-    // Установка нового диалога, шаг обнулён заранее, при переходе к новой странице (next_page)
+    // Установка нового диалога
+    // Шаг обнулён заранее, при переходе к новой странице (next_page)
     pub fn set_dialogue(&mut self,dialogue:&'b Dialogue){
         unsafe{
             self.dialogue=dialogue.format(&Settings.user_name);
-            self.lines.set_text(self.dialogue.get_line(self.dialogue_step),&mut self.glyphs);
+            self.lines.set_text(self.dialogue.get_line(self.dialogue_step));
         }
         self.chars=0f32;
         self.whole_text=false;
     }
 
-    // false - cлeдующая часть диалога или мгновенный вывод текста, true - следующая страница
+    // false - cлeдующая часть диалога или вывод всего текста,
+    // true - следующая страница
     pub fn next_page(&mut self)->bool{
         if self.whole_text{ // Если выведен весь текст
             self.whole_text=false; // Установка флага для отключения вывода всего текста
             self.chars=0f32; // Обнуление количества выводимых символов
             self.dialogue_step+=1; // Следующая часть диалога
             if self.dialogue_step<self.dialogue.len(){ // Проверка есть ли следующая часть диалога
-                self.lines.set_text(self.dialogue.get_line(self.dialogue_step),&mut self.glyphs);
+                self.lines.set_text(self.dialogue.get_line(self.dialogue_step));
                 false
             }
             else{
@@ -139,41 +141,39 @@ impl<'a,'b> DialogueBox<'a,'b>{
     }
 
     #[inline(always)]
-    pub fn clicked(&mut self)->bool{
+    pub fn clicked(&self)->bool{
         unsafe{
             self.y1<mouse_cursor.position()[1] // Если курсор в нижней трети экрана
         }
     }
 
     #[inline(always)]
-    pub fn draw_without_text(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
+    pub fn draw_without_text(&self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
         self.image.draw(&self.texture,draw_parameters,g);
     }
-}
 
-impl<'a,'b> Drawable for DialogueBox<'a,'b>{
-    fn set_alpha_channel(&mut self,alpha:f32){
+    pub fn set_alpha_channel(&mut self,alpha:f32){
         self.image.colour_filter[3]=alpha;
-        //self.lines.set_alpha_channel(alpha);
+        self.lines.set_alpha_channel(alpha);
     }
 
-    fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
         let name=self.dialogue.get_name(self.dialogue_step);
 
         self.image.draw(&self.texture,draw_parameters,g); // Основа
 
-        self.name_base.draw(name,draw_parameters,g,&mut self.glyphs); // Имя
+        self.name_base.draw(name,draw_parameters,g,&self.glyphs); // Имя
 
         // Реплика
         if self.whole_text{
-            self.lines.draw(draw_parameters,g,&mut self.glyphs) // Вывод всего текста
+            self.lines.draw(draw_parameters,g) // Вывод всего текста
         }
         else{
             unsafe{
                 self.chars+=Settings.signs_per_frame; // Количество выводимых символов
             }
             // Вывод части текста
-            self.whole_text=self.lines.draw_part(self.chars as usize,draw_parameters,g,&mut self.glyphs);
+            self.whole_text=self.lines.draw_part(self.chars as usize,draw_parameters,g);
         }
     }
 }

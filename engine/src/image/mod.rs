@@ -9,6 +9,7 @@ mod texture;
 pub use texture::Texture;
 
 pub use image;
+
 use glium::draw_parameters::DrawParameters;
 
 // Основа для изображений (текстур)

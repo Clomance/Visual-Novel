@@ -1,9 +1,8 @@
 use super::*;
 
 use engine::{
-    //statics
-    window_width,
-    window_height,
+    // fns
+    window_rect,
     // types
     Colour,
     // structs
@@ -21,13 +20,12 @@ const menu_movement_scale:f32=10f32; // Обратный коэфициент с
 
 // Меню, состоящее из заголовка и кнопок под ним
 pub struct Menu<'a>{
-    head:TextViewStaticLineDependent,
-    buttons:Vec<ButtonDependent>,
-    glyphs:Glyphs<'a>
+    head:TextViewStaticLine<'a>,
+    buttons:Vec<Button<'a>>,
 }
 
 impl<'a> Menu<'a>{
-    pub fn new<'b,S:Into<String>,B:Into<String>+Clone+'a>(settings:MenuSettings<'b,S,B>,glyphs:Glyphs<'a>)->Menu<'a>{
+    pub fn new<'c,S:Into<String>,B:Into<String>+Clone+'a>(settings:MenuSettings<'c,S,B>,glyphs:&'a Glyphs)->Menu<'a>{
         let r=unsafe{mouse_cursor.center_radius()}; //
         let dx=r[0]/menu_movement_scale;            // Сдвиг относительно положения мыши
         let dy=r[1]/menu_movement_scale;            //
@@ -95,15 +93,14 @@ impl<'a> Menu<'a>{
                     .background_colour(settings.buttons_color)
                     .font_size(settings.buttons_font_size);
 
-            let button=ButtonDependent::new(button_sets,&glyphs);
+            let button=Button::new(button_sets,&glyphs);
             menu_buttons.push(button);
             button_rect[1]+=settings.buttons_size[1]+button_margin;
         }
 
         Self{
-            head:TextViewStaticLineDependent::new(head_settings,&glyphs),
+            head:TextViewStaticLine::new(head_settings,&glyphs),
             buttons:menu_buttons,
-            glyphs:glyphs,
         }
     }
 
@@ -147,11 +144,11 @@ impl<'a> Drawable for Menu<'a>{
         }
     }
 
-    fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
-        self.head.draw(draw_parameters,graphics,&self.glyphs);
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+        self.head.draw(draw_parameters,graphics);
 
-        for button in &mut self.buttons{
-            button.draw(draw_parameters,graphics,&self.glyphs);
+        for button in &self.buttons{
+            button.draw(draw_parameters,graphics);
         }
     }
 }
@@ -173,7 +170,7 @@ pub struct MenuSettings<'a,S:Into<String>,B:Into<String>+'a>{
 impl<'a,S:Into<String>,B:Into<String>+'a> MenuSettings<'a,S,B>{
     pub fn new(head:S,buttons:&'a [B])->MenuSettings<'a,S,B>{
         Self{
-            rect:unsafe{[0f32,0f32,window_width,window_height]},
+            rect:window_rect(),
             head_text:head,
             head_size:[100f32,60f32],
             head_font_size:40f32,

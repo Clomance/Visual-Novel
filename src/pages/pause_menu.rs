@@ -1,4 +1,5 @@
 use crate::{
+    Calibri,
     make_screenshot,
     Game,
 };
@@ -16,9 +17,8 @@ use lib::{
 };
 
 use engine::{
-    // statics
-    window_width,
-    window_height,
+    // fns
+    window_rect,
     // types
     Colour,
     // enums
@@ -27,7 +27,6 @@ use engine::{
     KeyboardButton,
     music::Music,
     // structs
-    text::Glyphs,
     GameWindow,
     graphics::Rectangle,
 };
@@ -42,16 +41,13 @@ pub struct PauseMenu<'a>{
 
 impl<'a> PauseMenu<'a>{
     pub unsafe fn new()->PauseMenu<'a>{
-        // Загрузка шрифта
-        let menu_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
-        
         // Настройка меню
         let menu_settings=MenuSettings::new("Пауза",&["Продолжить","Главное меню","Настройки","Выход"])
             .head_size([180f32,80f32])
             .buttons_size([180f32,60f32]);
 
         Self{
-            menu:Menu::new(menu_settings,menu_glyphs),
+            menu:Menu::new(menu_settings,Calibri!()),
         }
     }
 
@@ -121,14 +117,7 @@ impl<'a> PauseMenu<'a>{
     pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
         window.set_new_smooth(page_smooth);
 
-        let mut background=Rectangle::new([
-                0f32,
-                0f32,
-                window_width,
-                window_height
-            ],
-            background_color
-        );
+        let mut background=Rectangle::new(window_rect(),background_color);
 
         while let Some(event)=window.next_event(){
             match event{

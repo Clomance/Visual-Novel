@@ -3,7 +3,7 @@ use super::{
     Drawable,
     Light_blue,
     TextViewSettings,
-    TextViewStaticLineDependent,
+    TextViewStaticLine,
 };
 
 use engine::{
@@ -24,21 +24,35 @@ const dcolour:f32=0.125; // На столько измененяется цве�
 
 // Обычная кнопка с собственным шрифтом
 pub struct Button<'a>{
-    base:ButtonDependent,
-    glyphs:Glyphs<'a>
+    base:ButtonBase,
+    text:TextViewStaticLine<'a>, // Зависимый от шрифта текстовый блок
 }
 
 impl<'a> Button<'a>{
-    pub fn new<S:Into<String>>(settings:ButtonSettings<S>,mut glyphs:Glyphs<'a>)->Button<'a>{
+    pub fn new<S:Into<String>>(settings:ButtonSettings<S>,glyphs:&'a Glyphs)->Button<'a>{
+        let text_view_settings=TextViewSettings::new(settings.text,settings.rect)
+                .text_colour(settings.text_colour)
+                .font_size(settings.font_size);
+
         Self{
-            base:ButtonDependent::new(settings,&mut glyphs),
-            glyphs:glyphs,
+            base:ButtonBase::new(settings.rect,settings.background_colour),
+            text:TextViewStaticLine::new(text_view_settings,glyphs),
         }
     }
 
-    #[inline(always)]
+    pub fn position(&self)->[f32;4]{
+        [
+            self.base.rect.x1,
+            self.base.rect.y1,
+            self.base.rect.x2,
+            self.base.rect.y2
+        ]
+    }
+
+    // Сдвиг
     pub fn shift(&mut self,dx:f32,dy:f32){
-        self.base.shift(dx,dy)
+        self.base.shift(dx,dy);
+        self.text.shift(dx,dy)
     }
 
     #[inline(always)]
@@ -55,62 +69,12 @@ impl<'a> Button<'a>{
 impl<'a> Drawable for Button<'a>{
     fn set_alpha_channel(&mut self,alpha:f32){
         self.base.set_alpha_channel(alpha);
-    }
-
-    fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
-        self.base.draw(draw_parameters,g,&mut self.glyphs)
-    }
-}
-
-// Зависимая от шрифта кнопка для связанных структур (должно быть больше зависимостей)
-pub struct ButtonDependent{
-    base:ButtonBase,
-    text:TextViewStaticLineDependent, // Зависимый от шрифта текстовый блок
-}
-
-impl ButtonDependent{
-    pub fn new<S:Into<String>>(settings:ButtonSettings<S>,glyphs:&Glyphs)->ButtonDependent{
-        let text_view_settings=TextViewSettings::new(settings.text,settings.rect)
-                .text_colour(settings.text_colour)
-                .font_size(settings.font_size);
-        Self{
-            base:ButtonBase::new(settings.rect,settings.background_colour),
-            text:TextViewStaticLineDependent::new(text_view_settings,glyphs),
-        }
-    }
-
-    pub fn position(&self)->[f32;4]{
-        [
-            self.base.rect.x1,
-            self.base.rect.y1,
-            self.base.rect.x2,
-            self.base.rect.y2
-        ]
-    }
-
-    pub fn shift(&mut self,dx:f32,dy:f32){
-        self.base.shift(dx,dy);
-        self.text.shift(dx,dy)
-    }
-
-    pub fn set_alpha_channel(&mut self,alpha:f32){
-        self.base.set_alpha_channel(alpha);
         self.text.set_alpha_channel(alpha);
     }
 
-    #[inline(always)]
-    pub fn pressed(&mut self)->bool{
-        self.base.pressed()
-    }
-
-    #[inline(always)] // Проверка находится ли курсор на кнопке и локальные действия
-    pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
-        self.base.released()
-    }
-    
-    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
         self.base.draw(draw_parameters,graphics);
-        self.text.draw(draw_parameters,graphics,glyphs);
+        self.text.draw(draw_parameters,graphics);
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::{
+    Calibri,
     Game,
     Settings,
 };
@@ -10,70 +11,64 @@ use lib::{
         Blue,
         Light_blue,
     },
+    AlignY,
     Drawable,
     EditTextView,
     EditTextViewSettings,
     TextViewSettings,
-    TextViewStaticLineDependent,
+    TextViewStaticLine,
 };
 
 use engine::{
     // statics
     window_width,
     window_height,
-    // structs
-    text::Glyphs,
-    GameWindow,
     // enums
     WindowEvent,
     MouseButton,
     KeyboardButton,
+    // structs
+    GameWindow,
 };
 
-const page_smooth:f32=1f32/8f32;
+// Шаг альфа-канала, для плавного перехода
+const page_smooth:f32=1f32/8f32; // 1 к количеству кадров перехода
 
-pub struct EnterUserName<'a,'b,'c,'d,'e>{
-    head:TextViewStaticLineDependent,
-    glyphs:Glyphs<'a>,
-    input:EditTextView<'b>,
-    main_menu:&'c mut MainMenu<'e,'d>,
+pub struct EnterUserName<'a,'c,'e>{
+    head:TextViewStaticLine<'a>,
+    input:EditTextView<'a>,
+    main_menu:&'c mut MainMenu<'a,'e>,
     window:*mut GameWindow,
 }
 
-impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
-    pub unsafe fn new(main_menu:&'c mut MainMenu<'e,'d>,window:&mut GameWindow)->EnterUserName<'a,'b,'c,'d,'e>{
+impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
+    pub fn new(main_menu:&'c mut MainMenu<'a,'e>,window:&mut GameWindow)->EnterUserName<'a,'c,'e>{
+        // Область для поля ввода
+        let mut rect=unsafe{[
+            window_width/2f32-150f32,
+            window_height/2f32-170f32,
+            300f32,
+            150f32,
+        ]};
 
-        // Загрузка шрифта
-        let head_glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
+        // Настройка заголовка
+        let head_settings=TextViewSettings::new("Введите своё имя",rect).align_y(AlignY::Up);
 
-        let head_settings=TextViewSettings::new("Введите своё имя",[
-                    window_width/2f32-150f32,
-                    window_height/2f32-150f32,
-                    300f32,
-                    70f32,
-                ]);
-
-        let glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
-
-        let settings=EditTextViewSettings::new("",[
-                    window_width/2f32-150f32,
-                    window_height/2f32-150f32,
-                    300f32,
-                    150f32,
-                ])
+        // Настройка поля ввода
+        rect[1]-=20f32;
+        let settings=EditTextViewSettings::new("",rect)
                 .background_colour(Light_blue)
-                .border_colour(Some(Blue));
+                .border_colour(Blue);
 
         Self{
-            head:TextViewStaticLineDependent::new(head_settings,&head_glyphs),
-            glyphs:head_glyphs,
-            input:EditTextView::new(settings,glyphs),
+            head:TextViewStaticLine::new(head_settings,Calibri!()),
+            input:EditTextView::new(settings,Calibri!()),
             main_menu:main_menu,
             window:window as *mut GameWindow,
         }
     }
 
-    pub unsafe fn start(&mut self)->Game{
+    pub fn start(&mut self)->Game{
         match self.smooth(){
             Game::Exit=>return Game::Exit,
             Game::Back=>return Game::Back,
@@ -81,7 +76,7 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
         }
 
         // Полная отрисовка
-        while let Some(event)=(*self.window).next_event(){
+        while let Some(event)=unsafe{(*self.window).next_event()}{
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
@@ -101,11 +96,11 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
                     }
                 }
 
-                WindowEvent::Draw=>{ // Рендеринг
+                WindowEvent::Draw=>unsafe{ // Рендеринг
                     (*self.window).draw(|c,g|{
                         self.main_menu.draw(c,g);
                         self.input.draw(c,g);
-                        self.head.draw(c,g,&self.glyphs);
+                        self.head.draw(c,g);
                     })
                 }
 
@@ -122,7 +117,7 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
                     match button{
                         KeyboardButton::Escape=>return Game::Back,
                         
-                        KeyboardButton::Enter=>{
+                        KeyboardButton::Enter=>unsafe{
                             let name=self.input.text().clone();
                             if !name.is_empty(){
                                 Settings.user_name=name;
@@ -139,33 +134,35 @@ impl<'a,'b,'c,'d,'e> EnterUserName<'a,'b,'c,'d,'e>{
     }
 
     // Сглаживание перехода к странице (открытие)
-    pub unsafe fn smooth(&mut self)->Game{
-        (*self.window).set_new_smooth(page_smooth);
+    pub fn smooth(&mut self)->Game{
+        unsafe{
+            (*self.window).set_new_smooth(page_smooth);
 
-        while let Some(event)=(*self.window).next_event(){
-            match event{
-                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+            while let Some(event)=(*self.window).next_event(){
+                match event{
+                    WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
+                    WindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
 
-                WindowEvent::Draw=>{ // Рендеринг
-                    if 1f32<(*self.window).draw_smooth(|alpha,c,g|{
-                        self.main_menu.draw(c,g);
+                    WindowEvent::Draw=>{ // Рендеринг
+                        if 1f32<(*self.window).draw_smooth(|alpha,c,g|{
+                            self.main_menu.draw(c,g);
 
-                        self.input.draw_smooth(alpha,c,g);
-                        self.head.draw_smooth(alpha,c,g,&self.glyphs);
-                    }){
-                        break
+                            self.input.draw_smooth(alpha,c,g);
+                            self.head.draw_smooth(alpha,c,g);
+                        }){
+                            break
+                        }
                     }
-                }
 
-                WindowEvent::KeyboardReleased(button)=>{
-                    match button{
-                        KeyboardButton::Escape=>return Game::Back,
-                        _=>{}
+                    WindowEvent::KeyboardReleased(button)=>{
+                        match button{
+                            KeyboardButton::Escape=>return Game::Back,
+                            _=>{}
+                        }
                     }
+                    _=>{}
                 }
-                _=>{}
             }
         }
         Game::Current

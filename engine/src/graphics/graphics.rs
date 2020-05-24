@@ -37,7 +37,7 @@ impl Graphics2D{
 
     #[inline(always)] // Рисует один символ
     pub fn draw_character(
-        &mut self,
+        &self,
         character:&Character,
         colour:Colour,
         draw_parameters:&DrawParameters,
@@ -48,7 +48,7 @@ impl Graphics2D{
 
     #[inline(always)] // Рисует простой объект
     pub fn draw_simple<O:SimpleObject>(
-        &mut self,
+        &self,
         object:&O,
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
@@ -58,14 +58,14 @@ impl Graphics2D{
 }
 
 // Простой интерфейс для связи кадра и графических функций
-pub struct GameGraphics<'d,'s>{
-    graphics:&'d mut Graphics2D,
-    frame:&'s mut Frame,
+pub struct GameGraphics<'graphics,'frame>{
+    graphics:&'graphics Graphics2D,
+    frame:&'frame mut Frame,
 }
 
-impl<'d,'s> GameGraphics<'d,'s>{
+impl<'graphics,'frame> GameGraphics<'graphics,'frame>{
     #[inline(always)]
-    pub fn new(graphics:&'d mut Graphics2D,frame:&'s mut Frame)->GameGraphics<'d,'s>{
+    pub fn new(graphics:&'graphics Graphics2D,frame:&'frame mut Frame)->GameGraphics<'graphics,'frame>{
         Self{
             graphics,
             frame
@@ -74,7 +74,7 @@ impl<'d,'s> GameGraphics<'d,'s>{
 
     #[inline(always)]
     pub fn frame(&mut self)->&mut Frame{
-        &mut self.frame
+        self.frame
     }
 
     #[inline(always)]

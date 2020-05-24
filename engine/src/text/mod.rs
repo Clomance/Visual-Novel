@@ -17,13 +17,13 @@ use rusttype::{
 const pixel_scale:f32=1.47; // Коэффициент для приведения к нужному размеру шрифта
 
 // Шрифт
-pub struct Glyphs<'a>{
-    font:Font<'a>
+pub struct Glyphs{
+    font:Font<'static>
 }
 
-impl<'a> Glyphs<'a>{
+impl Glyphs{
     // Загрузка шрифта из файла
-    pub fn load<P:AsRef<Path>>(path:P)->Glyphs<'a>{
+    pub fn load<P:AsRef<Path>>(path:P)->Glyphs{
         let data=fs::read(&path).unwrap();
         let font=Font::try_from_vec(data).unwrap();
         Self{
@@ -43,7 +43,7 @@ impl<'a> Glyphs<'a>{
     }
 
     // Символ, определённого размера, с нулейвой позицией
-    pub fn character(&self,character:char,font_size:f32)->Character<'a>{
+    pub fn character(&self,character:char,font_size:f32)->Character{
         let scale=Scale::uniform(font_size*pixel_scale); // Приведение к общему размеру пикселей
         let c=self.font.glyph(character).scaled(scale);
 
@@ -58,7 +58,7 @@ impl<'a> Glyphs<'a>{
     }
 
     // Символ, определённого размера с определённой позицией
-    pub fn character_positioned(&self,character:char,font_size:f32,position:[f32;2])->Character<'a>{
+    pub fn character_positioned(&self,character:char,font_size:f32,position:[f32;2])->Character{
         let scale=Scale::uniform(font_size*pixel_scale); // Приведение к общему размеру пикселей
         let c=self.font.glyph(character).scaled(scale);
 
@@ -73,11 +73,11 @@ impl<'a> Glyphs<'a>{
     }
 }
 
-pub struct Character<'a>{
-    c:PositionedGlyph<'a>,
+pub struct Character{
+    c:PositionedGlyph<'static>,
 }
 
-impl<'a> Character<'a>{
+impl Character{
     pub fn position(&self)->[f32;2]{
         let p=self.c.position();
         [p.x,p.y]

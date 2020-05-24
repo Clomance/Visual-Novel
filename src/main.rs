@@ -1,29 +1,29 @@
-#![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,dead_code)]
+#![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,dead_code,unused_unsafe)]
 #![windows_subsystem="windows"]
+
+use lib::{
+    *,
+    colours::*,
+};
 
 use engine::{
     // statics
     window_width,
     window_height,
-    window_center,
     mouse_cursor,
-    // structs
-    GameWindow,
     // enums
     WindowEvent,
     MouseButton,
     KeyboardButton,
+    // structs
+    GameWindow,
+    text::Glyphs,
     // mods
     music
 };
 
 use std::{
     fs::{metadata,read_dir},
-};
-
-use lib::{
-    *,
-    colours::*,
 };
 
 mod game_settings;
@@ -46,6 +46,16 @@ use textures::Textures;
 mod dialogue_box;
 pub use dialogue_box::DialogueBox;
 
+// Макрос для удобной и понятной замены ссылки на шрифт
+#[macro_export]
+macro_rules! Calibri {
+    () => {
+        unsafe{
+            &crate::glyph_cache[0]
+        }
+    };
+}
+
 #[derive(Eq,PartialEq)]
 pub enum Game{
     Current,
@@ -62,30 +72,21 @@ const page_smooth:f32=1f32/32f32;
 
 pub static mut Settings:game_settings::GameSettings=game_settings::GameSettings::new();
 
-
 pub static mut loading:bool=true; // Флаг загрузки
-pub struct LoadingFlag; // Флаг загрузки, автоматически сбрасывается при завершении загрузки или вылете
 
-impl Drop for LoadingFlag{
-    fn drop(&mut self){
-        unsafe{
-            loading=false
-        }
-    }
-}
+pub static mut glyph_cache:Vec<Glyphs>=Vec::new();
 
 fn main(){
+    unsafe{
+        let glyphs=Glyphs::load("./resources/fonts/CALIBRI.TTF");
+        glyph_cache.push(glyphs);
+    }
+
     let mut texture_base:Textures=Textures::new();
 
     unsafe{
         Settings.load(); // Загрузка настроек
         let mut window:GameWindow=GameWindow::new(&Settings.game_name); // Создание окна и загрузка функций OpenGL
-
-        let window_size=window.size();
-        window_width=window_size[0];
-        window_height=window_size[1];
-        window_center[0]=window_width/2f32;
-        window_center[1]=window_height/2f32;
 
         let wallpaper_size={
             let dx=window_width/(wallpaper_movement_scale*2f32);
@@ -104,12 +105,47 @@ fn main(){
 
         // Замыкание для допольнительного потока
         let loading_resources_thread=move||{
-            let _flag=LoadingFlag; // Флаг загрузки
 
-            *texture_base_ref=Textures::load();// Загрузка текстур
+            *texture_base_ref=Textures::load(); // Загрузка текстур
             if !loading{return}
 
-            *dialogues_ref=load_dialogues();// Загрузка диалогов
+            // Загрузка диалогов
+            let meta=match metadata("./resources/dialogues"){
+                Ok(meta)=>meta,
+                Err(_)=>{
+                    loading=false;
+                    return
+                },
+            };
+
+            let mut dialogues=Vec::with_capacity(meta.len() as usize);
+            let dir=match read_dir("./resources/dialogues"){
+                Ok(dir)=>dir,
+                Err(_)=>{
+                    loading=false;
+                    return
+                },
+            };
+
+            for r in dir{
+                if !loading{
+                    return // Если загрузка прервана
+                }
+
+                let file=match r{
+                    Ok(f)=>f,
+                    Err(_)=>{
+                        loading=false;
+                        return
+                    },
+                };
+                let path=file.path();
+                let dialogue=Dialogue::new(path);
+                dialogues.push(dialogue);
+            }
+            *dialogues_ref=dialogues;
+
+            loading=false;
         };
 
         // Экран загрузки
@@ -123,7 +159,7 @@ fn main(){
         let mut wallpaper=Wallpaper::new(texture_base.main_menu_wallpaper(),window.display());
         let mut characters_view=CharactersView::new(); // "Сцена" для персонажей
 
-        let mut dialogue_box=DialogueBox::new(texture_base.dialogue_box(),window.display()); // Диалоговое окно
+        let mut dialogue_box=DialogueBox::new(texture_base.dialogue_box(),window.display(),Calibri!()); // Диалоговое окно
 
         let mut music=music::Music::new();
         music.add_music("./resources/music/audio.mp3");
@@ -163,9 +199,8 @@ fn main(){
                 }
 
                 let wallpaper_path=page_table.current_wallpaper();
-                let current_wallpaper=textures::load_wallpaper_image(wallpaper_path,wallpaper_size[0],wallpaper_size[1]);
 
-                wallpaper.update_image(&current_wallpaper); // Установка текущего фона игры
+                wallpaper.update_image_path(wallpaper_path,wallpaper_size); // Установка текущего фона игры
 
                 dialogue_box.set_dialogue(page_table.current_dialogue()); // Установка текущего диалога
 
@@ -186,7 +221,7 @@ fn main(){
                                     wallpaper.draw_smooth(alpha,c,g);
                                     characters_view.draw_smooth(alpha,c,g);
                                     dialogue_box.set_alpha_channel(alpha);
-                                    dialogue_box.draw_without_text(c,g);
+                                    dialogue_box.draw(c,g);
                                 }){
                                     break 'opening_page
                                 }
@@ -251,6 +286,7 @@ fn main(){
                                             }
                                         }
                                     }
+
                                     KeyboardButton::Escape=>{
                                         mouse_cursor.save_position(); // Сохранение текущей позиции мышки
                                         // Пауза
@@ -273,11 +309,8 @@ fn main(){
                                             _=>{}
                                         }
                                     }
-                                    KeyboardButton::F5=>{
-                                        let path=format!("screenshots/screenshot{}.png",Settings.screenshot);
-                                        Settings.screenshot+=1;
-                                        window.screenshot(path)
-                                    },
+
+                                    KeyboardButton::F5=>make_screenshot(&window),
                                     _=>{}
                                 }
                             }
@@ -381,24 +414,10 @@ fn main(){
     }
 }
 
-// Загрузка всех диологов
-fn load_dialogues()->Vec<Dialogue>{
-    let meta=metadata("./resources/dialogues").unwrap();
-    let mut dialogues=Vec::with_capacity(meta.len() as usize);
-    let dir=read_dir("./resources/dialogues").unwrap();
-
-    for r in dir{
-        let file=r.unwrap();
-        let path=file.path();
-        let dialogue=Dialogue::new(path);
-        dialogues.push(dialogue);
+pub fn make_screenshot(window:&GameWindow){
+    unsafe{
+        let path=format!("screenshots/screenshot{}.png",Settings.screenshot);
+        Settings.screenshot+=1;
+        window.screenshot(path)
     }
-    dialogues
-}
-
-
-pub unsafe fn make_screenshot(window:&GameWindow){
-    let path=format!("screenshots/screenshot{}.png",Settings.screenshot);
-    Settings.screenshot+=1;
-    window.screenshot(path)
 }
