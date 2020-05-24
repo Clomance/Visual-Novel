@@ -180,3 +180,7 @@ O - Да, {}?
 ### Музыка
 
 Основная тема находится в папке `./resources/music`. Файл должен именоваться `audio.mp3` и быть в формате `mp3`.
+
+
+## Скриншоты
+![screenshot1](https://raw.githubusercontent.com/Clomance/Visual-Novel/master/screenshots/screenshot0.png)
