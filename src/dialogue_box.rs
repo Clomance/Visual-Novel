@@ -7,7 +7,7 @@ use crate::{
 use lib::{
     AlignX,
     AlignY,
-    colours::White,
+    colours::{White,Black},
     TextViewLined,
     TextViewSettings
 };
@@ -19,11 +19,11 @@ use engine::{
     // structs
     image::{ImageBase,Texture,image::RgbaImage},
     text::{TextBase,Glyphs},
-    graphics::GameGraphics,
+    graphics::{GameGraphics,Point2D,MonoColourPolygon},
     glium::{Display,DrawParameters},
 };
 
-const k:f32=3.3f32; // Отношение размера окна игры к диалоговому окну
+const k:f32=4f32; // Отношение размера окна игры к диалоговому окну
 
 const font_size:f32=24f32;
 
@@ -34,6 +34,7 @@ pub struct DialogueBox<'b,'c>{
     chars:f32, // Количесво выводимых в данный момент символов диалога
     dialogue_step:usize,
     y1:f32, // Граница нижней трети экрана, где находится диалоговое окно
+    name_box:MonoColourPolygon,
     name_base:TextBase,
     lines:TextViewLined<'c>, // Текстовый блок для диалогов
     image:ImageBase,
@@ -43,28 +44,43 @@ pub struct DialogueBox<'b,'c>{
 
 impl<'b,'c> DialogueBox<'b,'c>{
     pub fn new(texture:&RgbaImage,display:&Display,glyphs:&'c Glyphs)->DialogueBox<'b,'c>{
-        let texture=Texture::from_image(display,texture).unwrap();
-
         unsafe{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
 
+            let rect=[
+                0f32,
+                y1,
+                window_width,
+                height,
+            ];
+
+            let polygon=[
+                Point2D::new(0f32,y1-60f32),
+                Point2D::new(400f32,y1-60f32),
+                Point2D::new(460f32,y1),
+                Point2D::new(0f32,y1),
+                Point2D::new(0f32,y1-60f32),
+            ];
+
+            let texture=Texture::from_image(display,texture).unwrap();
+
             // Позиция имени
             let name_position=[
-                window_width/50f32,
-                y1+height/5.5f32,
+                20f32,
+                y1-18f32,
             ];
 
             let line_position=[
-                window_width/30f32,
-                name_position[1]+height/5f32,
+                60f32,
+                y1+40f32,
             ];
 
             let line_settings=TextViewSettings::new("",[
                         line_position[0],
                         line_position[1],
                         (window_width-2f32*line_position[0]),
-                        height*0.8f32,
+                        height-80f32,
                     ])
                     .font_size(font_size)
                     .align_x(AlignX::Left)
@@ -80,15 +96,11 @@ impl<'b,'c> DialogueBox<'b,'c>{
                 lines:TextViewLined::new(line_settings,&glyphs),
 
                 // Имя
+                name_box:MonoColourPolygon::new(&polygon,Black),
                 name_base:TextBase::new(White,font_size)
                         .position([name_position[0],name_position[1]]),
 
-                image:ImageBase::new(White,[
-                    0f32,
-                    y1,
-                    window_width,
-                    height
-                ]),
+                image:ImageBase::new(White,rect),
                 
                 texture:texture,
                 glyphs:glyphs
@@ -154,6 +166,7 @@ impl<'b,'c> DialogueBox<'b,'c>{
 
         self.image.draw(&self.texture,draw_parameters,g); // Основа
 
+        self.name_box.draw(draw_parameters,g);
         self.name_base.draw(name,draw_parameters,g,&self.glyphs); // Имя
 
         // Реплика

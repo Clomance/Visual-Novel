@@ -27,6 +27,52 @@ use glium::{
 // Здесь собраны простые фигуры
 // и основные функции к ним
 
+// Одноцветный многоугольник
+#[derive(Clone)]
+pub struct MonoColourPolygon{
+    points:Vec<Point2D>,
+    colour:Colour,
+}
+
+impl MonoColourPolygon{
+    pub fn new(points:&[Point2D],colour:Colour)->MonoColourPolygon{
+        Self{
+            points:points.into(),
+            colour
+        }
+    }
+
+    #[inline(always)]
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+        graphics.draw_simple(self,draw_parameters)
+    }
+}
+
+impl SimpleObject for MonoColourPolygon{
+    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
+        let slice=graphics.vertex_buffer.slice(0..self.points.len()).unwrap();
+        let indices=NoIndices(PrimitiveType::TriangleStrip);
+
+        let mut vec=Vec::with_capacity(self.points.len());
+        unsafe{
+            for point in &self.points{
+                vec.push(Point2D{
+                    position:[
+                        point.position[0]/window_center[0]-1f32,
+                        1f32-point.position[1]/window_center[1]
+                    ]
+                });
+            }
+        }
+
+        slice.write(&vec);
+
+        frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.colour},draw_parameters);
+    }
+}
+
+
+
 // Прямоугольник
 // Заполняется одним цветом
 #[derive(Clone)]

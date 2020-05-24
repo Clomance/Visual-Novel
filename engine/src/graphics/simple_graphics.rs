@@ -15,6 +15,14 @@ pub struct Point2D{
     pub position:[f32;2],
 }
 
+impl Point2D{
+    pub fn new(x:f32,y:f32)->Point2D{
+        Self{
+            position:[x,y]
+        }
+    }
+}
+
 // Для простых одноцветных объектов,
 // состоящих из менее, чем Points_limit точек
 // 
