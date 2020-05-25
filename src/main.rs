@@ -7,6 +7,8 @@ use lib::{
 };
 
 use engine::{
+    // fns
+    window_rect,
     // statics
     window_width,
     window_height,
@@ -17,7 +19,9 @@ use engine::{
     KeyboardButton,
     // structs
     GameWindow,
+    graphics::{Rectangle,GameGraphics},
     text::Glyphs,
+    glium::DrawParameters,
     // mods
     music
 };
@@ -246,7 +250,12 @@ fn main(){
 
                             WindowEvent::KeyboardReleased(button)=>{
                                 if button==KeyboardButton::F5{
-                                    make_screenshot(&window)
+                                    make_screenshot(&mut window,|d,g|{
+                                        g.clear_colour(White);
+                                        wallpaper.draw(d,g);
+                                        characters_view.draw(d,g);
+                                        dialogue_box.draw(d,g);
+                                    })
                                 }
                             }
                             _=>{}
@@ -325,7 +334,13 @@ fn main(){
                                         }
                                     }
 
-                                    KeyboardButton::F5=>make_screenshot(&window),
+                                    KeyboardButton::F5=>{
+                                        make_screenshot(&mut window,|c,g|{
+                                            wallpaper.draw(c,g);
+                                            characters_view.draw(c,g);
+                                            dialogue_box.draw(c,g);
+                                        })
+                                    }
                                     _=>{}
                                 }
                             }
@@ -358,7 +373,12 @@ fn main(){
 
                             WindowEvent::KeyboardReleased(button)=>{
                                 if button==KeyboardButton::F5{
-                                    make_screenshot(&window)
+                                    make_screenshot(&mut window,|d,g|{
+                                        g.clear_colour(White);
+                                        wallpaper.draw(d,g);
+                                        characters_view.draw(d,g);
+                                        dialogue_box.draw_without_text(d,g);
+                                    })
                                 }
                             }
                             _=>{}
@@ -382,8 +402,8 @@ fn main(){
                     }
 
                     WindowEvent::Draw=>{ //Рендеринг
-                        if 1f32<window.draw_smooth(|alpha,c,g|{
-                            wallpaper.draw_smooth(alpha,c,g)
+                        if 1f32<window.draw_smooth(|alpha,d,g|{
+                            wallpaper.draw_smooth(alpha,d,g)
                         }){
                             break 'smooth_ending
                         }
@@ -391,7 +411,7 @@ fn main(){
 
                     WindowEvent::KeyboardReleased(button)=>{
                         if button==KeyboardButton::F5{
-                            make_screenshot(&window)
+                            make_screenshot(&mut window,|d,g|{wallpaper.draw(d,g)})
                         }
                     }
 
@@ -416,7 +436,7 @@ fn main(){
                     WindowEvent::MouseReleased(_button)=>break 'gameplay_ending,
                     WindowEvent::KeyboardReleased(button)=>{
                         if button==KeyboardButton::F5{
-                            make_screenshot(&window)
+                            make_screenshot(&mut window,|d,g|{wallpaper.draw(d,g)})
                         }
                         break 'gameplay_ending
                     }
@@ -429,10 +449,22 @@ fn main(){
     }
 }
 
-pub fn make_screenshot(window:&GameWindow){
+pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(window:&mut GameWindow,f:F){
+    let rect=Rectangle::new(window_rect(),[1f32,1f32,1f32,0.8f32]);
+
+    window.set_cursor_visible(false); // Отключение курсора
+
+    window.draw_event_once(f); // Отрисовка кадра для скриншота
+
     unsafe{
         let path=format!("screenshots/screenshot{}.png",Settings.screenshot);
         Settings.screenshot+=1;
         window.screenshot(path)
     }
+
+    window.set_cursor_visible(true);
+
+    window.draw_event_once(|d,g|{
+        rect.draw(d,g)
+    });
 }

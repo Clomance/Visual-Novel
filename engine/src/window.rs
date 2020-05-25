@@ -417,6 +417,7 @@ impl GameWindow{
         frame.finish();
     }
 
+    // Выполняет замыкание и рисует курсор
     pub fn draw<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(&self,f:F){
         let mut draw_parameters=default_draw_parameters();
 
@@ -431,7 +432,8 @@ impl GameWindow{
         frame.finish();
     }
 
-    // Рисует курсор и выполняет замыкание f
+    // Выполняет замыкание и рисует курсор
+    // Нужна для правных переходов с помощью альфа-канала
     // Выдаёт изменяющийся альфа-канал для рисования, возвращает следующее значение альфа-канала
     pub fn draw_smooth<F:FnOnce(f32,&mut DrawParameters,&mut GameGraphics)>(&mut self,f:F)->f32{
         let mut draw_parameters=default_draw_parameters();
@@ -448,6 +450,22 @@ impl GameWindow{
 
         self.alpha_channel+=self.smooth;
         self.alpha_channel
+    }
+
+    // Игнорирует все события, кроме рендеринга и закрытия окна
+    // Рисует один кадр
+    pub fn draw_event_once<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(&mut self,f:F)->WindowEvent{
+        while let Some(event)=self.next_event(){
+            match event{
+                WindowEvent::Exit=>return WindowEvent::Exit, // Закрытие игры
+                WindowEvent::Draw=>{ //Рендеринг
+                    self.draw(f);
+                    break
+                }
+                _=>{}
+            }
+        }
+        WindowEvent::None
     }
 }
 

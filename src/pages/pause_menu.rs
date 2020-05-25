@@ -103,7 +103,10 @@ impl<'a> PauseMenu<'a>{
 
                     WindowEvent::KeyboardReleased(button)=>{
                         match button{
-                            KeyboardButton::F5=>make_screenshot(window),
+                            KeyboardButton::F5=>make_screenshot(window,|p,g|{
+                                g.clear_colour(background_color);
+                                self.menu.draw(p,g);
+                            }),
                             KeyboardButton::Escape=>return Game::ContinueGamePlay,
                             _=>{}
                         }
@@ -135,7 +138,10 @@ impl<'a> PauseMenu<'a>{
 
                 WindowEvent::KeyboardReleased(button)=>{
                     match button{
-                        KeyboardButton::F5=>make_screenshot(window),
+                        KeyboardButton::F5=>make_screenshot(window,|p,g|{
+                            background.draw(p,g);
+                            self.menu.draw(p,g);
+                        }),
                         KeyboardButton::Escape=>return Game::ContinueGamePlay,
                         _=>{}
                     }

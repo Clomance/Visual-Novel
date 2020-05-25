@@ -168,7 +168,10 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
 
                     WindowEvent::KeyboardReleased(button)=>{
                         if button==KeyboardButton::F5{
-                            make_screenshot(window)
+                            make_screenshot(window,|d,g|{
+                                self.wallpaper.draw(d,g);
+                                self.draw(d,g);
+                            });
                         }
                     }
 

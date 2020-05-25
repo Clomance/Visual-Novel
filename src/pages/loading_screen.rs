@@ -69,7 +69,10 @@ impl LoadingScreen{
 
                 WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
-                        make_screenshot(window)
+                        make_screenshot(window,|p,g|{
+                            g.clear_colour(White);
+                            self.logo_base.draw_rotate(&self.logo,t,p,g);
+                        })
                     }
                 }
                 _=>{}
@@ -94,7 +97,9 @@ impl LoadingScreen{
 
                 WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
-                        make_screenshot(window)
+                        make_screenshot(window,|_,g|{
+                            g.clear_colour(White);
+                        })
                     }
                 }
                 _=>{}

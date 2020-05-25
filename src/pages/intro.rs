@@ -84,7 +84,10 @@ impl<'a,'b> Intro<'a,'b>{
 
                 WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
-                        make_screenshot(&*window)
+                        make_screenshot(&mut (*window),|p,g|{
+                            g.clear_colour(background_color);
+                            self.text_view.draw(p,g);
+                        })
                     }
                 }
                 _=>{}
@@ -108,7 +111,10 @@ impl<'a,'b> Intro<'a,'b>{
 
                 WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
-                        make_screenshot(&*window)
+                        make_screenshot(&mut (*window),|p,g|{
+                            g.clear_colour(background_color);
+                            self.text_view.draw(p,g);
+                        })
                     }
                 }
                 _=>{}
@@ -130,9 +136,9 @@ impl<'a,'b> Intro<'a,'b>{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 WindowEvent::Draw=>{
-                    if 1f32<(*window).draw_smooth(|alpha,c,g|{
+                    if 1f32<(*window).draw_smooth(|alpha,p,g|{
                         background.colour[3]=alpha;
-                        background.draw(c,g);
+                        background.draw(p,g);
                     }){
                         break
                     }
@@ -140,7 +146,9 @@ impl<'a,'b> Intro<'a,'b>{
                 
                 WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
-                        make_screenshot(&*window)
+                        make_screenshot(self.window,|p,g|{
+                            background.draw(p,g);
+                        })
                     }
                 }
                 _=>{}
