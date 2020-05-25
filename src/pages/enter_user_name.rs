@@ -1,5 +1,5 @@
 use crate::{
-    Calibri,
+    Main_font,
     Game,
     Settings,
 };
@@ -61,8 +61,8 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                 .border_colour(Blue);
 
         Self{
-            head:TextViewStaticLine::new(head_settings,Calibri!()),
-            input:EditTextView::new(settings,Calibri!()),
+            head:TextViewStaticLine::new(head_settings,Main_font!()),
+            input:EditTextView::new(settings,Main_font!()),
             main_menu:main_menu,
             window:window as *mut GameWindow,
         }

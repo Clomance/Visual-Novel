@@ -1,6 +1,6 @@
 use crate::{
     game_name,
-    Calibri,
+    Main_font,
     make_screenshot,
     Game,
     Settings,
@@ -85,7 +85,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                 .buttons_size([180f32,60f32]);
 
         Self{
-            menu:Menu::new(menu_settings,Calibri!()), // Создание меню
+            menu:Menu::new(menu_settings,Main_font!()), // Создание меню
             wallpaper,
         }
     }

@@ -1,5 +1,5 @@
 use crate::{
-    Calibri,
+    Main_font,
     make_screenshot,
     Game,
     Settings,
@@ -76,7 +76,7 @@ impl<'a> SettingsPage<'a>{
                 .current_value(Settings.volume as f32*100f32/128f32);
 
 
-        let volume=Slider::new(volume_settings,Calibri!());
+        let volume=Slider::new(volume_settings,Main_font!());
 
         // Настройки кнопки выхода
         let button_settings=ButtonSettings::new("Назад",[
@@ -88,10 +88,10 @@ impl<'a> SettingsPage<'a>{
 
 
         Self{
-            head:TextViewStaticLine::new(head_settings,Calibri!()),
-            signs_per_sec:Slider::new(signs_per_sec_slider_sets,Calibri!()),
+            head:TextViewStaticLine::new(head_settings,Main_font!()),
+            signs_per_sec:Slider::new(signs_per_sec_slider_sets,Main_font!()),
             volume:volume,
-            back_button:Button::new(button_settings,Calibri!()),
+            back_button:Button::new(button_settings,Main_font!()),
         }
     }
 

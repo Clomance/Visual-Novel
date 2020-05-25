@@ -46,9 +46,9 @@ use textures::Textures;
 mod dialogue_box;
 pub use dialogue_box::DialogueBox;
 
-// Макрос для удобной и понятной замены ссылки на шрифт
+// Макросы для удобной и понятной замены ссылки на шрифт
 #[macro_export]
-macro_rules! Calibri {
+macro_rules! Main_font {
     () => {
         unsafe{
             &crate::glyph_cache[0]
@@ -92,10 +92,10 @@ pub static mut glyph_cache:Vec<Glyphs>=Vec::new();
 
 fn main(){
     unsafe{
-        let mut glyphs=Glyphs::load("./resources/fonts/CALIBRI.font");
+        let mut glyphs=Glyphs::load("./resources/fonts/main.font");
         glyph_cache.push(glyphs);
 
-        glyphs=Glyphs::load("./resources/fonts/dialogue_box.font");
+        glyphs=Glyphs::load("./resources/fonts/dialogue.font");
         glyph_cache.push(glyphs);
     }
 

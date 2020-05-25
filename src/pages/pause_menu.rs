@@ -1,5 +1,5 @@
 use crate::{
-    Calibri,
+    Main_font,
     make_screenshot,
     Game,
 };
@@ -47,7 +47,7 @@ impl<'a> PauseMenu<'a>{
             .buttons_size([180f32,60f32]);
 
         Self{
-            menu:Menu::new(menu_settings,Calibri!()),
+            menu:Menu::new(menu_settings,Main_font!()),
         }
     }
 

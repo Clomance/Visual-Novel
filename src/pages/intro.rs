@@ -1,5 +1,5 @@
 use crate::{
-    Calibri,
+    Main_font,
     make_screenshot,
     Game,
 };
@@ -54,7 +54,7 @@ impl<'a,'b> Intro<'a,'b>{
                 .text_colour(White);
 
         Self{
-            text_view:TextViewStaticLined::new(settings,Calibri!()),
+            text_view:TextViewStaticLined::new(settings,Main_font!()),
             window:window
         }
     }
