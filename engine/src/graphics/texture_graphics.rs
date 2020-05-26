@@ -37,12 +37,17 @@ pub struct TextureGraphics{
 }
 
 impl TextureGraphics{
-    pub fn new(display:&Display)->TextureGraphics{
-        let draw_rotate=include_str!("shaders/texture_rotation_vertex_shader.glsl");
-
-        let vertex_shader=include_str!("shaders/texture_vertex_shader.glsl");
-
-        let fragment_shader=include_str!("shaders/texture_fragment_shader.glsl");
+    pub fn new(display:&Display,glsl:u16)->TextureGraphics{
+        let (draw_rotate,vertex_shader,fragment_shader)=if glsl==120{(
+            include_str!("shaders/texture_rotation_vertex_shader_120.glsl"),
+            include_str!("shaders/texture_vertex_shader_120.glsl"),
+            include_str!("shaders/texture_fragment_shader_120.glsl")
+        )}
+        else{(
+            include_str!("shaders/texture_rotation_vertex_shader.glsl"),
+            include_str!("shaders/texture_vertex_shader.glsl"),
+            include_str!("shaders/texture_fragment_shader.glsl")
+        )};
 
         Self{
             vertex_buffer:VertexBuffer::empty_dynamic(display,4).unwrap(),

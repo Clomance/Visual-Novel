@@ -32,10 +32,15 @@ pub struct SimpleGraphics{
 }
 
 impl SimpleGraphics{
-    pub fn new(display:&Display)->SimpleGraphics{
-        let vertex_shader=include_str!("shaders/simple_vertex_shader.glsl");
-
-        let fragment_shader=include_str!("shaders/simple_fragment_shader.glsl");
+    pub fn new(display:&Display,glsl:u16)->SimpleGraphics{
+        let (vertex_shader,fragment_shader)=if glsl==120{(
+            include_str!("shaders/simple_vertex_shader_120.glsl"),
+            include_str!("shaders/simple_fragment_shader_120.glsl"),
+        )}
+        else{(
+            include_str!("shaders/simple_vertex_shader.glsl"),
+            include_str!("shaders/simple_fragment_shader.glsl"),
+        )};
 
         Self{
             vertex_buffer:VertexBuffer::empty_dynamic(display,Points_limit).unwrap(),

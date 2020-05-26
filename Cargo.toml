@@ -1,6 +1,6 @@
 [package]
 name = "Visual_Novel"
-version = "1.2.1"
+version = "1.2.2"
 authors = ["Clomance"]
 edition = "2018"
 build = "build.rs"

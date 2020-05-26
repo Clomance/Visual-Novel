@@ -42,10 +42,15 @@ pub struct TextGraphics{
 
 impl TextGraphics{
     // 
-    pub fn new(display:&Display)->TextGraphics{
-        let vertex_shader=include_str!("shaders/text_vertex_shader.glsl");
-
-        let fragment_shader=include_str!("shaders/text_fragment_shader.glsl");
+    pub fn new(display:&Display,glsl:u16)->TextGraphics{
+        let (vertex_shader,fragment_shader)=if glsl==120{(
+            include_str!("shaders/text_vertex_shader_120.glsl"),
+            include_str!("shaders/text_fragment_shader_120.glsl"),
+        )}
+        else{(
+            include_str!("shaders/text_vertex_shader.glsl"),
+            include_str!("shaders/text_fragment_shader.glsl"),
+        )};
 
         Self{
             vertex_buffer:VertexBuffer::empty_dynamic(display,Character_pixel_limit).unwrap(),

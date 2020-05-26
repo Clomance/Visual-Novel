@@ -27,11 +27,11 @@ pub struct Graphics2D{
 }
 
 impl Graphics2D{
-    pub fn new(window:&Display)->Graphics2D{
+    pub fn new(window:&Display,glsl:u16)->Graphics2D{
         Self{
-            texture:TextureGraphics::new(window),
-            simple:SimpleGraphics::new(window),
-            text:TextGraphics::new(window),
+            texture:TextureGraphics::new(window,glsl),
+            simple:SimpleGraphics::new(window,glsl),
+            text:TextGraphics::new(window,glsl),
         }
     }
 

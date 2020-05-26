@@ -12,6 +12,7 @@ use glium::{
     Display,
     Surface,
     Frame,
+    Version,
     draw_parameters::{
         DrawParameters,
         Blend,
@@ -140,11 +141,28 @@ impl GameWindow{
             .with_fullscreen(Some(fullscreen));
 
         let context_builder=ContextBuilder::new()
+            .with_gl_debug_flag(
+                #[cfg(debug_assertions)]
+                true,
+                #[cfg(not(debug_assertions))]
+                false
+            )
             .with_vsync(true)
             .with_srgb(true);
 
         // Создание окна и привязывание графической библиотеки
         let display=Display::new(window_builder,context_builder,&event_loop).unwrap();
+
+        // Опреление поддерживаемой версии GLSL
+        let Version(..,m,l)=display.get_supported_glsl_version();
+        let glsl=match m{
+            1 if l<3 =>{
+                120
+            }
+            _=>{
+                140
+            }
+        };
 
         let mut frame=display.draw();       //
         frame.clear_color(1.0,1.0,1.0,1.0); // Заполнение окна
@@ -156,7 +174,7 @@ impl GameWindow{
 
         Self{
             event_loop,
-            graphics:Graphics2D::new(&display),
+            graphics:Graphics2D::new(&display,glsl),
             mouse_icon:MouseCursorIcon::new(&display),
             display:display,
             events:VecDeque::with_capacity(32),
@@ -200,6 +218,15 @@ impl GameWindow{
     #[inline(always)]
     pub fn switch_cursor_visible(&mut self){
         self.mouse_icon.switch_visible()
+    }
+}
+
+impl GameWindow{
+    pub fn get_supported_glsl_version(&self)->Version{
+        self.display.get_supported_glsl_version()
+    }
+    pub fn get_opengl_version(&self)->&Version{
+        self.display.get_opengl_version()
     }
 }
 
