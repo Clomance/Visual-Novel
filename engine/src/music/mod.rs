@@ -7,3 +7,8 @@ pub use windows::Music;
 mod linux;
 #[cfg(target_os="linux")]
 pub use linux::Music;
+
+#[cfg(target_os="macos")]
+mod linux;
+#[cfg(target_os="macos")]
+pub use linux::Music;
