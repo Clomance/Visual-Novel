@@ -1,5 +1,5 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,dead_code,unused_unsafe)]
-// #![windows_subsystem="windows"]
+#![cfg_attr(not(debug_assertions),windows_subsystem="windows")]
 
 use lib::{
     *,
@@ -92,7 +92,9 @@ pub static mut Settings:game_settings::GameSettings=game_settings::GameSettings:
 
 pub static mut loading:bool=true; // Флаг загрузки
 
-pub static mut glyph_cache:Vec<Glyphs>=Vec::new();
+pub static mut glyph_cache:Vec<Glyphs>=Vec::new(); // Шрифты
+static mut _textures:Textures=Textures::new(); // Хранилище тектур и свазанное с ними
+static mut _dialogues:Vec<Dialogue>=Vec::new();
 
 fn main(){
     unsafe{
@@ -102,8 +104,6 @@ fn main(){
         glyphs=Glyphs::load("./resources/fonts/dialogue.font");
         glyph_cache.push(glyphs);
     }
-
-    let mut texture_base:Textures=Textures::new();
 
     unsafe{
         Settings.load(); // Загрузка настроек
@@ -117,17 +117,11 @@ fn main(){
                 (window_height+2f32*dy)
             ]
         };
-    
-        let mut dialogues:Vec<Dialogue>=Vec::new(); // Массив диалогов
-
-        let mut dialogues_ref=SyncRawPtr::new(&mut dialogues as *mut Vec<Dialogue>);
-
-        let mut texture_base_ref=SyncRawPtr::new(&mut texture_base as *mut Textures);
 
         // Замыкание для допольнительного потока
         let loading_resources_thread=move||{
 
-            *texture_base_ref=Textures::load(); // Загрузка текстур
+            _textures=Textures::load(); // Загрузка текстур
             if !loading{return}
 
             // Загрузка диалогов
@@ -164,7 +158,7 @@ fn main(){
                 let dialogue=Dialogue::new(path);
                 dialogues.push(dialogue);
             }
-            *dialogues_ref=dialogues;
+            _dialogues=dialogues;
 
             loading=false;
         };
@@ -176,6 +170,9 @@ fn main(){
             },
             _=>{}
         }
+
+        let texture_base=&_textures; // "Безопасная" ссылка на Хранилище текстур
+        let dialogues=&_dialogues; // "Безопасная" ссылка на диалоги
 
         let mut wallpaper=Wallpaper::new(texture_base.main_menu_wallpaper(),window.display());
         let mut characters_view=CharactersView::new(); // "Сцена" для персонажей
@@ -202,7 +199,7 @@ fn main(){
                     Settings.saved_dialogue=0;
                     dialogue_box.set_step(0);
 
-                    if Intro::new(&mut window).start()==Game::Exit{
+                    if Intro::new().start(&mut window)==Game::Exit{
                         break 'game
                     }
                 }

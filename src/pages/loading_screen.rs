@@ -36,7 +36,7 @@ impl LoadingScreen{
         }
     }
 
-    pub unsafe fn start<F,T>(&mut self,window:&mut GameWindow,background:F)->Game
+    pub unsafe fn start<F,T>(self,window:&mut GameWindow,background:F)->Game
             where F:FnOnce()->T,
                 F:Send+'static,
                 T:Send+'static{

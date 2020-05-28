@@ -51,7 +51,7 @@ impl<'a> PauseMenu<'a>{
         }
     }
 
-    pub unsafe fn start(&mut self,window:&mut GameWindow,music:&Music)->Game{
+    pub unsafe fn start(mut self,window:&mut GameWindow,music:&Music)->Game{
         'page:loop{
             match self.smooth(window){
                 Game::Exit=>return Game::Exit,

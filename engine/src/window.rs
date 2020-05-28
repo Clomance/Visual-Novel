@@ -94,7 +94,7 @@ pub enum WindowEvent{
     Hide(bool), // При потере фокуса игра сворачивается
 
     MouseMovementDelta((f32,f32)), // Сдвиг мышки (сдвиг за пределы экрана игнорируется)
-    MousePressed(MouseButton), 
+    MousePressed(MouseButton),
     MouseReleased(MouseButton),
 
     KeyboardPressed(KeyboardButton),
@@ -216,206 +216,18 @@ impl GameWindow{
     }
 
     #[inline(always)]
-    pub fn switch_cursor_visible(&mut self){
-        self.mouse_icon.switch_visible()
+    pub fn switch_cursor_visibility(&mut self){
+        self.mouse_icon.switch_visibility()
     }
 }
 
+// Связанное с версиями OpenGL
 impl GameWindow{
     pub fn get_supported_glsl_version(&self)->Version{
         self.display.get_supported_glsl_version()
     }
     pub fn get_opengl_version(&self)->&Version{
         self.display.get_opengl_version()
-    }
-}
-
-// Функции обработки событий
-impl GameWindow{
-    // Обычная функция обработки событий
-    fn event_listener(&mut self){
-        let vec=&mut self.events as *mut VecDeque<WindowEvent>;
-
-        let game_window=self as *mut GameWindow;
-
-        let display=self.display.gl_window();
-
-        let window:&Window=display.window();
-
-        self.event_loop.run_return(|event,_,control_flow|{
-            *control_flow=ControlFlow::Wait;
-
-            let next_event=match event{
-                Event::NewEvents(_)=>None, // Игнорирование
-
-                // События окна
-                Event::WindowEvent{event,..}=>{
-                    match event{
-                        // Закрытие окна
-                        GWindowEvent::CloseRequested=>Exit,
-
-                        // Сдвиг мыши (сдвиг за пределы окна игнорируется)
-                        GWindowEvent::CursorMoved{position,..}=>unsafe{
-                            let last_position=mouse_cursor.position();
-
-                            let position=[position.x as f32,position.y as f32];
-
-                            let dx=position[0]-last_position[0];
-                            let dy=position[1]-last_position[1];
-                            mouse_cursor.set_position(position);
-                            (*game_window).mouse_icon.set_position(position);
-                            MouseMovementDelta((dx,dy))
-                        }
-                        
-                        // Обработка действий с кнопками мыши (только стандартные кнопки)
-                        GWindowEvent::MouseInput{button,state,..}=>{
-                            if state==ElementState::Pressed{
-                                match button{
-                                    GMouseButton::Left=>unsafe{
-                                        (*game_window).mouse_icon.pressed();
-                                        MousePressed(MouseButton::Left)
-                                    }
-                                    GMouseButton::Middle=>MousePressed(MouseButton::Middle),
-                                    GMouseButton::Right=>MousePressed(MouseButton::Right),
-                                    GMouseButton::Other(_)=>None
-                                }
-                            }
-                            else{
-                                match button{
-                                    GMouseButton::Left=>unsafe{
-                                        (*game_window).mouse_icon.released();
-                                        MouseReleased(MouseButton::Left)
-                                    }
-                                    GMouseButton::Middle=>MouseReleased(MouseButton::Middle),
-                                    GMouseButton::Right=>MouseReleased(MouseButton::Right),
-                                    GMouseButton::Other(_)=>None
-                                }
-                            }
-                        }
-
-                        GWindowEvent::KeyboardInput{input,..}=>{
-                            let key=if let Some(key)=input.virtual_keycode{
-                                unsafe{std::mem::transmute(key)}
-                            }
-                            else{
-                                KeyboardButton::Unknown
-                            };
-
-                            if input.state==ElementState::Pressed{
-                                
-                                KeyboardPressed(key)
-                            }
-                            else{
-                                if key==KeyboardButton::F8{
-                                    unsafe{
-                                        (*game_window).switch_cursor_visible();
-                                    }
-                                }
-
-                                // Отключение/включение возможности сворачивания окна
-                                #[cfg(debug_assertions)]unsafe{
-                                if key==KeyboardButton::F10{
-                                    (*game_window).focusable_option=!(*game_window).focusable_option;
-                                }}
-                                KeyboardReleased(key)
-                            }
-                        }
-
-                        // Получение вводимых букв
-                        GWindowEvent::ReceivedCharacter(character)=>{
-                            if character.is_ascii_control(){
-                                None
-                            }
-                            else{
-                                CharacterInput(character)
-                            }
-                        }
-
-                        GWindowEvent::Focused(_)=>{
-                            #[cfg(debug_assertions)]
-                            unsafe{
-                                if (*game_window).focusable_option{
-                                    window.set_minimized(true); // Сворацивание окна
-                                    (*game_window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
-                                }
-                            }
-
-                            #[cfg(not(debug_assertions))]
-                            unsafe{
-                                window.set_minimized(true); // Сворацивание окна
-                                (*game_window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
-                            }
-
-                            *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
-
-                            WindowEvent::Hide(true) // Передача события во внешнее управление
-                        }
-                        _=>None // Игнорирование остальных событий
-                    }
-                }
-
-                // Запрос на рендеринг
-                Event::MainEventsCleared=>{
-                    window.request_redraw();
-                    None
-                }
-
-                // Рендеринг
-                Event::RedrawRequested(_)=>{
-                    Draw
-                }
-
-                // После вывода кадра
-                Event::RedrawEventsCleared=>{
-                    *control_flow=ControlFlow::Exit;
-                    None
-                } // Игнорирование
-
-                // Закрытия цикла обработки событий
-                Event::LoopDestroyed=>None, // Игнорирование
-
-                _=>None  // Игнорирование остальных событий
-            };
-
-            unsafe{(*vec).push_back(next_event)}
-        });
-    }
-
-    // Функция ожидания получения фокуса - перехватывает управление до получения окном фокуса
-    fn wait_until_focused(&mut self){
-        let vec=&mut self.events as *mut VecDeque<WindowEvent>;
-
-        let game_window=self as *mut GameWindow;
-
-        let display=self.display.gl_window();
-
-        let window:&Window=display.window();
-
-        self.event_loop.run_return(|event,_,control_flow|{
-            *control_flow=ControlFlow::Wait;
-
-            match event{
-                Event::WindowEvent{event,..}=>{
-                    match event{
-                        GWindowEvent::CloseRequested=>unsafe{ // Остановка цикла обработки событий,
-                            *control_flow=ControlFlow::Exit;
-                            (*vec).push_back(Exit); // Передача события во внешнее управление
-                        }
-
-                        GWindowEvent::Focused(_)=>unsafe{
-                            (*game_window).events_handler=GameWindow::event_listener; // Смена фукции обработки событий
-                            window.set_minimized(false);
-
-                            *control_flow=ControlFlow::Exit; // Остановка цикла обработки событий
-
-                            (*vec).push_back(Hide(false)); // Передача события во внешнее управление
-                        }
-                        _=>{}
-                    }
-                }
-                _=>{}
-            }
-        })
     }
 }
 
@@ -496,6 +308,7 @@ impl GameWindow{
     }
 }
 
+// Дополнительные функции
 impl GameWindow{
     // Сохраняет скриншот в формате png
     pub fn screenshot<P:AsRef<Path>>(&self,path:P){
@@ -517,6 +330,248 @@ impl GameWindow{
         }
     }
 }
+
+//                         \\
+//    ЛОКАЛЬНЫЕ ФУНКЦИИ    \\
+//                         \\
+
+// Функции обработки событий
+impl GameWindow{
+    // Обычная функция обработки событий
+    fn event_listener(&mut self){
+        let vec=&mut self.events as *mut VecDeque<WindowEvent>;
+
+        let game_window=self as *mut GameWindow;
+
+        let display=self.display.gl_window();
+
+        let window:&Window=display.window();
+
+        self.event_loop.run_return(|event,_,control_flow|{
+            *control_flow=ControlFlow::Wait;
+
+            let next_event=match event{
+                Event::NewEvents(_)=>None, // Игнорирование
+
+                // События окна
+                Event::WindowEvent{event,..}=>{
+                    match event{
+                        // Закрытие окна
+                        GWindowEvent::CloseRequested=>Exit,
+
+                        // Сдвиг мыши (сдвиг за пределы окна игнорируется)
+                        GWindowEvent::CursorMoved{position,..}=>unsafe{
+                            let last_position=mouse_cursor.position();
+
+                            let position=[position.x as f32,position.y as f32];
+
+                            let dx=position[0]-last_position[0];
+                            let dy=position[1]-last_position[1];
+                            mouse_cursor.set_position(position);
+                            (*game_window).mouse_icon.set_position(position);
+                            MouseMovementDelta((dx,dy))
+                        }
+
+                        GWindowEvent::CursorEntered{..}=>{
+                            None
+                        }
+
+                        GWindowEvent::CursorLeft{..}=>{
+                            None
+                        }
+
+                        // Обработка действий с кнопками мыши (только стандартные кнопки)
+                        GWindowEvent::MouseInput{button,state,..}=>{
+                            if state==ElementState::Pressed{
+                                match button{
+                                    GMouseButton::Left=>unsafe{
+                                        (*game_window).mouse_icon.pressed();
+                                        MousePressed(MouseButton::Left)
+                                    }
+                                    GMouseButton::Middle=>MousePressed(MouseButton::Middle),
+                                    GMouseButton::Right=>MousePressed(MouseButton::Right),
+                                    GMouseButton::Other(_)=>None
+                                }
+                            }
+                            else{
+                                match button{
+                                    GMouseButton::Left=>unsafe{
+                                        (*game_window).mouse_icon.released();
+                                        MouseReleased(MouseButton::Left)
+                                    }
+                                    GMouseButton::Middle=>MouseReleased(MouseButton::Middle),
+                                    GMouseButton::Right=>MouseReleased(MouseButton::Right),
+                                    GMouseButton::Other(_)=>None
+                                }
+                            }
+                        }
+
+                        // Обработка действий с клавишами клавиатуры
+                        GWindowEvent::KeyboardInput{input,..}=>{
+                            let key=if let Some(key)=input.virtual_keycode{
+                                unsafe{std::mem::transmute(key)}
+                            }
+                            else{
+                                KeyboardButton::Unknown
+                            };
+
+                            if input.state==ElementState::Pressed{
+                                
+                                KeyboardPressed(key)
+                            }
+                            else{
+                                if key==KeyboardButton::F8{
+                                    unsafe{
+                                        (*game_window).switch_cursor_visibility();
+                                    }
+                                }
+
+                                // Отключение/включение возможности сворачивания окна
+                                #[cfg(debug_assertions)]unsafe{
+                                if key==KeyboardButton::F10{
+                                    (*game_window).focusable_option=!(*game_window).focusable_option;
+                                }}
+                                KeyboardReleased(key)
+                            }
+                        }
+
+                        // Получение вводимых букв
+                        GWindowEvent::ReceivedCharacter(character)=>{
+                            if character.is_ascii_control(){
+                                None
+                            }
+                            else{
+                                CharacterInput(character)
+                            }
+                        }
+
+                        // При потере фокуса
+                        GWindowEvent::Focused(f)=>if !f{
+                            #[cfg(debug_assertions)]
+                            unsafe{
+                                if (*game_window).focusable_option{
+                                    window.set_minimized(true); // Сворацивание окна
+                                    (*game_window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+                                }
+                            }
+
+                            #[cfg(not(debug_assertions))]
+                            unsafe{
+                                window.set_minimized(true); // Сворацивание окна
+                                (*game_window).events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+                            }
+
+                            *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
+
+                            WindowEvent::Hide(true) // Передача события во внешнее управление
+                        }
+                        else{
+                            WindowEvent::Hide(false) // Передача события во внешнее управление
+                        }
+                        _=>None // Игнорирование остальных событий
+                    }
+                }
+
+                // Запрос на рендеринг
+                Event::MainEventsCleared=>{
+                    window.request_redraw();
+                    None
+                }
+
+                // Рендеринг
+                Event::RedrawRequested(_)=>{
+                    Draw
+                }
+
+                // После вывода кадра
+                Event::RedrawEventsCleared=>{
+                    *control_flow=ControlFlow::Exit;
+                    None
+                } // Игнорирование
+
+                // Закрытия цикла обработки событий
+                Event::LoopDestroyed=>None, // Игнорирование
+
+                _=>None  // Игнорирование остальных событий
+            };
+
+            unsafe{(*vec).push_back(next_event)}
+        });
+    }
+
+    // Функция ожидания получения фокуса - перехватывает управление до получения окном фокуса
+    fn wait_until_focused(&mut self){
+        let vec=&mut self.events as *mut VecDeque<WindowEvent>;
+
+        let game_window=self as *mut GameWindow;
+
+        let display=self.display.gl_window();
+
+        let window:&Window=display.window();
+
+        self.event_loop.run_return(|event,_,control_flow|{
+            *control_flow=ControlFlow::Wait;
+
+            match event{
+                Event::WindowEvent{event,..}=>{
+                    match event{
+                        GWindowEvent::CloseRequested=>unsafe{ // Остановка цикла обработки событий,
+                            *control_flow=ControlFlow::Exit;
+                            (*vec).push_back(Exit); // Передача события во внешнее управление
+                        }
+
+                        // При получении фокуса
+                        GWindowEvent::Focused(_)=>unsafe{
+                            (*game_window).events_handler=GameWindow::event_listener; // Смена фукции обработки событий
+                            window.set_minimized(false);
+
+                            *control_flow=ControlFlow::Exit; // Остановка цикла обработки событий
+
+                            (*vec).push_back(Hide(false)); // Передача события во внешнее управление
+                        }
+                        _=>{}
+                    }
+                }
+                _=>{}
+            }
+        })
+    }
+}
+
+// Функции внутренней обработки событий
+impl GameWindow{
+    // При потере фокуса - для отладки
+    #[cfg(debug_assertions)]
+    fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
+
+        // Если функция сворачивания включена
+        if self.focusable_option{
+            self.display.gl_window().window().set_minimized(true); // Сворацивание окна
+            self.events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+        }
+
+        *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
+
+        WindowEvent::Hide(true) // Передача события во внешнее управление
+    }
+
+    // При потере фокуса - релиз
+    #[cfg(not(debug_assertions))]
+    fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
+        window.set_minimized(true); // Сворацивание окна
+        self.events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+
+        *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
+
+        WindowEvent::Hide(true) // Передача события во внешнее управление
+    }
+
+    fn gained_focus(&mut self,_control_flow:&mut ControlFlow)->WindowEvent{
+        WindowEvent::Hide(false) // Передача события во внешнее управление
+    }
+}
+
+
 
 #[derive(Clone,PartialEq)]
 #[repr(u32)]

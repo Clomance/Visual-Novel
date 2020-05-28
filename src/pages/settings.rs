@@ -95,7 +95,7 @@ impl<'a> SettingsPage<'a>{
         }
     }
 
-    pub unsafe fn start(&mut self,window:&mut GameWindow,music:&Music)->Game{
+    pub unsafe fn start(mut self,window:&mut GameWindow,music:&Music)->Game{
 
         match self.smooth(window){
             Game::Back=>return Game::Back,

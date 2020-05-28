@@ -38,11 +38,10 @@ pub struct EnterUserName<'a,'c,'e>{
     head:TextViewStaticLine<'a>,
     input:EditTextView<'a>,
     main_menu:&'c mut MainMenu<'a,'e>,
-    window:*mut GameWindow,
 }
 
 impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
-    pub fn new(main_menu:&'c mut MainMenu<'a,'e>,window:&mut GameWindow)->EnterUserName<'a,'c,'e>{
+    pub fn new(main_menu:&'c mut MainMenu<'a,'e>)->EnterUserName<'a,'c,'e>{
         // Область для поля ввода
         let mut rect=unsafe{[
             window_width/2f32-150f32,
@@ -64,19 +63,19 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
             head:TextViewStaticLine::new(head_settings,Main_font!()),
             input:EditTextView::new(settings,Main_font!()),
             main_menu:main_menu,
-            window:window as *mut GameWindow,
         }
     }
 
-    pub fn start(&mut self)->Game{
-        match self.smooth(){
+    pub fn start(mut self,window:&mut GameWindow)->Game{
+        match self.smooth(window){
             Game::Exit=>return Game::Exit,
             Game::Back=>return Game::Back,
             _=>{}
         }
 
+
         // Полная отрисовка
-        while let Some(event)=unsafe{(*self.window).next_event()}{
+        while let Some(event)=window.next_event(){
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
@@ -97,7 +96,7 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                 }
 
                 WindowEvent::Draw=>unsafe{ // Рендеринг
-                    (*self.window).draw(|c,g|{
+                    window.draw(|c,g|{
                         self.main_menu.draw(c,g);
                         self.input.draw(c,g);
                         self.head.draw(c,g);
@@ -136,18 +135,18 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
     }
 
     // Сглаживание перехода к странице (открытие)
-    pub fn smooth(&mut self)->Game{
+    pub fn smooth(&mut self,window:&mut GameWindow)->Game{
         unsafe{
-            (*self.window).set_new_smooth(page_smooth);
+            window.set_new_smooth(page_smooth);
 
-            while let Some(event)=(*self.window).next_event(){
+            while let Some(event)=window.next_event(){
                 match event{
                     WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                     WindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
 
                     WindowEvent::Draw=>{ // Рендеринг
-                        if 1f32<(*self.window).draw_smooth(|alpha,c,g|{
+                        if 1f32<window.draw_smooth(|alpha,c,g|{
                             self.main_menu.draw(c,g);
 
                             self.input.draw_smooth(alpha,c,g);

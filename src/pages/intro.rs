@@ -34,13 +34,12 @@ const page_smooth:f32=default_page_smooth;
 
 const background_color:Colour=Black;
 
-pub struct Intro<'a,'b>{
+pub struct Intro<'b>{
     text_view:TextViewStaticLined<'b>,
-    window:&'a mut GameWindow,
 }
 
-impl<'a,'b> Intro<'a,'b>{
-    pub fn new(window:&'a mut GameWindow)->Intro<'a,'b>{
+impl<'b> Intro<'b>{
+    pub fn new()->Intro<'b>{
         let text="Прогресс сохраняется автоматически";
 
         let settings=TextViewSettings::new(text,
@@ -55,20 +54,17 @@ impl<'a,'b> Intro<'a,'b>{
 
         Self{
             text_view:TextViewStaticLined::new(settings,Main_font!()),
-            window:window
         }
     }
 
-    pub unsafe fn start(&mut self)->Game{
-        if self.smooth()==Game::Exit{
+    pub unsafe fn start(mut self,window:&mut GameWindow)->Game{
+        if self.smooth(window)==Game::Exit{
             return Game::Exit
         }
 
-        let window=self.window as *mut GameWindow;
+        window.set_new_smooth(1f32/128f32);
 
-        self.window.set_new_smooth(1f32/128f32);
-
-        while let Some(event)=self.window.next_event(){
+        while let Some(event)=window.next_event(){
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
@@ -94,8 +90,8 @@ impl<'a,'b> Intro<'a,'b>{
             }
         }
 
-        self.window.set_smooth(-1f32/128f32);
-        while let Some(event)=self.window.next_event(){
+        window.set_smooth(-1f32/128f32);
+        while let Some(event)=window.next_event(){
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
@@ -124,13 +120,12 @@ impl<'a,'b> Intro<'a,'b>{
         Game::ContinueGamePlay
     }
 
-    pub unsafe fn smooth(&mut self)->Game{
-        self.window.set_new_smooth(page_smooth);
-        let window=self.window as *mut GameWindow;
+    pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
+        window.set_new_smooth(page_smooth);
 
         let mut background=Rectangle::new(window_rect(),background_color);
 
-        while let Some(event)=self.window.next_event(){
+        while let Some(event)=window.next_event(){
 
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
@@ -146,7 +141,7 @@ impl<'a,'b> Intro<'a,'b>{
                 
                 WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
-                        make_screenshot(self.window,|p,g|{
+                        make_screenshot(window,|p,g|{
                             background.draw(p,g);
                         })
                     }

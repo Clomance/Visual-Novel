@@ -100,7 +100,7 @@ impl MouseCursorIcon{
         self.visible=visible
     }
 
-    pub fn switch_visible(&mut self){
+    pub fn switch_visibility(&mut self){
         self.visible=!self.visible
     }
 

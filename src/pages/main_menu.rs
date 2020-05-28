@@ -135,7 +135,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
 
                                         MenuButtons::New=>{ // Кнопка начала нового игрового процесса
                                             // Окно ввода имени захватывает управление над меню
-                                            match EnterUserName::new(&mut self,window).start(){
+                                            match EnterUserName::new(&mut self).start(window){
                                                 Game::NewGamePlay=>return Game::NewGamePlay,
                                                 Game::Exit=>return Game::Exit,
                                                 _=>{}
