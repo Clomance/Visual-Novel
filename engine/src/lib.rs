@@ -1,4 +1,4 @@
-#![allow(non_upper_case_globals,unused_must_use,dead_code)]
+#![allow(non_upper_case_globals,unused_must_use)]
 // reimports
 pub use glium;
 
@@ -13,7 +13,7 @@ mod mouse_cursor;
 
 
 mod window;
-// GameWindow,
+// Window,
 
 // WindowEvent,
 // MouseButton,

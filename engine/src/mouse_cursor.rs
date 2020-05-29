@@ -92,10 +92,6 @@ impl MouseCursorIcon{
         self.image_base.y2=position[1]+self.radius;
     }
 
-    pub fn set_filter(&mut self,filter:Colour){
-        self.image_base.colour_filter=filter;
-    }
-
     pub fn set_visible(&mut self,visible:bool){
         self.visible=visible
     }

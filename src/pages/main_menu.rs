@@ -23,7 +23,7 @@ use engine::{
     // statics
     mouse_cursor,
     // structs
-    GameWindow,
+    Window,
     graphics::GameGraphics,
     // enums
     WindowEvent,
@@ -90,7 +90,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
         }
     }
 
-    pub fn start(mut self,window:&mut GameWindow,music:&Music)->Game{
+    pub fn start(mut self,window:&mut Window,music:&Music)->Game{
         let radius=unsafe{mouse_cursor.center_radius()};
 
         self.wallpaper.mouse_shift(radius[0],radius[1]);
@@ -185,7 +185,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
         Game::Exit
     }
 
-    pub fn smooth(&mut self,window:&mut GameWindow)->Game{
+    pub fn smooth(&mut self,window:&mut Window)->Game{
         window.set_new_smooth(page_smooth);
 
         while let Some(event)=window.next_event(){

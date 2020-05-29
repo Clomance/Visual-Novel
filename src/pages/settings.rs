@@ -31,7 +31,7 @@ use engine::{
     KeyboardButton,
     music::Music,
     // structs
-    GameWindow,
+    Window,
     graphics::Rectangle,
 };
 
@@ -95,7 +95,7 @@ impl<'a> SettingsPage<'a>{
         }
     }
 
-    pub unsafe fn start(mut self,window:&mut GameWindow,music:&Music)->Game{
+    pub unsafe fn start(mut self,window:&mut Window,music:&Music)->Game{
 
         match self.smooth(window){
             Game::Back=>return Game::Back,
@@ -177,7 +177,7 @@ impl<'a> SettingsPage<'a>{
         Game::Exit
     }
 
-    pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
+    pub unsafe fn smooth(&mut self,window:&mut Window)->Game{
         window.set_new_smooth(page_smooth);
 
         let mut background=Rectangle::new([

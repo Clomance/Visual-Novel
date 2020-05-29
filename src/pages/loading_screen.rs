@@ -11,7 +11,7 @@ use engine::{
     window_width,
     window_height,
     // structs
-    GameWindow,
+    Window,
     image::{ImageBase,Texture},
     // enums
     WindowEvent,
@@ -24,7 +24,7 @@ pub struct LoadingScreen{
 }
 
 impl LoadingScreen{
-    pub fn new(window:&mut GameWindow)->LoadingScreen{
+    pub fn new(window:&mut Window)->LoadingScreen{
         Self{
             logo_base:ImageBase::new(White,unsafe{[
                 (window_width-200f32)/2f32,
@@ -36,7 +36,7 @@ impl LoadingScreen{
         }
     }
 
-    pub unsafe fn start<F,T>(self,window:&mut GameWindow,background:F)->Game
+    pub unsafe fn start<F,T>(self,window:&mut Window,background:F)->Game
             where F:FnOnce()->T,
                 F:Send+'static,
                 T:Send+'static{

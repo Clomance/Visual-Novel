@@ -28,7 +28,7 @@ use engine::{
     MouseButton,
     KeyboardButton,
     // structs
-    GameWindow,
+    Window,
 };
 
 // Шаг альфа-канала, для плавного перехода
@@ -66,7 +66,7 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
         }
     }
 
-    pub fn start(mut self,window:&mut GameWindow)->Game{
+    pub fn start(mut self,window:&mut Window)->Game{
         match self.smooth(window){
             Game::Exit=>return Game::Exit,
             Game::Back=>return Game::Back,
@@ -135,7 +135,7 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
     }
 
     // Сглаживание перехода к странице (открытие)
-    pub fn smooth(&mut self,window:&mut GameWindow)->Game{
+    pub fn smooth(&mut self,window:&mut Window)->Game{
         unsafe{
             window.set_new_smooth(page_smooth);
 

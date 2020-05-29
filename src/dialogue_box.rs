@@ -101,7 +101,6 @@ impl<'b,'c> DialogueBox<'b,'c>{
                         .position([name_position[0],name_position[1]]),
 
                 image:ImageBase::new(White,rect),
-                
                 texture:texture,
                 glyphs:glyphs
             }

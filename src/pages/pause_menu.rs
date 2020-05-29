@@ -27,7 +27,7 @@ use engine::{
     KeyboardButton,
     music::Music,
     // structs
-    GameWindow,
+    Window,
     graphics::Rectangle,
 };
 
@@ -51,7 +51,7 @@ impl<'a> PauseMenu<'a>{
         }
     }
 
-    pub unsafe fn start(mut self,window:&mut GameWindow,music:&Music)->Game{
+    pub unsafe fn start(mut self,window:&mut Window,music:&Music)->Game{
         'page:loop{
             match self.smooth(window){
                 Game::Exit=>return Game::Exit,
@@ -117,7 +117,7 @@ impl<'a> PauseMenu<'a>{
         }
     }
 
-    pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
+    pub unsafe fn smooth(&mut self,window:&mut Window)->Game{
         window.set_new_smooth(page_smooth);
 
         let mut background=Rectangle::new(window_rect(),background_color);

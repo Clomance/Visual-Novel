@@ -18,12 +18,17 @@ use engine::{
     MouseButton,
     KeyboardButton,
     // structs
-    GameWindow,
+    Window,
     graphics::{Rectangle,GameGraphics},
     text::Glyphs,
-    glium::DrawParameters,
+    glium::{
+        DrawParameters,
+        glutin::window::Icon,
+        glutin::dpi::Size
+    },
     // mods
-    music
+    music,
+    image::image::GenericImageView,
 };
 
 use std::{
@@ -103,11 +108,37 @@ fn main(){
 
         glyphs=Glyphs::load("./resources/fonts/dialogue.font");
         glyph_cache.push(glyphs);
-    }
 
-    unsafe{
         Settings.load(); // Загрузка настроек
-        let mut window:GameWindow=GameWindow::new(game_name); // Создание окна и загрузка функций OpenGL
+
+        // Настройка и создание окна и загрузка функций OpenGL
+        let mut window:Window=match Window::new(|mut monitors,window_builder,context_builder|{
+            let monitor=monitors.remove(0);
+            let size=monitor.size();
+
+            let fullscreen=engine::glium::glutin::window::Fullscreen::Borderless(monitor);
+
+            let icon=load_window_icon();
+
+            window_builder.window.inner_size=Some(Size::Physical(size));
+            window_builder.window.title=game_name.to_string();
+            window_builder.window.fullscreen=Some(fullscreen);
+            window_builder.window.resizable=false;
+            window_builder.window.decorations=false;
+            window_builder.window.always_on_top=true;
+            window_builder.window.window_icon=Some(icon);
+
+            context_builder.gl_attr.vsync=true;
+            context_builder.pf_reqs.srgb=true;
+            context_builder.pf_reqs.hardware_accelerated=None;
+        }){
+            Ok(window)=>window,
+            Err(e)=>{
+                #[cfg(debug_assertions)]
+                println!("{:?}",e);
+                return
+            }
+        };
 
         let wallpaper_size={
             let dx=window_width/(wallpaper_movement_scale*2f32);
@@ -446,7 +477,7 @@ fn main(){
     }
 }
 
-pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(window:&mut GameWindow,f:F){
+pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(window:&mut Window,f:F){
     let rect=Rectangle::new(window_rect(),[1f32,1f32,1f32,0.8f32]);
 
     window.set_cursor_visible(false); // Отключение курсора
@@ -464,4 +495,13 @@ pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(window:&
     window.draw_event_once(|d,g|{
         rect.draw(d,g)
     });
+}
+
+// Загрузка иконки окна
+fn load_window_icon()->Icon{
+    let image=engine::image::image::open("./resources/images/window_icon.png").unwrap();
+    let vec=image.to_bytes();
+    let (width,height)=image.dimensions();
+
+    Icon::from_rgba(vec,width,height).unwrap()
 }

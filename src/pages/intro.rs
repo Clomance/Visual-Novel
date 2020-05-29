@@ -26,7 +26,7 @@ use engine::{
     WindowEvent,
     KeyboardButton,
     // structs
-    GameWindow,
+    Window,
     graphics::Rectangle,
 };
 
@@ -57,7 +57,7 @@ impl<'b> Intro<'b>{
         }
     }
 
-    pub unsafe fn start(mut self,window:&mut GameWindow)->Game{
+    pub unsafe fn start(mut self,window:&mut Window)->Game{
         if self.smooth(window)==Game::Exit{
             return Game::Exit
         }
@@ -120,7 +120,7 @@ impl<'b> Intro<'b>{
         Game::ContinueGamePlay
     }
 
-    pub unsafe fn smooth(&mut self,window:&mut GameWindow)->Game{
+    pub unsafe fn smooth(&mut self,window:&mut Window)->Game{
         window.set_new_smooth(page_smooth);
 
         let mut background=Rectangle::new(window_rect(),background_color);

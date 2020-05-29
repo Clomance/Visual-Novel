@@ -20,7 +20,8 @@ use glium::{
         LinearBlendingFactor,
         BackfaceCullingMode,
     },
-    texture::RawImage2d
+    texture::RawImage2d,
+    backend::glutin::DisplayCreationError
 };
 
 use glium::glutin::{
@@ -29,16 +30,17 @@ use glium::glutin::{
         WindowEvent as GWindowEvent,
         MouseButton as GMouseButton,
         ElementState,
+        ModifiersState,
     },
     event_loop::{ControlFlow,EventLoop},
-    window::{WindowBuilder,Fullscreen},
+    window::WindowBuilder,
     ContextBuilder,
     platform::desktop::EventLoopExtDesktop,
-    window::Icon,
+    NotCurrent,
+    monitor::MonitorHandle,
 };
 
 use image::{
-    GenericImageView,
     ImageFormat,
     ImageBuffer,
     DynamicImage
@@ -55,7 +57,7 @@ use image::{
     4) LoopDestroyed
 
 
-    Все события обрабатываются и добавляются в очередь внешней обработки (GameWindow.events)
+    Все события обрабатываются и добавляются в очередь внешней обработки (Window.events)
         для работы с ними вне структуры окна
 
     При потере фокуса игра сворачивается, передача событий внешнему управлению прекращается
@@ -68,7 +70,7 @@ pub static mut window_width:f32=0f32;
 pub static mut window_height:f32=0f32;
 pub static mut window_center:[f32;2]=[0f32;2]; // Центр окна
 
-pub struct GameWindow{
+pub struct Window{
     event_loop:EventLoop<()>,
     display:Display,
     graphics:Graphics2D,
@@ -91,6 +93,7 @@ pub enum WindowEvent{
 
     // Получение/потеря фокуса, true/false
     Hide(bool), // При потере фокуса игра сворачивается
+    Resize((u32,u32)), // Изменение размера окна
 
     MouseMovementDelta((f32,f32)), // Сдвиг мышки (сдвиг за пределы экрана игнорируется)
     MousePressed(MouseButton),
@@ -99,6 +102,8 @@ pub enum WindowEvent{
     KeyboardPressed(KeyboardButton),
     KeyboardReleased(KeyboardButton),
     CharacterInput(char),
+
+    ModifiersChanged(ModifiersState),
 
     Exit,
 }
@@ -113,44 +118,28 @@ pub enum MouseButton{
 
 use WindowEvent::*;
 
-impl GameWindow{
-    #[inline(always)] // Создание окна с данным заголовком
-    pub fn new(title:&str)->GameWindow{
+impl Window{
+    #[inline(always)] // Создание окна с функцией настройки
+    pub fn new<F>(setting:F)->Result<Window,DisplayCreationError>
+        where
+            F:FnOnce(Vec<MonitorHandle>,&mut WindowBuilder,&mut ContextBuilder<NotCurrent>){
         let event_loop=EventLoop::new();
-        let monitor=event_loop.primary_monitor();
-        let size=monitor.size();
+        let monitors=event_loop.available_monitors().collect();
 
-        let fullscreen=Fullscreen::Borderless(monitor);
+        let mut window_builder=WindowBuilder::new();
+        let mut context_builder=ContextBuilder::new();
 
+        setting(monitors,&mut window_builder,&mut context_builder);
+
+        // Создание окна и привязывание графической библиотеки
+        let display=Display::new(window_builder,context_builder,&event_loop)?;
+
+        let size=display.gl_window().window().inner_size();
         unsafe{
             window_width=size.width as f32;
             window_height=size.height as f32;
             window_center=[window_width/2f32,window_height/2f32];
         }
-
-        let icon=load_window_icon();
-
-        let window_builder=WindowBuilder::new()
-            .with_inner_size(size)
-            .with_decorations(false)
-            .with_resizable(false)
-            .with_always_on_top(true)
-            .with_title(title)
-            .with_window_icon(Some(icon))
-            .with_fullscreen(Some(fullscreen));
-
-        let context_builder=ContextBuilder::new()
-            .with_gl_debug_flag(
-                #[cfg(debug_assertions)]
-                true,
-                #[cfg(not(debug_assertions))]
-                false
-            )
-            .with_vsync(true)
-            .with_srgb(true);
-
-        // Создание окна и привязывание графической библиотеки
-        let display=Display::new(window_builder,context_builder,&event_loop).unwrap();
 
         // Опреление поддерживаемой версии GLSL
         let Version(..,m,l)=display.get_supported_glsl_version();
@@ -166,24 +155,24 @@ impl GameWindow{
         let mut frame=display.draw();       //
         frame.clear_color(1.0,1.0,1.0,1.0); // Заполнение окна
         frame.finish().unwrap();            //
- 
+
         // Отлючение курсора системы
         // Заменил его своим
         display.gl_window().window().set_cursor_visible(false);
 
-        Self{
+        Ok(Self{
             event_loop,
             graphics:Graphics2D::new(&display,glsl),
             mouse_icon:MouseCursorIcon::new(&display),
             display:display,
             events:VecDeque::with_capacity(32),
-            events_handler:GameWindow::event_listener,
+            events_handler:Window::event_listener,
             alpha_channel:0f32,
             smooth:0f32,
 
             #[cfg(debug_assertions)]
             focusable_option:true,
-        }
+        })
     }
 
     #[inline(always)]
@@ -221,7 +210,7 @@ impl GameWindow{
 }
 
 // Связанное с версиями OpenGL
-impl GameWindow{
+impl Window{
     pub fn get_supported_glsl_version(&self)->Version{
         self.display.get_supported_glsl_version()
     }
@@ -231,7 +220,7 @@ impl GameWindow{
 }
 
 // Функции для сглаживания
-impl GameWindow{
+impl Window{
     pub fn set_alpha(&mut self,alpha:f32){
         self.alpha_channel=alpha;
     }
@@ -247,7 +236,7 @@ impl GameWindow{
 }
 
 // Функции для рисования
-impl GameWindow{
+impl Window{
     // Даёт прямое управление буфером кадра
     pub fn draw_raw<F:FnOnce(&mut Frame)>(&self,f:F){
         let mut frame=self.display().draw();
@@ -308,7 +297,7 @@ impl GameWindow{
 }
 
 // Дополнительные функции
-impl GameWindow{
+impl Window{
     // Сохраняет скриншот в формате png
     pub fn screenshot<P:AsRef<Path>>(&self,path:P){
         // Копирование буфера окна
@@ -335,7 +324,7 @@ impl GameWindow{
 //                         \\
 
 // Функции обработки событий
-impl GameWindow{
+impl Window{
     // Обычная функция обработки событий
     fn event_listener(&mut self){
         let el=&mut self.event_loop as *mut EventLoop<()>;
@@ -343,7 +332,6 @@ impl GameWindow{
 
         event_loop.run_return(|event,_,control_flow|{
             *control_flow=ControlFlow::Wait;
-
             let next_event=match event{
                 Event::NewEvents(_)=>None, // Игнорирование
 
@@ -352,6 +340,13 @@ impl GameWindow{
                     match event{
                         // Закрытие окна
                         GWindowEvent::CloseRequested=>Exit,
+
+                        GWindowEvent::Resized(size)=>unsafe{
+                            window_width=size.width as f32;
+                            window_height=size.height as f32;
+                            window_center=[window_width/2f32,window_height/2f32];
+                            Resize((size.width,size.height))
+                        }
 
                         // Сдвиг мыши (сдвиг за пределы окна игнорируется)
                         GWindowEvent::CursorMoved{position,..}=>unsafe{
@@ -364,14 +359,6 @@ impl GameWindow{
                             mouse_cursor.set_position(position);
                             self.mouse_icon.set_position(position);
                             MouseMovementDelta((dx,dy))
-                        }
-
-                        GWindowEvent::CursorEntered{..}=>{
-                            None
-                        }
-
-                        GWindowEvent::CursorLeft{..}=>{
-                            None
                         }
 
                         // Обработка действий с кнопками мыши (только стандартные кнопки)
@@ -419,9 +406,10 @@ impl GameWindow{
                                 }
 
                                 // Отключение/включение возможности сворачивания окна
-                                #[cfg(debug_assertions)]
-                                if key==KeyboardButton::F10{
-                                    self.focusable_option=!self.focusable_option;
+                                #[cfg(debug_assertions)]{
+                                    if key==KeyboardButton::F10{
+                                        self.focusable_option=!self.focusable_option;
+                                    }
                                 }
                                 KeyboardReleased(key)
                             }
@@ -492,6 +480,9 @@ impl GameWindow{
                         // При получении фокуса
                         GWindowEvent::Focused(_)=>self.gained_focus(control_flow),
 
+                        // Изменение флагов модификаторов (alt, shift, ctrl, logo)
+                        GWindowEvent::ModifiersChanged(state)=>ModifiersChanged(state),
+
                         _=>None
                     }
                 }
@@ -503,7 +494,7 @@ impl GameWindow{
 }
 
 // Функции внутренней обработки событий
-impl GameWindow{
+impl Window{
     // При потере фокуса - для отладки
     #[cfg(debug_assertions)]
     fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
@@ -511,7 +502,7 @@ impl GameWindow{
         // Если функция сворачивания включена
         if self.focusable_option{
             self.display.gl_window().window().set_minimized(true); // Сворацивание окна
-            self.events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+            self.events_handler=Window::wait_until_focused; // Смена фукции обработки событий
         }
 
         *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
@@ -523,7 +514,7 @@ impl GameWindow{
     #[cfg(not(debug_assertions))]
     fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
         self.display.gl_window().window().set_minimized(true); // Сворацивание окна
-        self.events_handler=GameWindow::wait_until_focused; // Смена фукции обработки событий
+        self.events_handler=Window::wait_until_focused; // Смена фукции обработки событий
 
         *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
 
@@ -532,8 +523,15 @@ impl GameWindow{
 
     // При получении фокуса
     fn gained_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
-        self.events_handler=GameWindow::event_listener; // Смена фукции обработки событий
+        self.events_handler=Window::event_listener; // Смена фукции обработки событий
         self.display.gl_window().window().set_minimized(false);
+
+        let size=self.display.gl_window().window().inner_size();
+        unsafe{
+            window_width=size.width as f32;
+            window_height=size.height as f32;
+            window_center=[window_width/2f32,window_height/2f32];
+        }
 
         *control_flow=ControlFlow::Exit; // Остановка цикла обработки событий
 
@@ -708,15 +706,6 @@ pub enum KeyboardButton{
     Paste,
     Cut,
     Unknown,
-}
-
-// Загрузка иконки окна
-fn load_window_icon()->Icon{
-    let image=image::open("./resources/images/window_icon.png").unwrap();
-    let vec=image.to_bytes();
-    let (width,height)=image.dimensions();
-
-    Icon::from_rgba(vec,width,height).unwrap()
 }
 
 // Обычные параметры для рисования
