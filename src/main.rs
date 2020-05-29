@@ -129,8 +129,11 @@ fn main(){
             window_builder.window.window_icon=Some(icon);
 
             context_builder.gl_attr.vsync=true;
+            context_builder.gl_attr.debug=false;
+
             context_builder.pf_reqs.srgb=true;
             context_builder.pf_reqs.hardware_accelerated=None;
+            
         }){
             Ok(window)=>window,
             Err(e)=>{

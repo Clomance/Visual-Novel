@@ -82,11 +82,6 @@ impl<'graphics,'frame> GameGraphics<'graphics,'frame>{
         self.frame.clear_color(colour[0],colour[1],colour[2],colour[3]);
     }
 
-    #[inline(always)]
-    fn clear_stencil(&mut self,value: u8){
-        self.frame.clear_stencil(value as i32);
-    }
-
     #[inline(always)] // Рисует простой объект
     pub fn draw_simple<O:SimpleObject>(&mut self,object:&O,draw_parameters:&mut DrawParameters){
         self.graphics.draw_simple(object,draw_parameters,self.frame)

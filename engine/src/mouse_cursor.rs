@@ -4,8 +4,6 @@ use super::{
     // structs
     graphics::{GameGraphics},
     image::{ImageBase,Texture},
-    // types
-    Colour,
 };
 
 use glium::{
