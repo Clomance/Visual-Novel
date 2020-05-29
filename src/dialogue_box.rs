@@ -85,7 +85,7 @@ impl<'b,'c> DialogueBox<'b,'c>{
                     .font_size(font_size)
                     .align_x(AlignX::Left)
                     .align_y(AlignY::Up)
-                    .text_colour(White);
+                    .text_colour([0.0, 0.0, 1.0, 1.0]);
 
             Self{
                 dialogue:DialogueFormatted::empty(),
