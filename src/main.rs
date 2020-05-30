@@ -112,7 +112,7 @@ fn main(){
         Settings.load(); // Загрузка настроек
 
         // Настройка и создание окна и загрузка функций OpenGL
-        let mut window:Window=match Window::new(|mut monitors,window_builder,context_builder|{
+        let mut window:Window=match Window::new(|mut monitors,window_builder,context_builder,graphics_sets|{
             let monitor=monitors.remove(0);
             let size=monitor.size();
 
@@ -133,7 +133,10 @@ fn main(){
 
             context_builder.pf_reqs.srgb=true;
             context_builder.pf_reqs.hardware_accelerated=None;
-            
+
+            graphics_sets.texture_vertex_buffer_size=8usize;
+            graphics_sets.simple_vertex_buffer_size=100usize;
+            graphics_sets.text_vertex_buffer_size=2000usize;
         }){
             Ok(window)=>window,
             Err(e)=>{

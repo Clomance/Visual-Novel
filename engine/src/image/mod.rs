@@ -1,8 +1,10 @@
 use super::{
+    // statics
+    window_center,
     // types
     Colour,
     // structs
-    graphics::Graphics,
+    graphics::{Graphics,TexturedVertex},
 };
 
 mod texture;
@@ -34,6 +36,24 @@ impl ImageBase{
             y2:rect[1]+rect[3],
             colour_filter,
         }
+    }
+
+    // Массив готовых для вывода координат
+    pub fn vertex_buffer(&self)->[TexturedVertex;4]{
+        let (x1,y1,x2,y2)=unsafe{(
+            self.x1/window_center[0]-1f32,
+            1f32-self.y1/window_center[1],
+
+            self.x2/window_center[0]-1f32,
+            1f32-self.y2/window_center[1]
+        )};
+
+        [
+            TexturedVertex::new([x1,y1],[0.0,1.0]),
+            TexturedVertex::new([x1,y2],[0.0,0.0]),
+            TexturedVertex::new([x2,y1],[1.0,1.0]),
+            TexturedVertex::new([x2,y2],[1.0,0.0])
+        ]
     }
 
     #[inline(always)] // Рисует изображение

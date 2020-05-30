@@ -34,6 +34,15 @@ pub struct TexturedVertex{
     tex_coords:[f32;2],
 }
 
+impl TexturedVertex{
+    pub const fn new(position:[f32;2],tex_coords:[f32;2])->TexturedVertex{
+        Self{
+            position,
+            tex_coords,
+        }
+    }
+}
+
 // Графическая основа для отрисовки текстур (картинок)
 // Размер буферов регулируется вручную при создании
 
@@ -82,36 +91,9 @@ impl TextureGraphics{
         frame:&mut Frame,
     ){
         let indices=NoIndices(PrimitiveType::TriangleStrip);
-        
-        let (x1,y1,x2,y2)=unsafe{(
-            image_base.x1/window_center[0]-1f32,
-            1f32-image_base.y1/window_center[1],
-
-            image_base.x2/window_center[0]-1f32,
-            1f32-image_base.y2/window_center[1]
-        )};
-
-        let rect=[
-            TexturedVertex{
-                position:[x1,y1],
-                tex_coords:[0.0,1.0],
-            },
-            TexturedVertex{
-                position:[x1,y2],
-                tex_coords:[0.0,0.0],
-            },
-            TexturedVertex{
-                position:[x2,y1],
-                tex_coords:[1.0,1.0],
-            },
-            TexturedVertex{
-                position:[x2,y2],
-                tex_coords:[1.0,0.0],
-            }
-        ];
 
         let slice=self.vertex_buffer.slice(0..4).unwrap();
-        slice.write(&rect);
+        slice.write(&image_base.vertex_buffer());
 
         frame.draw(
             slice,
@@ -143,22 +125,10 @@ impl TextureGraphics{
         );
 
         let rect=[
-            TexturedVertex{
-                position:[x1,y1],
-                tex_coords:[0.0,1.0],
-            },
-            TexturedVertex{
-                position:[x1,y2],
-                tex_coords:[0.0,0.0],
-            },
-            TexturedVertex{
-                position:[x2,y1],
-                tex_coords:[1.0,1.0],
-            },
-            TexturedVertex{
-                position:[x2,y2],
-                tex_coords:[1.0,0.0],
-            }
+            TexturedVertex::new([x1,y1],[0.0,1.0]),
+            TexturedVertex::new([x1,y2],[0.0,0.0]),
+            TexturedVertex::new([x2,y1],[1.0,1.0]),
+            TexturedVertex::new([x2,y2],[1.0,0.0])
         ];
 
         let slice=self.vertex_buffer.slice(0..4).unwrap();
@@ -196,49 +166,6 @@ impl TextureGraphics{
         Some(i)
     }
 
-    // Добавляет область
-    // Рассчитывает координаты из 'image_base'
-    // Области могут пересекаться
-    // Возвращает номер (индекс) области
-    pub fn bind_range_image(&mut self,range:Range<usize>,image_base:ImageBase)->Option<usize>{
-        let i=self.vertex_buffer_ranges.len();
-
-        self.vertex_buffer_ranges.push(range.clone());
-
-        let slice=self.vertex_buffer.slice(range)?;
-
-        let (x1,y1,x2,y2)=unsafe{(
-            image_base.x1/window_center[0]-1f32,
-            1f32-image_base.y1/window_center[1],
-
-            image_base.x2/window_center[0]-1f32,
-            1f32-image_base.y2/window_center[1]
-        )};
-
-        let rect=[
-            TexturedVertex{
-                position:[x1,y1],
-                tex_coords:[0.0,1.0],
-            },
-            TexturedVertex{
-                position:[x1,y2],
-                tex_coords:[0.0,0.0],
-            },
-            TexturedVertex{
-                position:[x2,y1],
-                tex_coords:[1.0,1.0],
-            },
-            TexturedVertex{
-                position:[x2,y2],
-                tex_coords:[1.0,0.0],
-            }
-        ];
-
-        slice.write(&rect);
-
-        Some(i)
-    }
-
     // Удаляет выбранную область
     pub fn unbind(&mut self,index:usize){
         self.vertex_buffer_ranges.remove(index);
@@ -270,6 +197,7 @@ impl TextureGraphics{
         );
     }
 
+    // Рисует выбранную область, сдвигая координаты
     pub fn draw_move_range<'a,I:Into<IndicesSource<'a>>>(
         &self,
         index:usize,

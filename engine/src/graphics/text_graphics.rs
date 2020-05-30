@@ -21,11 +21,6 @@ use glium::{
     index::{NoIndices,PrimitiveType},
 };
 
-// Максимальное количество точек на символ,
-// считаются только точки самого символа,
-// прозрачные же пропускаются
-const Character_pixel_limit:usize=2000;
-
 // Пиксель для текста
 // Позиция и альфа-канал каждой точки
 // Цвет передаётся отдельно - для экономии места
@@ -42,7 +37,7 @@ pub struct TextGraphics{
 
 impl TextGraphics{
     // 
-    pub fn new(display:&Display,glsl:u16)->TextGraphics{
+    pub fn new(display:&Display,buffer_size:usize,glsl:u16)->TextGraphics{
         let (vertex_shader,fragment_shader)=if glsl==120{(
             include_str!("shaders/120/text_vertex_shader_120.glsl"),
             include_str!("shaders/120/text_fragment_shader_120.glsl"),
@@ -53,7 +48,7 @@ impl TextGraphics{
         )};
 
         Self{
-            vertex_buffer:VertexBuffer::empty_dynamic(display,Character_pixel_limit).unwrap(),
+            vertex_buffer:VertexBuffer::empty_dynamic(display,buffer_size).unwrap(),
             program:Program::from_source(display,vertex_shader,fragment_shader,None).unwrap(),
         }
     }

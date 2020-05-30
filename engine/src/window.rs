@@ -1,5 +1,5 @@
 use super::{
-    graphics::{Graphics2D,Graphics},
+    graphics::{Graphics2D,Graphics,GraphicsSettings},
     mouse_cursor::{MouseCursor,MouseCursorIcon},
 };
 
@@ -122,14 +122,16 @@ impl Window{
     #[inline(always)] // Создание окна с функцией настройки
     pub fn new<F>(setting:F)->Result<Window,DisplayCreationError>
         where
-            F:FnOnce(Vec<MonitorHandle>,&mut WindowBuilder,&mut ContextBuilder<NotCurrent>){
+            F:FnOnce(Vec<MonitorHandle>,&mut WindowBuilder,&mut ContextBuilder<NotCurrent>,&mut GraphicsSettings){
         let event_loop=EventLoop::new();
         let monitors=event_loop.available_monitors().collect();
 
+        let mut graphics_settings=GraphicsSettings::new();
         let mut window_builder=WindowBuilder::new();
         let mut context_builder=ContextBuilder::new();
 
-        setting(monitors,&mut window_builder,&mut context_builder);
+        // настройка
+        setting(monitors,&mut window_builder,&mut context_builder,&mut graphics_settings);
 
         // Создание окна и привязывание графической библиотеки
         let display=Display::new(window_builder,context_builder,&event_loop)?;
@@ -162,7 +164,7 @@ impl Window{
 
         Ok(Self{
             event_loop,
-            graphics:Graphics2D::new(&display,glsl),
+            graphics:Graphics2D::new(&display,graphics_settings,glsl),
             mouse_icon:MouseCursorIcon::new(&display),
             display:display,
             events:VecDeque::with_capacity(32),

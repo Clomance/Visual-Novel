@@ -7,8 +7,6 @@ use glium::{
     DrawParameters,
 };
 
-const Points_limit:usize=100; // Максимальное количество точек для одного объекта
-
 implement_vertex!(Point2D,position);
 #[derive(Copy,Clone)]
 pub struct Point2D{
@@ -32,7 +30,7 @@ pub struct SimpleGraphics{
 }
 
 impl SimpleGraphics{
-    pub fn new(display:&Display,glsl:u16)->SimpleGraphics{
+    pub fn new(display:&Display,buffer_size:usize,glsl:u16)->SimpleGraphics{
         let (vertex_shader,fragment_shader)=if glsl==120{(
             include_str!("shaders/120/simple_vertex_shader_120.glsl"),
             include_str!("shaders/120/simple_fragment_shader_120.glsl"),
@@ -43,7 +41,7 @@ impl SimpleGraphics{
         )};
 
         Self{
-            vertex_buffer:VertexBuffer::empty_dynamic(display,Points_limit).unwrap(),
+            vertex_buffer:VertexBuffer::empty_dynamic(display,buffer_size).unwrap(),
             program:Program::from_source(display,vertex_shader,fragment_shader,None).unwrap(),
         }
     }

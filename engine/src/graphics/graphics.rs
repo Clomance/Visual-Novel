@@ -26,6 +26,23 @@ use glium::{
 
 use core::ops::Range;
 
+// Настройки графических основ
+pub struct GraphicsSettings{
+    pub texture_vertex_buffer_size:usize,
+    pub simple_vertex_buffer_size:usize,
+    pub text_vertex_buffer_size:usize,
+}
+
+impl GraphicsSettings{
+    pub fn new()->GraphicsSettings{
+        Self{
+            texture_vertex_buffer_size:8usize,
+            simple_vertex_buffer_size:100usize,
+            text_vertex_buffer_size:2000usize,
+        }
+    }
+}
+
 pub struct Graphics2D{
     texture:TextureGraphics,
     simple:SimpleGraphics,
@@ -33,11 +50,11 @@ pub struct Graphics2D{
 }
 
 impl Graphics2D{
-    pub fn new(window:&Display,glsl:u16)->Graphics2D{
+    pub fn new(window:&Display,settings:GraphicsSettings,glsl:u16)->Graphics2D{
         Self{
-            texture:TextureGraphics::new(window,8,glsl),
-            simple:SimpleGraphics::new(window,glsl),
-            text:TextGraphics::new(window,glsl),
+            texture:TextureGraphics::new(window,settings.texture_vertex_buffer_size,glsl),
+            simple:SimpleGraphics::new(window,settings.simple_vertex_buffer_size,glsl),
+            text:TextGraphics::new(window,settings.text_vertex_buffer_size,glsl),
         }
     }
 
@@ -45,9 +62,10 @@ impl Graphics2D{
     // чтобы постоянно не загружать из заново при отрисовке
     // Для вывода изображения из этой области используется функция 'draw_range_image'
     // Возращает номер области, если она не выходит за границы буфера
-    #[inline(always)]
     pub fn bind_image(&mut self,range:Range<usize>,image_base:ImageBase)->Option<usize>{
-        self.texture.bind_range_image(range,image_base)
+        let data=image_base.vertex_buffer();
+
+        self.texture.bind_range(range,&data)
     }
 
     pub fn draw_range_image(
