@@ -1,6 +1,8 @@
 use crate::{
     // statics
     window_center,
+    // types
+    Colour,
     // structs
     image::{ImageBase,Texture},
 };
@@ -17,51 +19,67 @@ use glium::{
     DrawParameters,
     index::{
         PrimitiveType, // enum
-        NoIndices
+        NoIndices,
+        IndicesSource, // enum
     },
-    Surface,
+    Surface, // trait
 };
+
+use core::ops::Range;
 
 implement_vertex!(TexturedVertex,position,tex_coords);
 #[derive(Copy,Clone)]
-struct TexturedVertex{
+pub struct TexturedVertex{
     position:[f32;2],
     tex_coords:[f32;2],
 }
 
+// Графическая основа для отрисовки текстур (картинок)
+// Размер буферов регулируется вручную при создании
 
+// Чтобы постоянно не загружать координаты для вывода,
+// можно сохранить нужную область буфера и использовать её
+// Лучше использовать конец для сохранения областей,
+// а начало для постоянно обновляющихся значений
 pub struct TextureGraphics{
     vertex_buffer:VertexBuffer<TexturedVertex>,
+    vertex_buffer_ranges:Vec<Range<usize>>,
     draw:Program,
     draw_rotate:Program,
+    draw_move:Program,
 }
 
 impl TextureGraphics{
-    pub fn new(display:&Display,glsl:u16)->TextureGraphics{
-        let (draw_rotate,vertex_shader,fragment_shader)=if glsl==120{(
-            include_str!("shaders/texture_rotation_vertex_shader_120.glsl"),
-            include_str!("shaders/texture_vertex_shader_120.glsl"),
-            include_str!("shaders/texture_fragment_shader_120.glsl")
+    pub fn new(display:&Display,buffer_size:usize,glsl:u16)->TextureGraphics{
+        let (rotation,moving,vertex_shader,fragment_shader)=if glsl==120{(
+            include_str!("shaders/120/texture_rotation_vertex_shader_120.glsl"),
+            include_str!("shaders/120/texture_moving_vertex_shader_120.glsl"),
+            include_str!("shaders/120/texture_vertex_shader_120.glsl"),
+            include_str!("shaders/120/texture_fragment_shader_120.glsl")
         )}
         else{(
             include_str!("shaders/texture_rotation_vertex_shader.glsl"),
+            include_str!("shaders/texture_moving_vertex_shader.glsl"),
             include_str!("shaders/texture_vertex_shader.glsl"),
             include_str!("shaders/texture_fragment_shader.glsl")
         )};
 
         Self{
-            vertex_buffer:VertexBuffer::empty_dynamic(display,4).unwrap(),
+            vertex_buffer:VertexBuffer::empty_dynamic(display,buffer_size).unwrap(),
+            vertex_buffer_ranges:Vec::<Range<usize>>::with_capacity(buffer_size),
             draw:Program::from_source(display,vertex_shader,fragment_shader,None).unwrap(),
-            draw_rotate:Program::from_source(display,draw_rotate,fragment_shader,None).unwrap(),
+            draw_rotate:Program::from_source(display,rotation,fragment_shader,None).unwrap(),
+            draw_move:Program::from_source(display,moving,fragment_shader,None).unwrap(),
         }
     }
 
-    pub fn draw_texture(
+    // Переписывает координаты с начала буфера и выводит, игнорируя все области
+    pub fn draw_image(
         &self,
         image_base:&ImageBase,
         texture:&Texture,
+        draw_parameters:&mut DrawParameters,
         frame:&mut Frame,
-        draw_parameters:&DrawParameters
     ){
         let indices=NoIndices(PrimitiveType::TriangleStrip);
         
@@ -92,10 +110,11 @@ impl TextureGraphics{
             }
         ];
 
-        self.vertex_buffer.write(&rect);
+        let slice=self.vertex_buffer.slice(0..4).unwrap();
+        slice.write(&rect);
 
         frame.draw(
-            &self.vertex_buffer,
+            slice,
             indices,
             &self.draw,
             &uniform!{
@@ -106,7 +125,7 @@ impl TextureGraphics{
         );
     }
 
-    pub fn draw_rotate_texture(
+    pub fn draw_rotate_image(
         &self,
         image_base:&ImageBase,
         texture:&Texture,
@@ -142,10 +161,11 @@ impl TextureGraphics{
             }
         ];
 
-        self.vertex_buffer.write(&rect);
+        let slice=self.vertex_buffer.slice(0..4).unwrap();
+        slice.write(&rect);
 
         frame.draw(
-            &self.vertex_buffer,
+            slice,
             indices,
             &self.draw_rotate,
             &uniform!{
@@ -154,6 +174,125 @@ impl TextureGraphics{
                 window_center:unsafe{window_center},
                 colour_filter:image_base.colour_filter,
             },
+            draw_parameters
+        );
+    }
+}
+
+// Функции для работы с областями
+impl TextureGraphics{
+    // Добавляет область
+    // Записывает в неё данные
+    // Области могут пересекаться
+    // Возвращает номер (индекс) области
+    pub fn bind_range(&mut self,range:Range<usize>,data:&[TexturedVertex])->Option<usize>{
+        let i=self.vertex_buffer_ranges.len();
+
+        let slice=self.vertex_buffer.slice(range.clone())?;
+        slice.write(&data);
+
+        self.vertex_buffer_ranges.push(range);
+
+        Some(i)
+    }
+
+    // Добавляет область
+    // Рассчитывает координаты из 'image_base'
+    // Области могут пересекаться
+    // Возвращает номер (индекс) области
+    pub fn bind_range_image(&mut self,range:Range<usize>,image_base:ImageBase)->Option<usize>{
+        let i=self.vertex_buffer_ranges.len();
+
+        self.vertex_buffer_ranges.push(range.clone());
+
+        let slice=self.vertex_buffer.slice(range)?;
+
+        let (x1,y1,x2,y2)=unsafe{(
+            image_base.x1/window_center[0]-1f32,
+            1f32-image_base.y1/window_center[1],
+
+            image_base.x2/window_center[0]-1f32,
+            1f32-image_base.y2/window_center[1]
+        )};
+
+        let rect=[
+            TexturedVertex{
+                position:[x1,y1],
+                tex_coords:[0.0,1.0],
+            },
+            TexturedVertex{
+                position:[x1,y2],
+                tex_coords:[0.0,0.0],
+            },
+            TexturedVertex{
+                position:[x2,y1],
+                tex_coords:[1.0,1.0],
+            },
+            TexturedVertex{
+                position:[x2,y2],
+                tex_coords:[1.0,0.0],
+            }
+        ];
+
+        slice.write(&rect);
+
+        Some(i)
+    }
+
+    // Удаляет выбранную область
+    pub fn unbind(&mut self,index:usize){
+        self.vertex_buffer_ranges.remove(index);
+    }
+
+    // Рисует выбранную облать
+    pub fn draw_range<'a,I:Into<IndicesSource<'a>>>(
+        &self,
+        index:usize,
+        texture:&Texture,
+        colour_filter:Colour,
+        indices:I,
+        draw_parameters:&mut DrawParameters,
+        frame:&mut Frame
+    ){
+        let range=self.vertex_buffer_ranges[index].clone();
+        let slice=self.vertex_buffer.slice(range).unwrap();
+        let uni=uniform!{
+            tex:&texture.0,
+            colour_filter:colour_filter,
+        };
+
+        frame.draw(
+            slice,
+            indices,
+            &self.draw,
+            &uni,
+            draw_parameters
+        );
+    }
+
+    pub fn draw_move_range<'a,I:Into<IndicesSource<'a>>>(
+        &self,
+        index:usize,
+        texture:&Texture,
+        colour_filter:Colour,
+        movement:[f32;2],
+        indices:I,
+        draw_parameters:&mut DrawParameters,
+        frame:&mut Frame
+    ){
+        let range=self.vertex_buffer_ranges[index].clone();
+        let slice=self.vertex_buffer.slice(range).unwrap();
+        let uni=uniform!{
+            tex:&texture.0,
+            colour_filter:colour_filter,
+            movement:movement
+        };
+
+        frame.draw(
+            slice,
+            indices,
+            &self.draw_move,
+            &uni,
             draw_parameters
         );
     }

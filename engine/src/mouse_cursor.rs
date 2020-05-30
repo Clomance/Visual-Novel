@@ -2,7 +2,7 @@ use super::{
     // statics
     window_center,
     // structs
-    graphics::{GameGraphics},
+    graphics::{Graphics},
     image::{ImageBase,Texture},
 };
 
@@ -12,6 +12,7 @@ use glium::{
 };
 
 pub struct MouseCursor{
+    raw_position:[f32;2],
     position:[f32;2],
     saved_position:[f32;2],
 }
@@ -19,9 +20,15 @@ pub struct MouseCursor{
 impl MouseCursor{
     pub const fn new()->MouseCursor{
         Self{
+            raw_position:[0f32;2],
             position:[0f32;2],
             saved_position:[0f32;2],
         }
+    }
+
+    #[inline(always)]
+    pub fn raw_position(&self)->[f32;2]{
+        self.raw_position
     }
 
     #[inline(always)]
@@ -52,6 +59,10 @@ impl MouseCursor{
 
     #[inline(always)]
     pub fn set_position(&mut self,position:[f32;2]){
+        self.raw_position=unsafe{[
+            position[0]/window_center[0]-1f32,
+            1f32-position[1]/window_center[1],
+        ]};
         self.position=position;
     }
 }
@@ -117,7 +128,7 @@ impl MouseCursorIcon{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         draw_parameters.color_mask=(self.visible,self.visible,self.visible,self.visible);
         self.image_base.draw(&self.texture,draw_parameters,graphics);
     }

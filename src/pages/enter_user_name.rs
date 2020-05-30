@@ -23,6 +23,7 @@ use engine::{
     // statics
     window_width,
     window_height,
+    mouse_cursor,
     // enums
     WindowEvent,
     MouseButton,
@@ -79,8 +80,8 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::MouseMovementDelta((dx,dy))=>{
-                    self.main_menu.wallpaper.mouse_shift(dx,dy);
+                WindowEvent::MouseMovementDelta((dx,dy))=>unsafe{
+                    self.main_menu.wallpaper.mouse_shift(mouse_cursor.raw_position());
                     self.main_menu.menu.mouse_shift(dx,dy)
                 }
 

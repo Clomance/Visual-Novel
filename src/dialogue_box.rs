@@ -19,7 +19,7 @@ use engine::{
     // structs
     image::{ImageBase,Texture,image::RgbaImage},
     text::{TextBase,Glyphs},
-    graphics::{GameGraphics,Point2D,MonoColourPolygon},
+    graphics::{Graphics,Point2D,MonoColourPolygon},
     glium::{Display,DrawParameters},
 };
 
@@ -151,7 +151,7 @@ impl<'b,'c> DialogueBox<'b,'c>{
     }
 
     #[inline(always)]
-    pub fn draw_without_text(&self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
+    pub fn draw_without_text(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics){
         self.image.draw(&self.texture,draw_parameters,g);
     }
 
@@ -160,7 +160,7 @@ impl<'b,'c> DialogueBox<'b,'c>{
         self.lines.set_alpha_channel(alpha);
     }
 
-    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut Graphics){
         let name=self.dialogue.get_name(self.dialogue_step);
 
         self.image.draw(&self.texture,draw_parameters,g); // Основа

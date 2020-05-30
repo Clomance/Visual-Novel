@@ -2,7 +2,7 @@ use crate::{
     // types
     Colour,
     // structs
-    graphics::GameGraphics
+    graphics::Graphics
 };
 
 use super::{
@@ -70,12 +70,12 @@ impl TextBase{
     }
 
     #[inline(always)] // Выводит уже готовый символ
-    pub fn draw_character(&self,character:&Character,draw_parameters:&DrawParameters,graphics:&mut GameGraphics){
-        graphics.draw_character(self.colour,character,&draw_parameters);
+    pub fn draw_character(&self,character:&Character,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        graphics.draw_character(self.colour,character,draw_parameters);
     }
 
     // Выводит один символ
-    pub fn draw_char(&self,character:char,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:Glyphs){
+    pub fn draw_char(&self,character:char,draw_parameters:&mut DrawParameters,graphics:&mut Graphics,glyphs:Glyphs){
         let position=self.position;
 
         let character=glyphs.character_positioned(character,self.font_size,position);
@@ -85,7 +85,7 @@ impl TextBase{
     }
 
     // Выодит весь текст в строчку
-    pub fn draw(&self,text:&str,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&self,text:&str,draw_parameters:&mut DrawParameters,graphics:&mut Graphics,glyphs:&Glyphs){
         let mut position=self.position;
         draw_parameters.point_size=Some(text_pixel_size);
         for c in text.chars(){
@@ -97,7 +97,7 @@ impl TextBase{
     }
 
     // Выводит часть текста в строчку, если текст выведен полностью, возвращает true
-    pub fn draw_part(&self,text:&str,chars:usize,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics,glyphs:&Glyphs)->bool{
+    pub fn draw_part(&self,text:&str,chars:usize,draw_parameters:&mut DrawParameters,graphics:&mut Graphics,glyphs:&Glyphs)->bool{
         let mut position=self.position;
         draw_parameters.point_size=Some(text_pixel_size);
 

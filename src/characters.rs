@@ -8,7 +8,7 @@ use engine::{
     window_height,
     window_width,
     image::{ImageBase,Texture,image::RgbaImage},
-    graphics::GameGraphics,
+    graphics::Graphics,
     glium::{Display,DrawParameters},
 };
 
@@ -124,7 +124,7 @@ impl Drawable for CharactersView{
         }
     }
 
-    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         for ch in &self.characters{
             ch.image.draw(&ch.texture,draw_parameters,graphics);
         }

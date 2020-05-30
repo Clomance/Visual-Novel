@@ -14,7 +14,7 @@ use engine::{
     // structs
     graphics::{
         RectangleWithBorder,
-        GameGraphics
+        Graphics
     },
     text::{TextBase,Glyphs},
     glium::DrawParameters,
@@ -111,7 +111,7 @@ impl<'a> Drawable for EditTextView<'a>{
         self.background.border_colour[3]=alpha;
     }
 
-    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.background.draw(draw_parameters,graphics);
         self.base.draw(&self.line,draw_parameters,graphics,&self.glyphs)
     }

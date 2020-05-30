@@ -20,7 +20,7 @@ use engine::{
     graphics::{
         CircleWithBorder,
         Line,
-        GameGraphics
+        Graphics
     },
     glium::DrawParameters,
 };
@@ -93,7 +93,7 @@ impl<'a> Drawable for Slider<'a>{
         self.base.set_alpha_channel(alpha);
     }
 
-    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.head.draw(draw_parameters,graphics);
         self.value.draw(draw_parameters,graphics,&self.glyphs);
         self.base.draw(draw_parameters,graphics);
@@ -214,7 +214,7 @@ impl Drawable for SimpleSlider{
         self.line.colour[3]=alpha;
     }
 
-    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.line.draw(draw_parameters,graphics);
         self.circle.draw(draw_parameters,graphics);
     }

@@ -2,7 +2,7 @@ use super::{
     // types
     Colour,
     // structs
-    graphics::GameGraphics,
+    graphics::Graphics,
 };
 
 mod texture;
@@ -37,12 +37,12 @@ impl ImageBase{
     }
 
     #[inline(always)] // Рисует изображение
-    pub fn draw(&self,texture:&Texture,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
-        graphics.draw_texture(self,texture,draw_parameters);
+    pub fn draw(&self,texture:&Texture,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        graphics.draw_image(self,texture,draw_parameters);
     }
 
     #[inline(always)] // Рисует изображение под углом
-    pub fn draw_rotate(&self,texture:&Texture,angle:f32,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
-        graphics.draw_rotate_texture(self,texture,angle,draw_parameters);
+    pub fn draw_rotate(&self,texture:&Texture,angle:f32,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        graphics.draw_rotate_image(self,texture,angle,draw_parameters);
     }
 }

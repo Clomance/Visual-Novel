@@ -44,8 +44,8 @@ impl TextGraphics{
     // 
     pub fn new(display:&Display,glsl:u16)->TextGraphics{
         let (vertex_shader,fragment_shader)=if glsl==120{(
-            include_str!("shaders/text_vertex_shader_120.glsl"),
-            include_str!("shaders/text_fragment_shader_120.glsl"),
+            include_str!("shaders/120/text_vertex_shader_120.glsl"),
+            include_str!("shaders/120/text_fragment_shader_120.glsl"),
         )}
         else{(
             include_str!("shaders/text_vertex_shader.glsl"),

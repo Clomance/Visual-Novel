@@ -7,8 +7,11 @@ use engine::{
     // statics
     window_width,
     window_height,
+    // types,
+    Colour,
     // structs
-    graphics::GameGraphics,
+    graphics::Graphics,
+    Window,
     image::{
         ImageBase,
         Texture,image::{
@@ -19,7 +22,7 @@ use engine::{
             GenericImageView
         }
     },
-    glium::{Display,DrawParameters},
+    glium::DrawParameters,
 };
 
 use std::path::Path;
@@ -28,12 +31,14 @@ pub const wallpaper_movement_scale:f32=16f32;
 
 // Подвижные обои
 pub struct Wallpaper{
-    image:ImageBase,
     texture:Texture,
+    range:usize,
+    filter:Colour,
+    movement:[f32;2],
 }
 
 impl Wallpaper{
-    pub fn new(image:&RgbaImage,display:&Display)->Wallpaper{
+    pub fn new(image:&RgbaImage,window:&mut Window)->Wallpaper{
         unsafe{
             let dx=window_width/(wallpaper_movement_scale*2f32);
             let dy=window_height/(wallpaper_movement_scale*2f32);
@@ -44,19 +49,25 @@ impl Wallpaper{
                 window_height+2f32*dy,
             ];
 
+            let image_base=ImageBase::new(White,rect);
+
+            let range=window.graphics().bind_image(4..8usize,image_base).unwrap();
+
             Self{
-                image:ImageBase::new(White,rect),
-                texture:Texture::from_image(display,image).unwrap(),
+                texture:Texture::from_image(window.display(),image).unwrap(),
+                range,
+                filter:White,
+                movement:[0f32;2]
             }
         }
     }
 
     #[inline(always)]
-    pub fn mouse_shift(&mut self,dx:f32,dy:f32){
-        self.image.x1+=dx/wallpaper_movement_scale;
-        self.image.y1+=dy/wallpaper_movement_scale;
-        self.image.x2+=dx/wallpaper_movement_scale;
-        self.image.y2+=dy/wallpaper_movement_scale;
+    pub fn mouse_shift(&mut self,raw_position:[f32;2]){
+        self.movement=[
+            raw_position[0]/wallpaper_movement_scale,
+            raw_position[1]/wallpaper_movement_scale,
+        ]
     }
 
     // Обновляет картинка (она должна быть такого же размера, как и предыдущая)
@@ -72,11 +83,17 @@ impl Wallpaper{
 
 impl Drawable for Wallpaper{
     fn set_alpha_channel(&mut self,alpha:f32){
-        self.image.colour_filter[3]=alpha
+        self.filter[3]=alpha
     }
 
-    fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
-        self.image.draw(&self.texture,draw_parameters,g)
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        graphics.draw_move_range_image(
+            self.range,
+            &self.texture,
+            self.filter,
+            self.movement,
+            draw_parameters
+        )
     }
 }
 

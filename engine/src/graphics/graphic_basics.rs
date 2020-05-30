@@ -7,7 +7,7 @@ use crate::{
 
 use super::{
     // structs
-    GameGraphics,
+    Graphics,
     SimpleObject,
     SimpleGraphics,
     Point2D
@@ -43,7 +43,7 @@ impl MonoColourPolygon{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.draw_simple(self,draw_parameters)
     }
 }
@@ -108,7 +108,7 @@ impl Rectangle{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.draw_simple(self,draw_parameters)
     }
 }
@@ -170,7 +170,7 @@ impl RectangleWithBorder{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.draw_simple(self,draw_parameters)
     }
 }
@@ -254,7 +254,7 @@ impl Line{
         }
     }
 
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         draw_parameters.line_width=Some(self.radius);
         graphics.draw_simple(self,draw_parameters);
     }
@@ -313,7 +313,7 @@ impl Circle{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.draw_simple(self,draw_parameters)
     }
 }
@@ -395,7 +395,7 @@ impl CircleWithBorder{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.draw_simple(self,draw_parameters)
     }
 }

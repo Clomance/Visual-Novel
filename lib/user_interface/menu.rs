@@ -6,7 +6,7 @@ use engine::{
     // types
     Colour,
     // structs
-    graphics::GameGraphics,
+    graphics::Graphics,
     mouse_cursor,
     text::Glyphs,
     glium::DrawParameters,
@@ -144,7 +144,7 @@ impl<'a> Drawable for Menu<'a>{
         }
     }
 
-    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.head.draw(draw_parameters,graphics);
 
         for button in &self.buttons{

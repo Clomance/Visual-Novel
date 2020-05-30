@@ -1,5 +1,5 @@
 use super::{
-    graphics::{Graphics2D,GameGraphics},
+    graphics::{Graphics2D,Graphics},
     mouse_cursor::{MouseCursor,MouseCursorIcon},
 };
 
@@ -180,6 +180,11 @@ impl Window{
         &self.display
     }
 
+    #[inline(always)]
+    pub fn graphics(&mut self)->&mut Graphics2D{
+        &mut self.graphics
+    }
+
     // Получение событий
     pub fn next_event(&mut self)->Option<WindowEvent>{
         if self.events.is_empty(){
@@ -245,12 +250,12 @@ impl Window{
     }
 
     // Выполняет замыкание и рисует курсор
-    pub fn draw<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(&self,f:F){
+    pub fn draw<F:FnOnce(&mut DrawParameters,&mut Graphics)>(&self,f:F){
         let mut draw_parameters=default_draw_parameters();
 
         let mut frame=self.display().draw();
 
-        let mut g=GameGraphics::new(&self.graphics,&mut frame);
+        let mut g=Graphics::new(&self.graphics,&mut frame);
 
         f(&mut draw_parameters,&mut g);
 
@@ -262,12 +267,12 @@ impl Window{
     // Выполняет замыкание и рисует курсор
     // Нужна для правных переходов с помощью альфа-канала
     // Выдаёт изменяющийся альфа-канал для рисования, возвращает следующее значение альфа-канала
-    pub fn draw_smooth<F:FnOnce(f32,&mut DrawParameters,&mut GameGraphics)>(&mut self,f:F)->f32{
+    pub fn draw_smooth<F:FnOnce(f32,&mut DrawParameters,&mut Graphics)>(&mut self,f:F)->f32{
         let mut draw_parameters=default_draw_parameters();
 
         let mut frame=self.display().draw();
 
-        let mut g=GameGraphics::new(&mut self.graphics,&mut frame);
+        let mut g=Graphics::new(&mut self.graphics,&mut frame);
 
         f(self.alpha_channel,&mut draw_parameters,&mut g);
 
@@ -281,7 +286,7 @@ impl Window{
 
     // Игнорирует все события, кроме рендеринга и закрытия окна
     // Рисует один кадр
-    pub fn draw_event_once<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(&mut self,f:F)->WindowEvent{
+    pub fn draw_event_once<F:FnOnce(&mut DrawParameters,&mut Graphics)>(&mut self,f:F)->WindowEvent{
         while let Some(event)=self.next_event(){
             match event{
                 WindowEvent::Exit=>return WindowEvent::Exit, // Закрытие игры

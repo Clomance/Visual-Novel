@@ -34,8 +34,8 @@ pub struct SimpleGraphics{
 impl SimpleGraphics{
     pub fn new(display:&Display,glsl:u16)->SimpleGraphics{
         let (vertex_shader,fragment_shader)=if glsl==120{(
-            include_str!("shaders/simple_vertex_shader_120.glsl"),
-            include_str!("shaders/simple_fragment_shader_120.glsl"),
+            include_str!("shaders/120/simple_vertex_shader_120.glsl"),
+            include_str!("shaders/120/simple_fragment_shader_120.glsl"),
         )}
         else{(
             include_str!("shaders/simple_vertex_shader.glsl"),

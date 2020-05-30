@@ -24,7 +24,7 @@ use engine::{
     mouse_cursor,
     // structs
     Window,
-    graphics::GameGraphics,
+    graphics::Graphics,
     // enums
     WindowEvent,
     KeyboardButton,
@@ -91,9 +91,9 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
     }
 
     pub fn start(mut self,window:&mut Window,music:&Music)->Game{
-        let radius=unsafe{mouse_cursor.center_radius()};
-
-        self.wallpaper.mouse_shift(radius[0],radius[1]);
+        unsafe{
+            self.wallpaper.mouse_shift(mouse_cursor.raw_position());
+        }
         window.set_smooth(page_smooth);
 
         'main:while self.smooth(window)!=Game::Exit{
@@ -111,8 +111,8 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                         });
                     }
 
-                    WindowEvent::MouseMovementDelta((dx,dy))=>{
-                        self.wallpaper.mouse_shift(dx,dy);
+                    WindowEvent::MouseMovementDelta((dx,dy))=>unsafe{
+                        self.wallpaper.mouse_shift(mouse_cursor.raw_position());
                         self.menu.mouse_shift(dx,dy)
                     }
 
@@ -149,7 +149,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                                                 Game::Back=>{
                                                     let (dx,dy)=mouse_cursor.saved_movement();
                                                     self.menu.mouse_shift(dx,dy);
-                                                    self.wallpaper.mouse_shift(dx,dy);
+                                                    self.wallpaper.mouse_shift(mouse_cursor.raw_position());
                                                     continue 'main
                                                 }
                                                 _=>{}
@@ -193,8 +193,8 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::MouseMovementDelta((dx,dy))=>{
-                    self.wallpaper.mouse_shift(dx,dy);
+                WindowEvent::MouseMovementDelta((dx,dy))=>unsafe{
+                    self.wallpaper.mouse_shift(mouse_cursor.raw_position());
                     self.menu.mouse_shift(dx,dy)
                 }
 
@@ -212,12 +212,12 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
         Game::Current
     }
 
-    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.wallpaper.draw(draw_parameters,graphics);
         self.menu.draw(draw_parameters,graphics);
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.wallpaper.draw_smooth(alpha,draw_parameters,graphics);
         self.menu.draw_smooth(alpha,draw_parameters,graphics);
     }

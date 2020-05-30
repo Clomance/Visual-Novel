@@ -10,7 +10,7 @@ use engine::{
     Colour,
     // structs
     text::{TextBase,Glyphs},
-    graphics::GameGraphics,
+    graphics::Graphics,
     glium::DrawParameters,
 };
 
@@ -67,11 +67,11 @@ impl<'a> TextViewLine<'a>{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics,glyphs:&Glyphs){
         self.base.base.draw(&self.base.line,draw_parameters,g,glyphs);
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut GameGraphics,glyphs:&Glyphs){
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut Graphics,glyphs:&Glyphs){
         self.set_alpha_channel(alpha);
         self.draw(draw_parameters,g,glyphs)
     }
@@ -178,12 +178,12 @@ impl<'a> TextViewLined<'a>{
         self.base.set_alpha_channel(alpha)
     }
 
-    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
        self.base.draw(draw_parameters,graphics)
     }
 
     // Вывод части текста
-    pub fn draw_part(&mut self,chars:usize,draw_parameters:&DrawParameters,g:&mut GameGraphics)->bool{
+    pub fn draw_part(&mut self,chars:usize,draw_parameters:&mut DrawParameters,g:&mut Graphics)->bool{
         self.base.draw_part(chars,draw_parameters,g)
     }
 }
@@ -234,11 +234,11 @@ impl<'a> TextViewStaticLine<'a>{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics){
         self.base.draw(&self.line,draw_parameters,g,self.glyphs);
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut Graphics){
         self.set_alpha_channel(alpha);
         self.draw(draw_parameters,g)
     }
@@ -343,7 +343,7 @@ impl<'a> TextViewStaticLined<'a>{
         self.base.set_alpha_channel(alpha);
     }
 
-    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         let position=self.base.position; // Сохранение начальной позиции
 
         let dy=self.base.font_size+line_margin;
@@ -361,7 +361,7 @@ impl<'a> TextViewStaticLined<'a>{
     }
 
     // Вывод части текста
-    pub fn draw_part(&mut self,chars:usize,draw_parameters:&DrawParameters,g:&mut GameGraphics)->bool{
+    pub fn draw_part(&mut self,chars:usize,draw_parameters:&mut DrawParameters,g:&mut Graphics)->bool{
         let mut position=[self.base.position[0] as f32,self.base.position[1] as f32];
 
         let dy=self.base.font_size+line_margin as f32;

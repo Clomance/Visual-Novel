@@ -19,7 +19,7 @@ use engine::{
     KeyboardButton,
     // structs
     Window,
-    graphics::{Rectangle,GameGraphics},
+    graphics::{Rectangle,Graphics},
     text::Glyphs,
     glium::{
         DrawParameters,
@@ -208,7 +208,7 @@ fn main(){
         let texture_base=&_textures; // "Безопасная" ссылка на Хранилище текстур
         let dialogues=&_dialogues; // "Безопасная" ссылка на диалоги
 
-        let mut wallpaper=Wallpaper::new(texture_base.main_menu_wallpaper(),window.display());
+        let mut wallpaper=Wallpaper::new(texture_base.main_menu_wallpaper(),&mut window);
         let mut characters_view=CharactersView::new(); // "Сцена" для персонажей
 
         let mut dialogue_box=DialogueBox::new(texture_base.dialogue_box(),window.display(),Dialogue_font!()); // Диалоговое окно
@@ -263,8 +263,8 @@ fn main(){
                         match event{
                             WindowEvent::Exit=>break 'game, // Закрытие игры
 
-                            WindowEvent::MouseMovementDelta((dx,dy))=>{
-                                wallpaper.mouse_shift(dx,dy);
+                            WindowEvent::MouseMovementDelta(_)=>{
+                                wallpaper.mouse_shift(mouse_cursor.raw_position());
                             }
 
                             WindowEvent::Draw=>{ //Рендеринг
@@ -301,8 +301,8 @@ fn main(){
                                 break 'game
                             }
 
-                            WindowEvent::MouseMovementDelta((dx,dy))=>{
-                                wallpaper.mouse_shift(dx,dy);
+                            WindowEvent::MouseMovementDelta(_)=>{
+                                wallpaper.mouse_shift(mouse_cursor.raw_position());
                             }
 
                             WindowEvent::Draw=>{ //Рендеринг
@@ -343,17 +343,14 @@ fn main(){
                                     }
 
                                     KeyboardButton::Escape=>{
-                                        mouse_cursor.save_position(); // Сохранение текущей позиции мышки
                                         // Пауза
                                         match PauseMenu::new().start(&mut window,&music){
                                             Game::ContinueGamePlay=>{
-                                                let (dx,dy)=mouse_cursor.saved_movement();
-                                                wallpaper.mouse_shift(dx,dy);
+                                                wallpaper.mouse_shift(mouse_cursor.raw_position());
                                                 continue 'page
                                             }
                                             Game::MainMenu=>{ // Возвращение в гланое меню
-                                                let (dx,dy)=mouse_cursor.saved_movement();
-                                                wallpaper.mouse_shift(dx,dy);
+                                                wallpaper.mouse_shift(mouse_cursor.raw_position());
                                                 Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
                                                 continue 'game
                                             }
@@ -386,8 +383,8 @@ fn main(){
                         match event{
                             WindowEvent::Exit=>break 'game, // Закрытие игры
 
-                            WindowEvent::MouseMovementDelta((dx,dy))=>{
-                                wallpaper.mouse_shift(dx,dy);
+                            WindowEvent::MouseMovementDelta(_)=>{
+                                wallpaper.mouse_shift(mouse_cursor.raw_position());
                             }
 
                             WindowEvent::Draw=>{ //Рендеринг
@@ -428,8 +425,8 @@ fn main(){
                 match event{
                     WindowEvent::Exit=>break 'game, // Закрытие игры
 
-                    WindowEvent::MouseMovementDelta((dx,dy))=>{
-                        wallpaper.mouse_shift(dx,dy);
+                    WindowEvent::MouseMovementDelta(_)=>{
+                        wallpaper.mouse_shift(mouse_cursor.raw_position());
                     }
 
                     WindowEvent::Draw=>{ //Рендеринг
@@ -454,8 +451,8 @@ fn main(){
                 match event{
                     WindowEvent::Exit=>break 'game, // Закрытие игры
 
-                    WindowEvent::MouseMovementDelta((dx,dy))=>{
-                        wallpaper.mouse_shift(dx,dy);
+                    WindowEvent::MouseMovementDelta(_)=>{
+                        wallpaper.mouse_shift(mouse_cursor.raw_position());
                     }
 
                     WindowEvent::Draw=>{ // Рендеринг
@@ -480,7 +477,7 @@ fn main(){
     }
 }
 
-pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut GameGraphics)>(window:&mut Window,f:F){
+pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut Window,f:F){
     let rect=Rectangle::new(window_rect(),[1f32,1f32,1f32,0.8f32]);
 
     window.set_cursor_visible(false); // Отключение курсора

@@ -14,7 +14,7 @@ use engine::{
     // structs
     text::Glyphs,
     graphics::{
-        GameGraphics,
+        Graphics,
         Rectangle,
     },
     glium::DrawParameters,
@@ -72,7 +72,7 @@ impl<'a> Drawable for Button<'a>{
         self.text.set_alpha_channel(alpha);
     }
 
-    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut GameGraphics){
+    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.base.draw(draw_parameters,graphics);
         self.text.draw(draw_parameters,graphics);
     }
@@ -160,7 +160,7 @@ impl ButtonBase{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut GameGraphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics){
         self.rect.draw(draw_parameters,g);
     }
 }
