@@ -10,6 +10,8 @@ use engine::{
     // statics
     window_width,
     window_height,
+    // types
+    Colour,
     // structs
     Window,
     image::{ImageBase,Texture},
@@ -19,47 +21,57 @@ use engine::{
 };
 
 pub struct LoadingScreen{
-    logo_base:ImageBase,
     logo:Texture,
+    range:usize,
+    filter:Colour,
 }
 
 impl LoadingScreen{
     pub fn new(window:&mut Window)->LoadingScreen{
+        let image_base=ImageBase::new(White,unsafe{[
+            (window_width-200f32)/2f32,
+            (window_height-200f32)/2f32,
+            200f32,
+            200f32
+        ]});
+
+        // Установка области для быстрой отрисовки иконки загрузки
+        let range=window.graphics().bind_rotating_image(4..8usize,image_base).unwrap();
+
         Self{
-            logo_base:ImageBase::new(White,unsafe{[
-                (window_width-200f32)/2f32,
-                (window_height-200f32)/2f32,
-                200f32,
-                200f32
-            ]}),
+            range,
+            filter:White,
             logo:Texture::from_path(window.display(),"./resources/images/logo.png").unwrap(),
         }
     }
 
-    pub unsafe fn start<F,T>(self,window:&mut Window,background:F)->Game
-            where F:FnOnce()->T,
-                F:Send+'static,
-                T:Send+'static{
-
+    pub fn start<F,T>(self,window:&mut Window,background:F)->Game
+            where F:FnOnce()->T,F:Send+'static,T:Send+'static{
         let mut t=0f32;
         let thread=std::thread::spawn(background);
 
         'loading:while let Some(event)=window.next_event(){
-            if !loading{
+            if unsafe{!loading}{
                 let _result=thread.join();
                 break 'loading
             }
             match event{
                 WindowEvent::Exit=>{ // Закрытие игры
-                    loading=false;
+                    unsafe{loading=false}
                     let _result=thread.join();
                     return Game::Exit
                 }
 
                 WindowEvent::Draw=>{
-                    window.draw(|c,g|{
-                        g.clear_colour(White);
-                        self.logo_base.draw_rotate(&self.logo,t,c,g);
+                    window.draw(|parameters,graphics|{
+                        graphics.clear_colour(White);
+                        graphics.draw_rotate_range_image(
+                            self.range,
+                            &self.logo,
+                            self.filter,
+                            t,
+                            parameters
+                        );
                     });
                     t+=0.05f32;
                     if t>360f32{
@@ -69,9 +81,15 @@ impl LoadingScreen{
 
                 WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
-                        make_screenshot(window,|p,g|{
-                            g.clear_colour(White);
-                            self.logo_base.draw_rotate(&self.logo,t,p,g);
+                        make_screenshot(window,|parameters,graphics|{
+                            graphics.clear_colour(White);
+                            graphics.draw_rotate_range_image(
+                                self.range,
+                                &self.logo,
+                                self.filter,
+                                t,
+                                parameters
+                            );
                         })
                     }
                 }
@@ -105,6 +123,9 @@ impl LoadingScreen{
                 _=>{}
             }
         }
+
+        // Удаление области для иконки загрузки
+        window.graphics().unbind_texture(self.range);
 
         Game::MainMenu
     }

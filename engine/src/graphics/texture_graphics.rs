@@ -11,6 +11,8 @@ use glium::{
     // macroses
     implement_vertex,
     uniform,
+    // enums
+    DrawError,
     // structs
     VertexBuffer,
     Program,
@@ -49,7 +51,7 @@ impl TexturedVertex{
 // Чтобы постоянно не загружать координаты для вывода,
 // можно сохранить нужную область буфера и использовать её
 // Лучше использовать конец для сохранения областей,
-// а начало для постоянно обновляющихся значений
+// а начало - для постоянно обновляющихся значений
 pub struct TextureGraphics{
     vertex_buffer:VertexBuffer<TexturedVertex>,
     vertex_buffer_ranges:Vec<Range<usize>>,
@@ -62,13 +64,13 @@ impl TextureGraphics{
     pub fn new(display:&Display,buffer_size:usize,glsl:u16)->TextureGraphics{
         let (rotation,moving,vertex_shader,fragment_shader)=if glsl==120{(
             include_str!("shaders/120/texture_rotation_vertex_shader_120.glsl"),
-            include_str!("shaders/120/texture_moving_vertex_shader_120.glsl"),
+            include_str!("shaders/120/texture_movement_vertex_shader_120.glsl"),
             include_str!("shaders/120/texture_vertex_shader_120.glsl"),
             include_str!("shaders/120/texture_fragment_shader_120.glsl")
         )}
         else{(
             include_str!("shaders/texture_rotation_vertex_shader.glsl"),
-            include_str!("shaders/texture_moving_vertex_shader.glsl"),
+            include_str!("shaders/texture_movement_vertex_shader.glsl"),
             include_str!("shaders/texture_vertex_shader.glsl"),
             include_str!("shaders/texture_fragment_shader.glsl")
         )};
@@ -82,14 +84,15 @@ impl TextureGraphics{
         }
     }
 
-    // Переписывает координаты с начала буфера и выводит, игнорируя все области
+    // Строит объект с нуля и выводит, игнорируя все области
+    // Переписывает координаты с начала буфера (0..4)
     pub fn draw_image(
         &self,
         image_base:&ImageBase,
         texture:&Texture,
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame,
-    ){
+    )->Result<(),DrawError>{
         let indices=NoIndices(PrimitiveType::TriangleStrip);
 
         let slice=self.vertex_buffer.slice(0..4).unwrap();
@@ -104,9 +107,11 @@ impl TextureGraphics{
                 colour_filter:image_base.colour_filter
             },
             draw_parameters
-        );
+        )
     }
 
+    // Строит объект с нуля и выводит под данным углом, игнорируя все области
+    // Переписывает координаты с начала буфера (0..4)
     pub fn draw_rotate_image(
         &self,
         image_base:&ImageBase,
@@ -114,25 +119,11 @@ impl TextureGraphics{
         angle:f32,
         frame:&mut Frame,
         draw_parameters:&mut DrawParameters
-    ){
+    )->Result<(),DrawError>{
         let indices=NoIndices(PrimitiveType::TriangleStrip);
-        
-        let (x1,y1,x2,y2)=(
-            image_base.x1,
-            image_base.y1,
-            image_base.x2,
-            image_base.y2
-        );
-
-        let rect=[
-            TexturedVertex::new([x1,y1],[0.0,1.0]),
-            TexturedVertex::new([x1,y2],[0.0,0.0]),
-            TexturedVertex::new([x2,y1],[1.0,1.0]),
-            TexturedVertex::new([x2,y2],[1.0,0.0])
-        ];
 
         let slice=self.vertex_buffer.slice(0..4).unwrap();
-        slice.write(&rect);
+        slice.write(&image_base.rotation_vertex_buffer());
 
         frame.draw(
             slice,
@@ -145,7 +136,7 @@ impl TextureGraphics{
                 colour_filter:image_base.colour_filter,
             },
             draw_parameters
-        );
+        )
     }
 }
 
@@ -153,8 +144,8 @@ impl TextureGraphics{
 impl TextureGraphics{
     // Добавляет область
     // Записывает в неё данные
-    // Области могут пересекаться
     // Возвращает номер (индекс) области
+    // Области могут пересекаться
     pub fn bind_range(&mut self,range:Range<usize>,data:&[TexturedVertex])->Option<usize>{
         let i=self.vertex_buffer_ranges.len();
 
@@ -171,7 +162,7 @@ impl TextureGraphics{
         self.vertex_buffer_ranges.remove(index);
     }
 
-    // Рисует выбранную облать
+    // Рисует выбранную область
     pub fn draw_range<'a,I:Into<IndicesSource<'a>>>(
         &self,
         index:usize,
@@ -180,7 +171,7 @@ impl TextureGraphics{
         indices:I,
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
-    ){
+    )->Result<(),DrawError>{
         let range=self.vertex_buffer_ranges[index].clone();
         let slice=self.vertex_buffer.slice(range).unwrap();
         let uni=uniform!{
@@ -194,22 +185,30 @@ impl TextureGraphics{
             &self.draw,
             &uni,
             draw_parameters
-        );
+        )
     }
 
     // Рисует выбранную область, сдвигая координаты
+    // Сдвиг в формате координат OpenGL
+    // movement: [dx, dy],
     pub fn draw_move_range<'a,I:Into<IndicesSource<'a>>>(
         &self,
         index:usize,
         texture:&Texture,
         colour_filter:Colour,
-        movement:[f32;2],
+        [dx,dy]:[f32;2],
         indices:I,
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
-    ){
+    )->Result<(),DrawError>{
         let range=self.vertex_buffer_ranges[index].clone();
         let slice=self.vertex_buffer.slice(range).unwrap();
+
+        let movement=unsafe{[
+            dx/window_center[0],
+            -dy/window_center[1]
+        ]};
+
         let uni=uniform!{
             tex:&texture.0,
             colour_filter:colour_filter,
@@ -222,6 +221,36 @@ impl TextureGraphics{
             &self.draw_move,
             &uni,
             draw_parameters
-        );
+        )
+    }
+
+    // Рисует выбранную область, поворачивая координаты
+    // Угол в радианах
+    pub fn draw_rotate_range<'a,I:Into<IndicesSource<'a>>>(
+        &self,
+        index:usize,
+        texture:&Texture,
+        colour_filter:Colour,
+        angle:f32,
+        indices:I,
+        draw_parameters:&mut DrawParameters,
+        frame:&mut Frame
+    )->Result<(),DrawError>{
+        let range=self.vertex_buffer_ranges[index].clone();
+        let slice=self.vertex_buffer.slice(range).unwrap();
+        let uni=uniform!{
+            tex:&texture.0,
+            angle:angle,
+            window_center:unsafe{window_center},
+            colour_filter:colour_filter,
+        };
+
+        frame.draw(
+            slice,
+            indices,
+            &self.draw_rotate,
+            &uni,
+            draw_parameters
+        )
     }
 }

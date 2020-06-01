@@ -74,15 +74,14 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
             _=>{}
         }
 
-
-        // Полная отрисовка
+        // Главный цикл
         while let Some(event)=window.next_event(){
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::MouseMovementDelta((dx,dy))=>unsafe{
-                    self.main_menu.wallpaper.mouse_shift(mouse_cursor.raw_position());
-                    self.main_menu.menu.mouse_shift(dx,dy)
+                // Движение мыши
+                WindowEvent::MouseMovementDelta(_)=>unsafe{
+                    self.main_menu.mouse_shift(mouse_cursor.center_radius())
                 }
 
                 WindowEvent::MouseReleased(button)=>{
@@ -95,15 +94,14 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                         _=>{}
                     }
                 }
+                // Рендеринг
+                WindowEvent::Draw=>window.draw(|c,g|{
+                    self.main_menu.draw(c,g);
+                    self.input.draw(c,g);
+                    self.head.draw(c,g);
+                }),
 
-                WindowEvent::Draw=>unsafe{ // Рендеринг
-                    window.draw(|c,g|{
-                        self.main_menu.draw(c,g);
-                        self.input.draw(c,g);
-                        self.head.draw(c,g);
-                    })
-                }
-
+                // Ввод символов
                 WindowEvent::CharacterInput(character)=>{
                     self.input.push_char(character);
                 },
@@ -137,34 +135,33 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
 
     // Сглаживание перехода к странице (открытие)
     pub fn smooth(&mut self,window:&mut Window)->Game{
-        unsafe{
-            window.set_new_smooth(page_smooth);
+        window.set_new_smooth(page_smooth);
 
-            while let Some(event)=window.next_event(){
-                match event{
-                    WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+        while let Some(event)=window.next_event(){
+            match event{
+                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                    WindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.menu.mouse_shift(dx,dy),
+                WindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.mouse_shift([dx,dy]),
 
-                    WindowEvent::Draw=>{ // Рендеринг
-                        if 1f32<window.draw_smooth(|alpha,c,g|{
-                            self.main_menu.draw(c,g);
+                // Рендеринг
+                WindowEvent::Draw=>{
+                    if 1f32<window.draw_smooth(|alpha,c,g|{
+                        self.main_menu.draw(c,g);
 
-                            self.input.draw_smooth(alpha,c,g);
-                            self.head.draw_smooth(alpha,c,g);
-                        }){
-                            break
-                        }
+                        self.input.draw_smooth(alpha,c,g);
+                        self.head.draw_smooth(alpha,c,g);
+                    }){
+                        break
                     }
-
-                    WindowEvent::KeyboardReleased(button)=>{
-                        match button{
-                            KeyboardButton::Escape=>return Game::Back,
-                            _=>{}
-                        }
-                    }
-                    _=>{}
                 }
+
+                WindowEvent::KeyboardReleased(button)=>{
+                    match button{
+                        KeyboardButton::Escape=>return Game::Back,
+                        _=>{}
+                    }
+                }
+                _=>{}
             }
         }
         Game::Current

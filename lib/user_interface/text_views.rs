@@ -238,6 +238,12 @@ impl<'a> TextViewStaticLine<'a>{
         self.base.draw(&self.line,draw_parameters,g,self.glyphs);
     }
 
+    pub fn draw_move(&mut self,[dx,dy]:[f32;2],draw_parameters:&mut DrawParameters,g:&mut Graphics){
+        self.base.shift(dx,dy);
+        self.base.draw(&self.line,draw_parameters,g,self.glyphs);
+        self.base.shift(-dx,-dy);
+    }
+
     pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut Graphics){
         self.set_alpha_channel(alpha);
         self.draw(draw_parameters,g)
@@ -360,9 +366,28 @@ impl<'a> TextViewStaticLined<'a>{
         self.base.set_position(position);
     }
 
+    pub fn draw_move(&mut self,[x,y]:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        let position=self.base.position; // Сохранение начальной позиции
+
+        self.base.shift(x,y);
+
+        let dy=self.base.font_size+line_margin;
+        // Перебор строк
+        for line in &self.lines{
+            let dx=line.0; // Выравнивание строки
+            self.base.shift_x(dx);
+
+            self.base.draw(&line.1,draw_parameters,graphics,self.glyphs);
+
+            self.base.shift(-dx,dy);
+        }
+
+        self.base.set_position(position);
+    }
+
     // Вывод части текста
     pub fn draw_part(&mut self,chars:usize,draw_parameters:&mut DrawParameters,g:&mut Graphics)->bool{
-        let mut position=[self.base.position[0] as f32,self.base.position[1] as f32];
+        let mut position=self.base.position;
 
         let dy=self.base.font_size+line_margin as f32;
 

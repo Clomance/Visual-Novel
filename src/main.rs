@@ -1,4 +1,4 @@
-#![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,dead_code,unused_unsafe)]
+#![allow(non_snake_case,non_upper_case_globals,non_camel_case_types)]
 #![cfg_attr(not(debug_assertions),windows_subsystem="windows")]
 
 use lib::{
@@ -59,6 +59,7 @@ pub use dialogue_box::DialogueBox;
 #[macro_export]
 macro_rules! Main_font {
     () => {
+        #[allow(unused_unsafe)]
         unsafe{
             &crate::glyph_cache[0]
         }
@@ -68,6 +69,7 @@ macro_rules! Main_font {
 #[macro_export]
 macro_rules! Dialogue_font {
     () => {
+        #[allow(unused_unsafe)]
         unsafe{
             &crate::glyph_cache[1]
         }
@@ -267,13 +269,13 @@ fn main(){
                             WindowEvent::Exit=>break 'game, // Закрытие игры
 
                             WindowEvent::MouseMovementDelta(_)=>{
-                                wallpaper.mouse_shift(mouse_cursor.raw_position());
+                                wallpaper.mouse_shift(mouse_cursor.center_radius());
                             }
 
                             WindowEvent::Draw=>{ //Рендеринг
                                 if 1f32<window.draw_smooth(|alpha,c,g|{
                                     g.clear_colour(White);
-                                    wallpaper.draw_smooth(alpha,c,g);
+                                    wallpaper.draw_move_smooth(alpha,c,g);
                                     characters_view.draw_smooth(alpha,c,g);
                                     dialogue_box.set_alpha_channel(alpha);
                                     dialogue_box.draw(c,g);
@@ -305,12 +307,12 @@ fn main(){
                             }
 
                             WindowEvent::MouseMovementDelta(_)=>{
-                                wallpaper.mouse_shift(mouse_cursor.raw_position());
+                                wallpaper.mouse_shift(mouse_cursor.center_radius());
                             }
 
                             WindowEvent::Draw=>{ //Рендеринг
                                 window.draw(|c,g|{
-                                    wallpaper.draw(c,g);
+                                    wallpaper.draw_move(c,g);
                                     characters_view.draw(c,g);
                                     dialogue_box.draw(c,g);
                                 });
@@ -349,11 +351,11 @@ fn main(){
                                         // Пауза
                                         match PauseMenu::new().start(&mut window,&music){
                                             Game::ContinueGamePlay=>{
-                                                wallpaper.mouse_shift(mouse_cursor.raw_position());
+                                                wallpaper.mouse_shift(mouse_cursor.center_radius());
                                                 continue 'page
                                             }
                                             Game::MainMenu=>{ // Возвращение в гланое меню
-                                                wallpaper.mouse_shift(mouse_cursor.raw_position());
+                                                wallpaper.mouse_shift(mouse_cursor.center_radius());
                                                 Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
                                                 continue 'game
                                             }
@@ -367,7 +369,7 @@ fn main(){
 
                                     KeyboardButton::F5=>{
                                         make_screenshot(&mut window,|c,g|{
-                                            wallpaper.draw(c,g);
+                                            wallpaper.draw_move(c,g);
                                             characters_view.draw(c,g);
                                             dialogue_box.draw(c,g);
                                         })
@@ -387,7 +389,7 @@ fn main(){
                             WindowEvent::Exit=>break 'game, // Закрытие игры
 
                             WindowEvent::MouseMovementDelta(_)=>{
-                                wallpaper.mouse_shift(mouse_cursor.raw_position());
+                                wallpaper.mouse_shift(mouse_cursor.center_radius());
                             }
 
                             WindowEvent::Draw=>{ //Рендеринг
@@ -406,7 +408,7 @@ fn main(){
                                 if button==KeyboardButton::F5{
                                     make_screenshot(&mut window,|d,g|{
                                         g.clear_colour(White);
-                                        wallpaper.draw(d,g);
+                                        wallpaper.draw_move(d,g);
                                         characters_view.draw(d,g);
                                         dialogue_box.draw_without_text(d,g);
                                     })
@@ -428,11 +430,7 @@ fn main(){
                 match event{
                     WindowEvent::Exit=>break 'game, // Закрытие игры
 
-                    WindowEvent::MouseMovementDelta(_)=>{
-                        wallpaper.mouse_shift(mouse_cursor.raw_position());
-                    }
-
-                    WindowEvent::Draw=>{ //Рендеринг
+                    WindowEvent::Draw=>{ // Рендеринг
                         if 1f32<window.draw_smooth(|alpha,d,g|{
                             wallpaper.draw_smooth(alpha,d,g)
                         }){
@@ -454,22 +452,19 @@ fn main(){
                 match event{
                     WindowEvent::Exit=>break 'game, // Закрытие игры
 
-                    WindowEvent::MouseMovementDelta(_)=>{
-                        wallpaper.mouse_shift(mouse_cursor.raw_position());
-                    }
-
-                    WindowEvent::Draw=>{ // Рендеринг
-                        window.draw(|c,g|{
-                            wallpaper.draw(c,g)
-                        });
-                    }
+                    // Рендеринг
+                    WindowEvent::Draw=>window.draw(|c,g|{
+                        wallpaper.draw(c,g)
+                    }),
 
                     WindowEvent::MouseReleased(_button)=>break 'gameplay_ending,
                     WindowEvent::KeyboardReleased(button)=>{
                         if button==KeyboardButton::F5{
                             make_screenshot(&mut window,|d,g|{wallpaper.draw(d,g)})
                         }
-                        break 'gameplay_ending
+                        else{
+                            break 'gameplay_ending
+                        }
                     }
                     _=>{}
                 }

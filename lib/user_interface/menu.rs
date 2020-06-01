@@ -7,7 +7,6 @@ use engine::{
     Colour,
     // structs
     graphics::Graphics,
-    mouse_cursor,
     text::Glyphs,
     glium::DrawParameters,
 };
@@ -15,8 +14,6 @@ use engine::{
 const head_margin:f32=50f32; // Расстояние между заголовком и кнопками
 const button_margin:f32=10f32; // Расстояние между кнопками
 const dmargin:f32=head_margin-button_margin; // Для расчёта высоты меню - чтобы не вычитать button_margin
-
-const menu_movement_scale:f32=10f32; // Обратный коэфициент сдвига меню при движении мышью
 
 // Меню, состоящее из заголовка и кнопок под ним
 pub struct Menu<'a>{
@@ -26,12 +23,8 @@ pub struct Menu<'a>{
 
 impl<'a> Menu<'a>{
     pub fn new<'c,S:Into<String>,B:Into<String>+Clone+'a>(settings:MenuSettings<'c,S,B>,glyphs:&'a Glyphs)->Menu<'a>{
-        let r=unsafe{mouse_cursor.center_radius()}; //
-        let dx=r[0]/menu_movement_scale;            // Сдвиг относительно положения мыши
-        let dy=r[1]/menu_movement_scale;            //
-
-        let x0=settings.rect[0]+dx;     //
-        let y0=settings.rect[1]+dy;     // Положение и размер
+        let x0=settings.rect[0];        //
+        let y0=settings.rect[1];        // Положение и размер
         let width=settings.rect[2];     // области для вставки
         let height=settings.rect[3];    //
 
@@ -124,14 +117,18 @@ impl<'a> Menu<'a>{
         None
     }
 
-    // Сдвиг с коэффициентом
-    pub fn mouse_shift(&mut self,dx:f32,dy:f32){
-        let dx=dx/menu_movement_scale;
-        let dy=dy/menu_movement_scale;
-        self.head.shift(dx,dy);
+    pub fn draw_move(&mut self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        self.head.draw_move(movement,draw_parameters,graphics);
+
         for button in &mut self.buttons{
-            button.shift(dx,dy)
+            button.draw_move(movement,draw_parameters,graphics);
         }
+    }
+
+    pub fn draw_move_smooth(&mut self,alpha:f32,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        self.set_alpha_channel(alpha);
+
+        self.draw_move(movement,draw_parameters,graphics)
     }
 }
 

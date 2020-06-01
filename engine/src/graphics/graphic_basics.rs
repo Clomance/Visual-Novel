@@ -9,19 +9,15 @@ use super::{
     // structs
     Graphics,
     SimpleObject,
-    SimpleGraphics,
     Point2D
 };
 
 use glium::{
-    uniform,
-    Frame,
     DrawParameters,
     index::{
         NoIndices,
         PrimitiveType,
     },
-    Surface,
 };
 
 // Здесь собраны простые фигуры
@@ -30,8 +26,8 @@ use glium::{
 // Одноцветный многоугольник
 #[derive(Clone)]
 pub struct MonoColourPolygon{
-    points:Vec<Point2D>,
-    colour:Colour,
+    pub points:Vec<Point2D>,
+    pub colour:Colour,
 }
 
 impl MonoColourPolygon{
@@ -42,32 +38,37 @@ impl MonoColourPolygon{
         }
     }
 
+    pub fn vertex_buffer(&self)->Vec<Point2D>{
+        let mut vec=Vec::with_capacity(self.points.len());
+
+        for point in &self.points{
+            vec.push(unsafe{Point2D::new(
+                point.position[0]/window_center[0]-1f32,
+                1f32-point.position[1]/window_center[1]
+            )});
+        }
+
+        vec
+    }
+
     #[inline(always)]
     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.draw_simple(self,draw_parameters)
     }
 }
 
-impl SimpleObject for MonoColourPolygon{
-    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
-        let slice=graphics.vertex_buffer.slice(0..self.points.len()).unwrap();
-        let indices=NoIndices(PrimitiveType::TriangleStrip);
+impl<'a> SimpleObject<'a> for MonoColourPolygon{
+    type Indices=NoIndices;
+    fn colour(&self)->Colour{
+        self.colour
+    }
 
-        let mut vec=Vec::with_capacity(self.points.len());
-        unsafe{
-            for point in &self.points{
-                vec.push(Point2D{
-                    position:[
-                        point.position[0]/window_center[0]-1f32,
-                        1f32-point.position[1]/window_center[1]
-                    ]
-                });
-            }
-        }
+    fn point_buffer(&self)->Vec<Point2D>{
+        self.points.clone()
+    }
 
-        slice.write(&vec);
-
-        frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.colour},draw_parameters);
+    fn indices(&self)->NoIndices{
+        NoIndices(PrimitiveType::TriangleStrip)
     }
 }
 
@@ -111,45 +112,119 @@ impl Rectangle{
     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.draw_simple(self,draw_parameters)
     }
+
+    #[inline(always)]
+    pub fn draw_move(&self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        graphics.draw_move_simple(self,movement,draw_parameters)
+    }
 }
 
-impl SimpleObject for Rectangle{
-    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
-        let slice=graphics.vertex_buffer.slice(0..4).unwrap();
-        let indices=NoIndices(PrimitiveType::TriangleStrip);
+impl<'a> SimpleObject<'a> for Rectangle{
+    type Indices=NoIndices;
+    fn colour(&self)->Colour{
+        self.colour
+    }
 
+    fn point_buffer(&self)->Vec<Point2D>{
         let mut vec=Vec::with_capacity(4);
-        unsafe{
-            let x1=self.x1/window_center[0]-1f32;
-            let y1=1f32-self.y1/window_center[1];
 
-            let x2=self.x2/window_center[0]-1f32;
-            let y2=1f32-self.y2/window_center[1];
+        vec.push(Point2D::new(self.x1,self.y1));
+        vec.push(Point2D::new(self.x1,self.y2));
+        vec.push(Point2D::new(self.x2,self.y1));
+        vec.push(Point2D::new(self.x2,self.y2));
 
-            vec.push(Point2D{
-                position:[x1,y1]
-            });
-            vec.push(Point2D{
-                position:[x1,y2]
-            });
-            vec.push(Point2D{
-                position:[x2,y1]
-            });
-            vec.push(Point2D{
-                position:[x2,y2]
-            });
+        vec
+    }
+
+    fn indices(&self)->NoIndices{
+        NoIndices(PrimitiveType::TriangleStrip)
+    }
+}
+
+#[derive(Clone)]
+pub struct RectangleBorder{
+    pub x1:f32,
+    pub y1:f32,
+    pub x2:f32,
+    pub y2:f32,
+    pub width:f32,
+    pub colour:Colour,
+}
+
+impl RectangleBorder{
+    // rect - [x1,y1,x2,y2]
+    pub const fn raw(rect:[f32;4],width:f32,colour:Colour)->RectangleBorder{
+        Self{
+            x1:rect[0],
+            y1:rect[1],
+            x2:rect[2],
+            y2:rect[3],
+            width,
+            colour
         }
+    }
 
-        slice.write(&vec);
+    pub fn from_rectangle(rect:Rectangle,width:f32)->RectangleBorder{
+        Self{
+            x1:rect.x1,
+            y1:rect.y1,
+            x2:rect.x2,
+            y2:rect.y2,
+            width,
+            colour:rect.colour
+        }
+    }
 
-        frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.colour},draw_parameters);
+    pub fn rectangle_base(rect:Rectangle,width:f32,colour:Colour)->RectangleBorder{
+        Self{
+            x1:rect.x1,
+            y1:rect.y1,
+            x2:rect.x2,
+            y2:rect.y2,
+            width,
+            colour
+        }
+    }
+
+    #[inline(always)]
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        draw_parameters.line_width=Some(self.width);
+        graphics.draw_simple(self,draw_parameters)
+    }
+
+    #[inline(always)]
+    pub fn draw_move(&self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        draw_parameters.line_width=Some(self.width);
+        graphics.draw_move_simple(self,movement,draw_parameters)
+    }
+}
+
+impl<'a> SimpleObject<'a> for RectangleBorder{
+    type Indices=NoIndices;
+    fn colour(&self)->Colour{
+        self.colour
+    }
+
+    fn point_buffer(&self)->Vec<Point2D>{
+        let mut vec=Vec::with_capacity(4);
+
+        vec.push(Point2D::new(self.x1,self.y1));
+        vec.push(Point2D::new(self.x1,self.y2));
+        vec.push(Point2D::new(self.x2,self.y2));
+        vec.push(Point2D::new(self.x2,self.y1));
+
+        vec
+    }
+
+    fn indices(&self)->NoIndices{
+        NoIndices(PrimitiveType::LineLoop)
     }
 }
 
 #[derive(Clone)] // Прямоугольник с рамкой
 pub struct RectangleWithBorder{
     pub rect:Rectangle,
-    pub border_radius:f32,
+    pub border_width:f32,
     pub border_colour:Colour,
 }
 
@@ -158,77 +233,21 @@ impl RectangleWithBorder{
     pub fn new(rect:[f32;4],colour:Colour)->RectangleWithBorder{
         Self{
             rect:Rectangle::new(rect,colour),
-            border_radius:1f32,
+            border_width:1f32,
             border_colour:colour,
         }
     }
 
-    pub const fn border(mut self,radius:f32,colour:Colour)->RectangleWithBorder{
-        self.border_radius=radius;
+    pub const fn border(mut self,width:f32,colour:Colour)->RectangleWithBorder{
+        self.border_width=width;
         self.border_colour=colour;
         self
     }
 
-    #[inline(always)]
     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        graphics.draw_simple(self,draw_parameters)
-    }
-}
-
-impl SimpleObject for RectangleWithBorder{
-    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
-        let mut vec=Vec::with_capacity(4);
-        let (x1,y1,x2,y2)=unsafe{(
-            self.rect.x1/window_center[0]-1f32,
-            1f32-self.rect.y1/window_center[1],
-
-            self.rect.x2/window_center[0]-1f32,
-            1f32-self.rect.y2/window_center[1]
-        )};
-
-        // Закрашивание прямоугольника
-        let mut slice=graphics.vertex_buffer.slice(0..4).unwrap();
-        let mut indices=NoIndices(PrimitiveType::TriangleStrip);
-
-        vec.push(Point2D{
-            position:[x1,y1]
-        });
-        vec.push(Point2D{
-            position:[x1,y2]
-        });
-        vec.push(Point2D{
-            position:[x2,y1]
-        });
-        vec.push(Point2D{
-            position:[x2,y2]
-        });
-
-        slice.write(&vec);
-
-        frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.rect.colour},draw_parameters);
-
-        // Обводка прямоугольника
-        slice=graphics.vertex_buffer.slice(0..4).unwrap();
-        indices=NoIndices(PrimitiveType::LineLoop);
-        vec.clear();
-
-        vec.push(Point2D{
-            position:[x1,y1]
-        });
-        vec.push(Point2D{
-            position:[x1,y2]
-        });
-        vec.push(Point2D{
-            position:[x2,y2]
-        });
-        vec.push(Point2D{
-            position:[x2,y1]
-        });
-
-        slice.write(&vec);
-
-        draw_parameters.line_width=Some(self.border_radius);
-        frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.border_colour},draw_parameters);
+        self.rect.draw(draw_parameters,graphics);
+        let border=RectangleBorder::rectangle_base(self.rect.clone(),self.border_width,self.border_colour);
+        border.draw(draw_parameters,graphics);
     }
 }
 
@@ -261,31 +280,23 @@ impl Line{
 }
 
 
-impl SimpleObject for Line{
-    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
+impl<'a> SimpleObject<'a> for Line{
+    type Indices=NoIndices;
+    fn colour(&self)->Colour{
+        self.colour
+    }
+
+    fn point_buffer(&self)->Vec<Point2D>{
         let mut vec=Vec::with_capacity(2);
 
-        let (x1,y1,x2,y2)=unsafe{(
-            self.x1/window_center[0]-1f32,
-            1f32-self.y1/window_center[1],
+        vec.push(Point2D::new(self.x1,self.y1));
+        vec.push(Point2D::new(self.x2,self.y2));
 
-            self.x2/window_center[0]-1f32,
-            1f32-self.y2/window_center[1]
-        )};
-        
-        let slice=graphics.vertex_buffer.slice(0..2).unwrap();
-        let indices=NoIndices(PrimitiveType::LineLoop);
+        vec
+    }
 
-        vec.push(Point2D{
-            position:[x1,y1]
-        });
-        vec.push(Point2D{
-            position:[x2,y2]
-        });
-
-        slice.write(&vec);
-
-        frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.colour},draw_parameters);
+    fn indices(&self)->NoIndices{
+        NoIndices(PrimitiveType::LinesList)
     }
 }
 
@@ -318,48 +329,48 @@ impl Circle{
     }
 }
 
-impl SimpleObject for Circle{
-    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
-        unsafe{
-            let k=window_center[0]/window_center[1];
-            let r_x=self.radius/window_center[0];
-            let r_y=self.radius/window_center[1];
+impl<'a> SimpleObject<'a> for Circle{
+    type Indices=NoIndices;
+    fn colour(&self)->Colour{
+        self.colour
+    }
+    fn point_buffer(&self)->Vec<Point2D>{
+        let r_x=self.radius;
+        let r_y=self.radius;
 
-            let c_x=self.x/window_center[0]-1f32;
-            let c_y=1f32-self.y/window_center[1];
+        let c_x=self.x;
+        let c_y=self.y;
 
-            let mut shape=[Point2D{position:[c_x,c_y]};4*ellipse_points+2];
+        let mut shape=vec![Point2D{position:[c_x,c_y]};4*ellipse_points+2];
 
-            let dx=r_x/ellipse_points as f32;
-            let mut x=dx;
+        let dx=r_x/ellipse_points as f32;
+        let mut x=dx;
 
-            for c in 1..ellipse_points{
-                let y=((r_x-x)*(r_x+x)).sqrt()*k;
-                
-                shape[c].position=[c_x+x,c_y+y];
+        for c in 1..ellipse_points{
+            let y=((r_x-x)*(r_x+x)).sqrt();
+            
+            shape[c].position=[c_x+x,c_y+y];
 
-                shape[2*ellipse_points-c].position=[c_x+x,c_y-y];
+            shape[2*ellipse_points-c].position=[c_x+x,c_y-y];
 
-                shape[2*ellipse_points+c].position=[c_x-x,c_y-y];
+            shape[2*ellipse_points+c].position=[c_x-x,c_y-y];
 
-                shape[4*ellipse_points-c].position=[c_x-x,c_y+y];
+            shape[4*ellipse_points-c].position=[c_x-x,c_y+y];
 
-                x+=dx;
-            }
-
-            shape[1].position=[c_x,c_y+r_y];
-            shape[ellipse_points].position=[c_x+r_x,c_y];
-            shape[2*ellipse_points].position=[c_x,c_y-r_y];
-            shape[3*ellipse_points].position=[c_x-r_x,c_y];
-            shape[4*ellipse_points].position=[c_x,c_y+r_y];
-
-            let slice=graphics.vertex_buffer.slice(0..4*ellipse_points+2).unwrap();
-            slice.write(&shape);
-
-            let indices=NoIndices(PrimitiveType::TriangleFan);
-
-            frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.colour},draw_parameters);
+            x+=dx;
         }
+
+        shape[1].position=[c_x,c_y+r_y];
+        shape[ellipse_points].position=[c_x+r_x,c_y];
+        shape[2*ellipse_points].position=[c_x,c_y-r_y];
+        shape[3*ellipse_points].position=[c_x-r_x,c_y];
+        shape[4*ellipse_points].position=[c_x,c_y+r_y];
+
+        shape
+    }
+
+    fn indices(&self)->NoIndices{
+        NoIndices(PrimitiveType::TriangleFan)
     }
 }
 
@@ -400,53 +411,100 @@ impl CircleWithBorder{
     }
 }
 
-impl SimpleObject for CircleWithBorder{
-    fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
-        unsafe{
-            let k=window_center[0]/window_center[1];
-            let r_x=self.radius/window_center[0];
-            let r_y=self.radius/window_center[1];
+// // // // // // // // // // // // // // // // // // // // // // // // //
+impl<'a> SimpleObject<'a> for CircleWithBorder{
+    type Indices=NoIndices;
+    fn colour(&self)->Colour{
+        self.colour
+    }
 
-            let c_x=self.x/window_center[0]-1f32;
-            let c_y=1f32-self.y/window_center[1];
+    fn point_buffer(&self)->Vec<Point2D>{
+        let r_x=self.radius;
+        let r_y=self.radius;
 
-            let mut shape=[Point2D{position:[c_x,c_y]};4*ellipse_points+2];
+        let c_x=self.x;
+        let c_y=self.y;
 
-            let dx=r_x/ellipse_points as f32;
-            let mut x=dx;
+        let mut shape=vec![Point2D{position:[c_x,c_y]};4*ellipse_points+2];
 
-            for c in 1..ellipse_points{
-                let y=((r_x-x)*(r_x+x)).sqrt()*k;
-                
-                shape[c].position=[c_x+x,c_y+y];
+        let dx=r_x/ellipse_points as f32;
+        let mut x=dx;
 
-                shape[2*ellipse_points-c].position=[c_x+x,c_y-y];
+        for c in 1..ellipse_points{
+            let y=((r_x-x)*(r_x+x)).sqrt();
+            
+            shape[c].position=[c_x+x,c_y+y];
 
-                shape[2*ellipse_points+c].position=[c_x-x,c_y-y];
+            shape[2*ellipse_points-c].position=[c_x+x,c_y-y];
 
-                shape[4*ellipse_points-c].position=[c_x-x,c_y+y];
+            shape[2*ellipse_points+c].position=[c_x-x,c_y-y];
 
-                x+=dx;
-            }
+            shape[4*ellipse_points-c].position=[c_x-x,c_y+y];
 
-            shape[1].position=[c_x,c_y+r_y];
-            shape[ellipse_points].position=[c_x+r_x,c_y];
-            shape[2*ellipse_points].position=[c_x,c_y-r_y];
-            shape[3*ellipse_points].position=[c_x-r_x,c_y];
-            shape[4*ellipse_points].position=[c_x,c_y+r_y];
-
-            let slice=graphics.vertex_buffer.slice(0..4*ellipse_points+2).unwrap();
-            slice.write(&shape);
-
-            let mut indices=NoIndices(PrimitiveType::TriangleFan);
-
-            frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.colour},draw_parameters);
-
-            indices=NoIndices(PrimitiveType::LineLoop);
-
-            let slice=graphics.vertex_buffer.slice(1..4*ellipse_points+1).unwrap();
-            draw_parameters.line_width=Some(self.border_radius);
-            frame.draw(slice,indices,&graphics.program,&uniform!{colour:self.border_colour},draw_parameters);
+            x+=dx;
         }
+
+        shape[1].position=[c_x,c_y+r_y];
+        shape[ellipse_points].position=[c_x+r_x,c_y];
+        shape[2*ellipse_points].position=[c_x,c_y-r_y];
+        shape[3*ellipse_points].position=[c_x-r_x,c_y];
+        shape[4*ellipse_points].position=[c_x,c_y+r_y];
+
+        shape
+    }
+
+    fn indices(&self)->NoIndices{
+        NoIndices(PrimitiveType::TriangleFan)
     }
 }
+
+
+//     fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){
+//         unsafe{
+//             let k=window_center[0]/window_center[1];
+//             let r_x=self.radius/window_center[0];
+//             let r_y=self.radius/window_center[1];
+
+//             let c_x=self.x/window_center[0]-1f32;
+//             let c_y=1f32-self.y/window_center[1];
+
+//             let mut shape=[Point2D{position:[c_x,c_y]};4*ellipse_points+2];
+
+//             let dx=r_x/ellipse_points as f32;
+//             let mut x=dx;
+
+//             for c in 1..ellipse_points{
+//                 let y=((r_x-x)*(r_x+x)).sqrt()*k;
+                
+//                 shape[c].position=[c_x+x,c_y+y];
+
+//                 shape[2*ellipse_points-c].position=[c_x+x,c_y-y];
+
+//                 shape[2*ellipse_points+c].position=[c_x-x,c_y-y];
+
+//                 shape[4*ellipse_points-c].position=[c_x-x,c_y+y];
+
+//                 x+=dx;
+//             }
+
+//             shape[1].position=[c_x,c_y+r_y];
+//             shape[ellipse_points].position=[c_x+r_x,c_y];
+//             shape[2*ellipse_points].position=[c_x,c_y-r_y];
+//             shape[3*ellipse_points].position=[c_x-r_x,c_y];
+//             shape[4*ellipse_points].position=[c_x,c_y+r_y];
+
+//             let slice=graphics.vertex_buffer.slice(0..4*ellipse_points+2).unwrap();
+//             slice.write(&shape);
+
+//             let mut indices=NoIndices(PrimitiveType::TriangleFan);
+
+//             frame.draw(slice,indices,&graphics.draw,&uniform!{colour:self.colour},draw_parameters);
+
+//             indices=NoIndices(PrimitiveType::LineLoop);
+
+//             let slice=graphics.vertex_buffer.slice(1..4*ellipse_points+1).unwrap();
+//             draw_parameters.line_width=Some(self.border_radius);
+//             frame.draw(slice,indices,&graphics.draw,&uniform!{colour:self.border_colour},draw_parameters);
+//         }
+//     }
+// }

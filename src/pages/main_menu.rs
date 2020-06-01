@@ -16,7 +16,6 @@ use lib::{
     Wallpaper,
     Menu,
     MenuSettings,
-    Drawable,
 };
 
 use engine::{
@@ -34,6 +33,8 @@ use engine::{
 };
 
 const page_smooth:f32=default_page_smooth; // Сглаживание переходов - 1 к количеству кадров перехода
+
+const menu_movement_scale:f32=10f32; // Обратный коэфициент сдвига меню при движении мышью
 
 // Кнопки меню
 // Для упрощение определения нажатой кнопки,
@@ -63,6 +64,7 @@ impl MenuButtons{
 // Главное меню
 pub struct MainMenu<'a,'wallpaper>{
     pub menu:Menu<'a>,
+    pub menu_shift:[f32;2],
     pub wallpaper:&'wallpaper mut Wallpaper
 }
 
@@ -86,14 +88,16 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
 
         Self{
             menu:Menu::new(menu_settings,Main_font!()), // Создание меню
+            menu_shift:[0f32;2],
             wallpaper,
         }
     }
 
     pub fn start(mut self,window:&mut Window,music:&Music)->Game{
-        unsafe{
-            self.wallpaper.mouse_shift(mouse_cursor.raw_position());
-        }
+        self.mouse_shift(unsafe{
+            mouse_cursor.center_radius()
+        });
+
         window.set_smooth(page_smooth);
 
         'main:while self.smooth(window)!=Game::Exit{
@@ -103,19 +107,17 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
 
                 match event{
                     WindowEvent::Exit=>return Game::Exit, // Закрытие игры
-
-                    WindowEvent::Draw=>{ //Рендеринг
+                    //Рендеринг
+                    WindowEvent::Draw=>{ 
                         window.draw(|c,g|{
-                            self.wallpaper.draw(c,g);
                             self.draw(c,g);
                         });
                     }
-
-                    WindowEvent::MouseMovementDelta((dx,dy))=>unsafe{
-                        self.wallpaper.mouse_shift(mouse_cursor.raw_position());
-                        self.menu.mouse_shift(dx,dy)
+                    // Движение мышки
+                    WindowEvent::MouseMovementDelta(_)=>unsafe{
+                        self.mouse_shift(mouse_cursor.center_radius());
                     }
-
+                    // Кнопка мышки нажата
                     WindowEvent::MousePressed(button)=>{
                         match button{
                             MouseButton::Left=>{
@@ -124,7 +126,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                             _=>{}
                         }
                     }
-
+                    // Кнопка мышки отпущена
                     WindowEvent::MouseReleased(button)=>{
                         match button{
                             MouseButton::Left=>{
@@ -143,13 +145,10 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                                         }
 
                                         MenuButtons::Settings=>unsafe{
-                                            mouse_cursor.save_position(); // Сохранение текущей позиции мышки
                                             match SettingsPage::new().start(window,music){
                                                 Game::Exit=>return Game::Exit,
                                                 Game::Back=>{
-                                                    let (dx,dy)=mouse_cursor.saved_movement();
-                                                    self.menu.mouse_shift(dx,dy);
-                                                    self.wallpaper.mouse_shift(mouse_cursor.raw_position());
+                                                    self.mouse_shift(mouse_cursor.center_radius());
                                                     continue 'main
                                                 }
                                                 _=>{}
@@ -193,9 +192,8 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::MouseMovementDelta((dx,dy))=>unsafe{
-                    self.wallpaper.mouse_shift(mouse_cursor.raw_position());
-                    self.menu.mouse_shift(dx,dy)
+                WindowEvent::MouseMovementDelta(_)=>unsafe{
+                    self.mouse_shift(mouse_cursor.center_radius());
                 }
 
                 WindowEvent::Draw=>{
@@ -213,12 +211,17 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
     }
 
     pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.wallpaper.draw(draw_parameters,graphics);
-        self.menu.draw(draw_parameters,graphics);
+        self.wallpaper.draw_move(draw_parameters,graphics);
+        self.menu.draw_move(self.menu_shift,draw_parameters,graphics);
     }
 
     pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.wallpaper.draw_smooth(alpha,draw_parameters,graphics);
-        self.menu.draw_smooth(alpha,draw_parameters,graphics);
+        self.wallpaper.draw_move_smooth(alpha,draw_parameters,graphics);
+        self.menu.draw_move_smooth(alpha,self.menu_shift,draw_parameters,graphics);
+    }
+
+    pub fn mouse_shift(&mut self,[dx,dy]:[f32;2]){
+        self.menu_shift=[dx/menu_movement_scale,dy/menu_movement_scale];
+        self.wallpaper.mouse_shift([dx,dy]);
     }
 }

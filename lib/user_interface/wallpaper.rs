@@ -1,7 +1,4 @@
-use crate::{
-    colours::White,
-    traits::Drawable,
-};
+use crate::colours::White;
 
 use engine::{
     // statics
@@ -63,10 +60,10 @@ impl Wallpaper{
     }
 
     #[inline(always)]
-    pub fn mouse_shift(&mut self,raw_position:[f32;2]){
+    pub fn mouse_shift(&mut self,[dx,dy]:[f32;2]){
         self.movement=[
-            raw_position[0]/wallpaper_movement_scale,
-            raw_position[1]/wallpaper_movement_scale,
+            dx/wallpaper_movement_scale,
+            dy/wallpaper_movement_scale,
         ]
     }
 
@@ -76,17 +73,46 @@ impl Wallpaper{
         self.texture.update(image);
     }
 
+    #[inline(always)]
     pub fn update_image_path<P:AsRef<Path>>(&mut self,path:P,size:[f32;2]){
         self.texture.update(&load_wallpaper_image(path,size[0],size[1]));
     }
-}
 
-impl Drawable for Wallpaper{
-    fn set_alpha_channel(&mut self,alpha:f32){
-        self.filter[3]=alpha
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        graphics.draw_range_image(
+            self.range,
+            &self.texture,
+            self.filter,
+            draw_parameters
+        )
     }
 
-    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+    pub fn draw_move(
+        &mut self,
+        draw_parameters:&mut DrawParameters,
+        graphics:&mut Graphics
+    ){
+        graphics.draw_move_range_image(
+            self.range,
+            &self.texture,
+            self.filter,
+            self.movement,
+            draw_parameters
+        )
+    }
+
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        self.filter[3]=alpha;
+        self.draw(draw_parameters,graphics);
+    }
+
+    pub fn draw_move_smooth(
+        &mut self,
+        alpha:f32,
+        draw_parameters:&mut DrawParameters,
+        graphics:&mut Graphics
+    ){
+        self.filter[3]=alpha;
         graphics.draw_move_range_image(
             self.range,
             &self.texture,

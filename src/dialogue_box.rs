@@ -19,7 +19,7 @@ use engine::{
     // structs
     image::{ImageBase,Texture,image::RgbaImage},
     text::{TextBase,Glyphs},
-    graphics::{Graphics,Point2D,MonoColourPolygon},
+    graphics::{Graphics,Point2D,MonoColourPolygon,Line},
     glium::{Display,DrawParameters},
 };
 
@@ -27,18 +27,22 @@ const k:f32=4f32; // Отношение размера окна игры к ди
 
 const font_size:f32=24f32;
 
+const image_border_width:f32=4f32;
+const dibw:f32=image_border_width/2f32;
 
 pub struct DialogueBox<'b,'c>{
+    name_box:MonoColourPolygon,
+    name_base:TextBase,
+
+    lines:TextViewLined<'c>, // Текстовый блок для диалогов
+    image_border:Line,
+    image:ImageBase,
+    texture:Texture,
+
     dialogue:DialogueFormatted<'b>,
     whole_text:bool, // Флаг вывода всего текста
     chars:f32, // Количесво выводимых в данный момент символов диалога
     dialogue_step:usize,
-    y1:f32, // Граница нижней трети экрана, где находится диалоговое окно
-    name_box:MonoColourPolygon,
-    name_base:TextBase,
-    lines:TextViewLined<'c>, // Текстовый блок для диалогов
-    image:ImageBase,
-    texture:Texture,
     glyphs:&'c Glyphs
 }
 
@@ -56,11 +60,10 @@ impl<'b,'c> DialogueBox<'b,'c>{
             ];
 
             let polygon=[
-                Point2D::new(0f32,y1-60f32),
-                Point2D::new(400f32,y1-60f32),
-                Point2D::new(460f32,y1),
-                Point2D::new(0f32,y1),
-                Point2D::new(0f32,y1-60f32),
+                Point2D::new(0f32,y1-60f32-dibw),
+                Point2D::new(400f32,y1-60f32-dibw),
+                Point2D::new(0f32,y1-dibw),
+                Point2D::new(460f32,y1-dibw),
             ];
 
             let texture=Texture::from_image(display,texture).unwrap();
@@ -88,20 +91,20 @@ impl<'b,'c> DialogueBox<'b,'c>{
                     .text_colour([0.0, 0.0, 1.0, 1.0]);
 
             Self{
-                dialogue:DialogueFormatted::empty(),
-                whole_text:false,
-                chars:0f32,
-                dialogue_step:Settings.saved_dialogue,
-                y1:y1,
-                lines:TextViewLined::new(line_settings,&glyphs),
-
                 // Имя
                 name_box:MonoColourPolygon::new(&polygon,Black),
                 name_base:TextBase::new(White,font_size)
                         .position([name_position[0],name_position[1]]),
 
+                lines:TextViewLined::new(line_settings,&glyphs),
+                image_border:Line::new([0f32,y1,window_width,y1],image_border_width,Black),
                 image:ImageBase::new(White,rect),
                 texture:texture,
+
+                dialogue:DialogueFormatted::empty(),
+                whole_text:false,
+                chars:0f32,
+                dialogue_step:Settings.saved_dialogue,
                 glyphs:glyphs
             }
         }
@@ -153,10 +156,14 @@ impl<'b,'c> DialogueBox<'b,'c>{
     #[inline(always)]
     pub fn draw_without_text(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics){
         self.image.draw(&self.texture,draw_parameters,g);
+        self.image_border.draw(draw_parameters,g);
+        self.name_box.draw(draw_parameters,g);
     }
 
     pub fn set_alpha_channel(&mut self,alpha:f32){
         self.image.colour_filter[3]=alpha;
+        self.image_border.colour[3]=alpha;
+        self.name_box.colour[3]=alpha;
         self.lines.set_alpha_channel(alpha);
     }
 
@@ -164,6 +171,8 @@ impl<'b,'c> DialogueBox<'b,'c>{
         let name=self.dialogue.get_name(self.dialogue_step);
 
         self.image.draw(&self.texture,draw_parameters,g); // Основа
+
+        self.image_border.draw(draw_parameters,g);
 
         self.name_box.draw(draw_parameters,g);
         self.name_base.draw(name,draw_parameters,g,&self.glyphs); // Имя

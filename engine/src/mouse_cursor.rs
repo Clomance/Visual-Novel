@@ -12,23 +12,14 @@ use glium::{
 };
 
 pub struct MouseCursor{
-    raw_position:[f32;2],
     position:[f32;2],
-    saved_position:[f32;2],
 }
 
 impl MouseCursor{
     pub const fn new()->MouseCursor{
         Self{
-            raw_position:[0f32;2],
             position:[0f32;2],
-            saved_position:[0f32;2],
         }
-    }
-
-    #[inline(always)]
-    pub fn raw_position(&self)->[f32;2]{
-        self.raw_position
     }
 
     #[inline(always)]
@@ -44,25 +35,8 @@ impl MouseCursor{
         ]}
     }
 
-    #[inline(always)] // Сохранение текущей позиции
-    pub fn save_position(&mut self){
-        self.saved_position=self.position;
-    }
-
-    // Сдвиг с сохранённого места
-    pub fn saved_movement(&self)->(f32,f32){
-        (
-            self.position[0]-self.saved_position[0],
-            self.position[1]-self.saved_position[1]
-        )
-    }
-
     #[inline(always)]
     pub fn set_position(&mut self,position:[f32;2]){
-        self.raw_position=unsafe{[
-            position[0]/window_center[0]-1f32,
-            1f32-position[1]/window_center[1],
-        ]};
         self.position=position;
     }
 }

@@ -64,6 +64,11 @@ impl<'a> Button<'a>{
     pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
         self.base.released()
     }
+
+    pub fn draw_move(&mut self,shift:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        self.base.draw_move(shift,draw_parameters,graphics);
+        self.text.draw_move(shift,draw_parameters,graphics);
+    }
 }
 
 impl<'a> Drawable for Button<'a>{
@@ -162,6 +167,10 @@ impl ButtonBase{
     #[inline(always)]
     pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics){
         self.rect.draw(draw_parameters,g);
+    }
+
+    pub fn draw_move(&self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        self.rect.draw_move(movement,draw_parameters,graphics);
     }
 }
 

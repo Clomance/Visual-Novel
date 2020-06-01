@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use lib::{
     Drawable,
     colours::White,
