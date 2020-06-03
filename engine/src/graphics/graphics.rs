@@ -78,6 +78,11 @@ impl Graphics2D{
         self.texture.bind_range(range,&data)
     }
 
+    pub fn rewrite_range_image(&mut self,range:usize,image_base:ImageBase)->Option<()>{
+        let data=image_base.rotation_vertex_buffer();
+        self.texture.rewrite_range(range,&data)
+    }
+
     #[inline(always)]
     pub fn unbind_texture(&mut self,index:usize){
         self.texture.unbind(index)
@@ -190,7 +195,17 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         self.graphics.texture.draw_image(image_base,texture,draw_parameters,self.frame);
     }
 
-    #[inline(always)] // Рисует изображение на сохранённой основе
+    #[inline(always)] // Рисует изображение на основе image_base c поворотом в 'angle' градусов
+    pub fn draw_rotate_image(&mut self,image_base:&ImageBase,texture:&Texture,angle:f32,draw_parameters:&mut DrawParameters){
+        self.graphics.texture.draw_rotate_image(image_base,texture,angle,self.frame,draw_parameters);
+    }
+}
+
+// Функции для работы с областями
+impl<'graphics,'frame> Graphics<'graphics,'frame>{
+    // Рисует изображение на основе
+    // данных из области
+    #[inline(always)]
     pub fn draw_range_image(
         &mut self,
         index:usize,
@@ -207,11 +222,8 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         )
     }
 
-    #[inline(always)] // Рисует изображение на основе image_base c поворотом в 'angle' градусов
-    pub fn draw_rotate_image(&mut self,image_base:&ImageBase,texture:&Texture,angle:f32,draw_parameters:&mut DrawParameters){
-        self.graphics.texture.draw_rotate_image(image_base,texture,angle,self.frame,draw_parameters);
-    }
-
+    // Рисует и сдвигает изображение на основе
+    // данных из области
     #[inline(always)]
     pub fn draw_move_range_image(
         &mut self,
@@ -231,6 +243,8 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         );
     }
 
+    // Рисует изображение с поворотом в 'angle' градусов на основе
+    // данных из области
     #[inline(always)]
     pub fn draw_rotate_range_image(
         &mut self,
@@ -250,4 +264,3 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         );
     }
 }
-

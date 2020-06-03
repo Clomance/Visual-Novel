@@ -141,8 +141,9 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::MouseMovementDelta((dx,dy))=>self.main_menu.mouse_shift([dx,dy]),
-
+                WindowEvent::MouseMovementDelta(_)=>unsafe{
+                        self.main_menu.mouse_shift(mouse_cursor.center_radius())
+                }
                 // Рендеринг
                 WindowEvent::Draw=>{
                     if 1f32<window.draw_smooth(|alpha,c,g|{

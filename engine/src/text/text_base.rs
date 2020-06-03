@@ -54,6 +54,11 @@ impl TextBase{
     }
 
     #[inline(always)]
+    pub fn shift_y(&mut self,dy:f32){
+        self.position[1]+=dy
+    }
+
+    #[inline(always)]
     pub fn shift(&mut self,dx:f32,dy:f32){
         self.position[0]+=dx;
         self.position[1]+=dy;

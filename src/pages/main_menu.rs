@@ -145,7 +145,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                                         }
 
                                         MenuButtons::Settings=>unsafe{
-                                            match SettingsPage::new().start(window,music){
+                                            match SettingsPage::new(window).start(window,music){
                                                 Game::Exit=>return Game::Exit,
                                                 Game::Back=>{
                                                     self.mouse_shift(mouse_cursor.center_radius());

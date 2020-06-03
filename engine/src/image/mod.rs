@@ -18,6 +18,7 @@ use glium::draw_parameters::DrawParameters;
 // Прямоугольник с координатами: (x1,y1), (x1,y2), (x2,y1), (x2,y2)
 // Цветовой фильтр - [red, green, blue, alpha]
 // Цвет = цвет * фильтр
+#[derive(Clone)]
 pub struct ImageBase{
     pub x1:f32,
     pub y1:f32,

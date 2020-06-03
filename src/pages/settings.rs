@@ -16,6 +16,9 @@ use lib::{
     TextViewStaticLine,
     Button,
     ButtonSettings,
+    List,
+    ListSettings,
+    ListFocus
 };
 
 use engine::{
@@ -35,19 +38,23 @@ use engine::{
     graphics::Rectangle,
 };
 
+
 const page_smooth:f32=default_page_smooth;
 
 const background_color:Colour=Settings_page_colour;
 
 pub struct SettingsPage<'a>{
     head:TextViewStaticLine<'a>,
+    monitor_head:TextViewStaticLine<'a>,
+    monitor_label:TextViewStaticLine<'a>,
+    monitor_list:List<'a>,
     signs_per_sec:Slider<'a>,
     volume:Slider<'a>,
     back_button:Button<'a>,
 }
 
 impl<'a> SettingsPage<'a>{
-    pub unsafe fn new()->SettingsPage<'a>{
+    pub unsafe fn new(window:&Window)->SettingsPage<'a>{
         let head_settings=TextViewSettings::new("Настройки",[
                     0f32,
                     0f32,
@@ -57,6 +64,48 @@ impl<'a> SettingsPage<'a>{
                 .font_size(40f32)
                 .text_colour(White);
 
+        let mut monitors:Vec<String>=Vec::new();
+        let available_monitors=window.available_monitors();
+
+        for monitor in available_monitors{
+            monitors.push(if let Some(m)=monitor.name(){
+                    m
+                }
+                else{
+                    "Недоступен".to_string()
+                }
+            )
+        }
+
+        let monitor_list_head_settings=TextViewSettings::new("Выбор монитора",
+                [
+                    140f32,
+                    140f32,
+                    260f32,
+                    40f32,
+                ])
+                .text_colour(White);
+
+        let monitor_list_label_settings=TextViewSettings::new("Требуется перезапуск",
+                [
+                    140f32,
+                    180f32,
+                    260f32,
+                    20f32,
+                ])
+                .font_size(15f32)
+                .text_colour(White);
+
+        let monitor_list_settings=ListSettings::new(
+                [
+                    140f32,
+                    200f32,
+                    260f32,
+                    50f32,
+                ],
+                &monitors
+            )
+            .chosen_item(Settings.monitor);
 
         let signs_per_sec_slider_sets=SliderSettings::new()
                 .head("Количество символов в секунду")
@@ -89,6 +138,9 @@ impl<'a> SettingsPage<'a>{
 
         Self{
             head:TextViewStaticLine::new(head_settings,Main_font!()),
+            monitor_head:TextViewStaticLine::new(monitor_list_head_settings,Main_font!()),
+            monitor_label:TextViewStaticLine::new(monitor_list_label_settings,Main_font!()),
+            monitor_list:List::new(monitor_list_settings,Main_font!()),
             signs_per_sec:Slider::new(signs_per_sec_slider_sets,Main_font!()),
             volume:volume,
             back_button:Button::new(button_settings,Main_font!()),
@@ -118,6 +170,10 @@ impl<'a> SettingsPage<'a>{
 
                         self.head.draw(c,g);
 
+                        self.monitor_head.draw(c,g);
+                        self.monitor_label.draw(c,g);
+                        self.monitor_list.draw(c,g);
+
                         self.signs_per_sec.draw(c,g);
                         self.volume.draw(c,g);
 
@@ -128,6 +184,7 @@ impl<'a> SettingsPage<'a>{
                 WindowEvent::MousePressed(button)=>{
                     match button{
                         MouseButton::Left=>{
+                            self.monitor_list.pressed();
                             self.back_button.pressed();
                             self.signs_per_sec.pressed();
                             self.volume.pressed();
@@ -139,6 +196,14 @@ impl<'a> SettingsPage<'a>{
                 WindowEvent::MouseReleased(button)=>{
                     match button{
                         MouseButton::Left=>{
+                            if let ListFocus::Item(m)=self.monitor_list.released(){
+                                if Settings.monitor!=m{
+                                    //window.choose_fullscreen_monitor(m);
+                                    Settings.monitor=m;
+                                }
+                                
+                            }
+
                             Settings.signs_per_frame=self.signs_per_sec.released()/60f32;
 
                             Settings.volume=(self.volume.released()/100f32*128f32) as u8;
@@ -159,6 +224,10 @@ impl<'a> SettingsPage<'a>{
                             g.clear_colour(background_color);
 
                             self.head.draw(p,g);
+
+                            self.monitor_head.draw(p,g);
+                            self.monitor_label.draw(p,g);
+                            self.monitor_list.draw(p,g);
 
                             self.signs_per_sec.draw(p,g);
                             self.volume.draw(p,g);
@@ -199,10 +268,15 @@ impl<'a> SettingsPage<'a>{
                         background.colour[3]=alpha;
                         background.draw(c,g);
                         self.head.draw_smooth(alpha,c,g);
+
+                        self.monitor_head.draw_smooth(alpha,c,g);
+                        self.monitor_label.draw_smooth(alpha,c,g);
+                        self.monitor_list.draw_smooth(alpha,c,g);
+
                         self.signs_per_sec.draw_smooth(alpha,c,g);
                         self.volume.draw_smooth(alpha,c,g);
-                        self.back_button.set_alpha_channel(alpha);
-                        self.back_button.draw(c,g);
+
+                        self.back_button.draw_smooth(alpha,c,g);
                     }){
                         break
                     }

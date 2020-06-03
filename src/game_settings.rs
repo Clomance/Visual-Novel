@@ -12,10 +12,12 @@ pub struct GameSettings{
     pub signs_per_frame:f32, // Знаков на кадр
     pub volume:u8, // Громкость игры, 0 - 128
     pub screenshot:u32, // номер следующего скришота
+
+    pub monitor:usize, // Номер монитора в списке мониторов
 }
 
 impl GameSettings{
-    //
+    ///
     pub const fn new()->GameSettings{
         Self{
             continue_game:false,
@@ -26,9 +28,12 @@ impl GameSettings{
             signs_per_frame:0.25f32,
             volume:64u8,
             screenshot:0u32,
+
+            monitor:0usize,
         }
     }
-    // Загрузка настроек
+
+    /// Загрузка настроек
     pub fn load(&mut self){
         // Общие настройки пользоавателя
         let mut settings_file=OpenOptions::new().read(true).open("settings/game_settings").unwrap();
@@ -62,13 +67,20 @@ impl GameSettings{
         // Количество сделанных скриншотов (номер следующего)
         settings_file.read_exact(&mut buffer).unwrap();
         self.screenshot=u32::from_be_bytes(buffer);
+
+        // Выбранный монитор
+        let mut buffer=[0u8;8];
+        settings_file.read_exact(&mut buffer).unwrap();
+        self.monitor=usize::from_be_bytes(buffer);
     }
-    // Установка позиций для сохранения
+
+    /// Установка позиций для сохранения
     pub fn set_saved_position(&mut self,page:usize,dialogue:usize){
         self.saved_page=page;
         self.saved_dialogue=dialogue;
     }
-    // Сохрание настроек
+
+    /// Сохрание настроек
     pub fn save(&mut self){
         let mut settings_file=OpenOptions::new().write(true).truncate(true).open("settings/game_settings").unwrap();
         if self.continue_game{
@@ -95,6 +107,10 @@ impl GameSettings{
         settings_file.write_all(&[self.volume]).unwrap();
         // Количество сделанных скриншотов (номер следующего)
         buffer=self.screenshot.to_be_bytes();
+        settings_file.write_all(&buffer).unwrap();
+
+        // Выбранный монитор
+        let buffer=self.monitor.to_be_bytes();
         settings_file.write_all(&buffer).unwrap();
     }
 }

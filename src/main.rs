@@ -112,42 +112,52 @@ fn main(){
         glyph_cache.push(glyphs);
 
         Settings.load(); // Загрузка настроек
+    }
 
-        // Настройка и создание окна и загрузка функций OpenGL
-        let mut window:Window=match Window::new(|mut monitors,window_builder,context_builder,graphics_sets|{
-            let monitor=monitors.remove(0);
-            let size=monitor.size();
-
-            let fullscreen=engine::glium::glutin::window::Fullscreen::Borderless(monitor);
-
-            let icon=load_window_icon();
-
-            window_builder.window.inner_size=Some(Size::Physical(size));
-            window_builder.window.title=game_name.to_string();
-            window_builder.window.fullscreen=Some(fullscreen);
-            window_builder.window.resizable=false;
-            window_builder.window.decorations=false;
-            window_builder.window.always_on_top=true;
-            window_builder.window.window_icon=Some(icon);
-
-            context_builder.gl_attr.vsync=true;
-            context_builder.gl_attr.debug=false;
-
-            context_builder.pf_reqs.srgb=true;
-            context_builder.pf_reqs.hardware_accelerated=None;
-
-            graphics_sets.texture_vertex_buffer_size=8usize;
-            graphics_sets.simple_vertex_buffer_size=100usize;
-            graphics_sets.text_vertex_buffer_size=2000usize;
-        }){
-            Ok(window)=>window,
-            Err(e)=>{
-                #[cfg(debug_assertions)]
-                println!("{:?}",e);
-                return
-            }
+    // Настройка и создание окна и загрузка функций OpenGL
+    let mut window:Window=match Window::new(|mut monitors,window_builder,context_builder,graphics_sets|{
+        let monitor=unsafe{Settings.monitor};
+        let monitor=if monitor<monitors.len(){
+            monitors.remove(monitor)
+        }
+        else{
+            unsafe{Settings.monitor=0}
+            monitors.remove(0)
         };
 
+        let size=monitor.size();
+
+        let fullscreen=engine::glium::glutin::window::Fullscreen::Borderless(monitor);
+
+        let icon=load_window_icon();
+
+        window_builder.window.inner_size=Some(Size::Physical(size));
+        window_builder.window.title=game_name.to_string();
+        window_builder.window.fullscreen=Some(fullscreen);
+        window_builder.window.resizable=false;
+        window_builder.window.decorations=false;
+        window_builder.window.always_on_top=true;
+        window_builder.window.window_icon=Some(icon);
+
+        context_builder.gl_attr.vsync=true;
+        context_builder.gl_attr.debug=false;
+
+        context_builder.pf_reqs.srgb=true;
+        context_builder.pf_reqs.hardware_accelerated=None;
+
+        graphics_sets.texture_vertex_buffer_size=12usize;
+        graphics_sets.simple_vertex_buffer_size=100usize;
+        graphics_sets.text_vertex_buffer_size=2000usize;
+    }){
+        Ok(window)=>window,
+        Err(e)=>{
+            #[cfg(debug_assertions)]
+            println!("{:?}",e);
+            return
+        }
+    };
+
+    unsafe{
         let wallpaper_size={
             let dx=window_width/(wallpaper_movement_scale*2f32);
             let dy=window_height/(wallpaper_movement_scale*2f32);
@@ -286,11 +296,11 @@ fn main(){
 
                             WindowEvent::KeyboardReleased(button)=>{
                                 if button==KeyboardButton::F5{
-                                    make_screenshot(&mut window,|d,g|{
+                                    make_screenshot(&mut window,|p,g|{
                                         g.clear_colour(White);
-                                        wallpaper.draw(d,g);
-                                        characters_view.draw(d,g);
-                                        dialogue_box.draw(d,g);
+                                        wallpaper.draw(p,g);
+                                        characters_view.draw(p,g);
+                                        dialogue_box.draw(p,g);
                                     })
                                 }
                             }
@@ -431,8 +441,8 @@ fn main(){
                     WindowEvent::Exit=>break 'game, // Закрытие игры
 
                     WindowEvent::Draw=>{ // Рендеринг
-                        if 1f32<window.draw_smooth(|alpha,d,g|{
-                            wallpaper.draw_smooth(alpha,d,g)
+                        if 1f32<window.draw_smooth(|alpha,p,g|{
+                            wallpaper.draw_smooth(alpha,p,g);
                         }){
                             break 'smooth_ending
                         }

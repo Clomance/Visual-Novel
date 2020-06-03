@@ -1,9 +1,12 @@
+#![allow(dead_code)]
+
 use super::{
-    // statics
     window_center,
-    // structs
-    graphics::{Graphics},
-    image::{ImageBase,Texture},
+    graphics::Graphics,
+    image::{
+        ImageBase,
+        Texture,
+    },
 };
 
 use glium::{
@@ -41,10 +44,6 @@ impl MouseCursor{
     }
 }
 
-
-// Иконка курсора мыши
-// Сделана для прямого вывода на кадр
-// Требуется доработка
 
 const radius:f32=30f32;
 const d_radius:f32=5f32;

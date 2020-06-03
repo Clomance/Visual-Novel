@@ -238,6 +238,14 @@ impl RectangleWithBorder{
         }
     }
 
+    // rect - [x1,y1,x2,y2]
+    pub const fn raw(rect:[f32;4],colour:Colour,width:f32,border_colour:Colour)->RectangleWithBorder{
+        Self{
+            rect:Rectangle::raw(rect,colour),
+            border_width:width,
+            border_colour,
+        }
+    }
     pub const fn border(mut self,width:f32,colour:Colour)->RectangleWithBorder{
         self.border_width=width;
         self.border_colour=colour;
@@ -271,6 +279,27 @@ impl Line{
             radius,
             colour,
         }
+    }
+    
+    pub fn position(&self)->[f32;4]{
+        [
+            self.x1,
+            self.y1,
+            self.x2,
+            self.y2,
+        ]
+    }
+
+    pub fn set_position(&mut self,[x1,y1,x2,y2]:[f32;4]){
+        self.x1=x1;
+        self.y1=y1;
+        self.x2=x2;
+        self.y2=y2;
+    }
+
+    pub fn shift_y(&mut self,dy:f32){
+        self.y1+=dy;
+        self.y2+=dy;
     }
 
     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
@@ -377,86 +406,86 @@ impl<'a> SimpleObject<'a> for Circle{
 // Круг с центром в точке (x, y)
 // и радиусов 'radius',
 // который заполняется цветом 'colour'
-pub struct CircleWithBorder{
-    pub x:f32,
-    pub y:f32,
-    pub radius:f32,
-    pub colour:Colour,
-    pub border_radius:f32,
-    pub border_colour:Colour,
-}
+// pub struct CircleWithBorder{
+//     pub x:f32,
+//     pub y:f32,
+//     pub radius:f32,
+//     pub colour:Colour,
+//     pub border_radius:f32,
+//     pub border_colour:Colour,
+// }
 
-impl CircleWithBorder{
-    // rect - [x,y,radius]
-    pub const fn new(rect:[f32;3],colour:Colour)->CircleWithBorder{
-        Self{
-            x:rect[0],
-            y:rect[1],
-            radius:rect[2],
-            colour,
-            border_colour:colour,
-            border_radius:1f32,
-        }
-    }
+// impl CircleWithBorder{
+//     // rect - [x,y,radius]
+//     pub const fn new(rect:[f32;3],colour:Colour)->CircleWithBorder{
+//         Self{
+//             x:rect[0],
+//             y:rect[1],
+//             radius:rect[2],
+//             colour,
+//             border_colour:colour,
+//             border_radius:1f32,
+//         }
+//     }
 
-    pub fn border(mut self,radius:f32,colour:Colour)->CircleWithBorder{
-        self.border_colour=colour;
-        self.border_radius=radius;
-        self
-    }
+//     pub fn border(mut self,radius:f32,colour:Colour)->CircleWithBorder{
+//         self.border_colour=colour;
+//         self.border_radius=radius;
+//         self
+//     }
 
-    #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        graphics.draw_simple(self,draw_parameters)
-    }
-}
+//     #[inline(always)]
+//     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+//         graphics.draw_simple(self,draw_parameters)
+//     }
+// }
 
-// // // // // // // // // // // // // // // // // // // // // // // // //
-impl<'a> SimpleObject<'a> for CircleWithBorder{
-    type Indices=NoIndices;
-    fn colour(&self)->Colour{
-        self.colour
-    }
+// // // // // // // // // // // // // // // // // // // // // // // // // //
+// impl<'a> SimpleObject<'a> for CircleWithBorder{
+//     type Indices=NoIndices;
+//     fn colour(&self)->Colour{
+//         self.colour
+//     }
 
-    fn point_buffer(&self)->Vec<Point2D>{
-        let r_x=self.radius;
-        let r_y=self.radius;
+//     fn point_buffer(&self)->Vec<Point2D>{
+//         let r_x=self.radius;
+//         let r_y=self.radius;
 
-        let c_x=self.x;
-        let c_y=self.y;
+//         let c_x=self.x;
+//         let c_y=self.y;
 
-        let mut shape=vec![Point2D{position:[c_x,c_y]};4*ellipse_points+2];
+//         let mut shape=vec![Point2D{position:[c_x,c_y]};4*ellipse_points+2];
 
-        let dx=r_x/ellipse_points as f32;
-        let mut x=dx;
+//         let dx=r_x/ellipse_points as f32;
+//         let mut x=dx;
 
-        for c in 1..ellipse_points{
-            let y=((r_x-x)*(r_x+x)).sqrt();
+//         for c in 1..ellipse_points{
+//             let y=((r_x-x)*(r_x+x)).sqrt();
             
-            shape[c].position=[c_x+x,c_y+y];
+//             shape[c].position=[c_x+x,c_y+y];
 
-            shape[2*ellipse_points-c].position=[c_x+x,c_y-y];
+//             shape[2*ellipse_points-c].position=[c_x+x,c_y-y];
 
-            shape[2*ellipse_points+c].position=[c_x-x,c_y-y];
+//             shape[2*ellipse_points+c].position=[c_x-x,c_y-y];
 
-            shape[4*ellipse_points-c].position=[c_x-x,c_y+y];
+//             shape[4*ellipse_points-c].position=[c_x-x,c_y+y];
 
-            x+=dx;
-        }
+//             x+=dx;
+//         }
 
-        shape[1].position=[c_x,c_y+r_y];
-        shape[ellipse_points].position=[c_x+r_x,c_y];
-        shape[2*ellipse_points].position=[c_x,c_y-r_y];
-        shape[3*ellipse_points].position=[c_x-r_x,c_y];
-        shape[4*ellipse_points].position=[c_x,c_y+r_y];
+//         shape[1].position=[c_x,c_y+r_y];
+//         shape[ellipse_points].position=[c_x+r_x,c_y];
+//         shape[2*ellipse_points].position=[c_x,c_y-r_y];
+//         shape[3*ellipse_points].position=[c_x-r_x,c_y];
+//         shape[4*ellipse_points].position=[c_x,c_y+r_y];
 
-        shape
-    }
+//         shape
+//     }
 
-    fn indices(&self)->NoIndices{
-        NoIndices(PrimitiveType::TriangleFan)
-    }
-}
+//     fn indices(&self)->NoIndices{
+//         NoIndices(PrimitiveType::TriangleFan)
+//     }
+// }
 
 
 //     fn draw_simple(&self,draw_parameters:&mut DrawParameters,frame:&mut Frame,graphics:&SimpleGraphics){

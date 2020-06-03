@@ -90,7 +90,7 @@ impl TextureGraphics{
         &self,
         image_base:&ImageBase,
         texture:&Texture,
-        draw_parameters:&mut DrawParameters,
+        draw_parameters:&DrawParameters,
         frame:&mut Frame,
     )->Result<(),DrawError>{
         let indices=NoIndices(PrimitiveType::TriangleStrip);
@@ -118,7 +118,7 @@ impl TextureGraphics{
         texture:&Texture,
         angle:f32,
         frame:&mut Frame,
-        draw_parameters:&mut DrawParameters
+        draw_parameters:&DrawParameters
     )->Result<(),DrawError>{
         let indices=NoIndices(PrimitiveType::TriangleStrip);
 
@@ -157,6 +157,13 @@ impl TextureGraphics{
         Some(i)
     }
 
+    pub fn rewrite_range(&mut self,range:usize,data:&[TexturedVertex])->Option<()>{
+        let range=self.vertex_buffer_ranges.get(range)?;
+        let slice=self.vertex_buffer.slice(range.clone())?;
+        slice.write(&data);
+        Some(())
+    }
+
     // Удаляет выбранную область
     pub fn unbind(&mut self,index:usize){
         self.vertex_buffer_ranges.remove(index);
@@ -169,7 +176,7 @@ impl TextureGraphics{
         texture:&Texture,
         colour_filter:Colour,
         indices:I,
-        draw_parameters:&mut DrawParameters,
+        draw_parameters:&DrawParameters,
         frame:&mut Frame
     )->Result<(),DrawError>{
         let range=self.vertex_buffer_ranges[index].clone();
@@ -198,7 +205,7 @@ impl TextureGraphics{
         colour_filter:Colour,
         [dx,dy]:[f32;2],
         indices:I,
-        draw_parameters:&mut DrawParameters,
+        draw_parameters:&DrawParameters,
         frame:&mut Frame
     )->Result<(),DrawError>{
         let range=self.vertex_buffer_ranges[index].clone();
@@ -233,7 +240,7 @@ impl TextureGraphics{
         colour_filter:Colour,
         angle:f32,
         indices:I,
-        draw_parameters:&mut DrawParameters,
+        draw_parameters:&DrawParameters,
         frame:&mut Frame
     )->Result<(),DrawError>{
         let range=self.vertex_buffer_ranges[index].clone();

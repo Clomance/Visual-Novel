@@ -53,6 +53,8 @@ fn main(){
         game_settings.write_all(&[64u8]).unwrap();
         // Количество сделанных скриншотов (номер следующего)
         game_settings.write_all(&[0u8;4]).unwrap();
+        // Выбранный монитор
+        game_settings.write_all(&[0u8;8]).unwrap();
     }
 
 

@@ -84,7 +84,7 @@ impl<'a> Drawable for Button<'a>{
 }
 
 // Основа для кнопок
-struct ButtonBase{
+pub struct ButtonBase{
     rect:Rectangle,
     pressed:bool,
 }
@@ -110,25 +110,23 @@ impl ButtonBase{
         self.rect.colour[3]=alpha;
     }
 
-    // Изменение цвета при нажатии
+    /// Изменение цвета при нажатии
     pub fn press_colour(&mut self){
         self.rect.colour[0]-=dcolour;
         self.rect.colour[1]-=dcolour;
         self.rect.colour[2]-=dcolour;
     }
 
-    // Изменение цвета при освобождении
+    /// Изменение цвета при освобождении
     pub fn release_colour(&mut self){
         self.rect.colour[0]+=dcolour;
         self.rect.colour[1]+=dcolour;
         self.rect.colour[2]+=dcolour;
     }
 
-    // Проверка нажатия на кнопку и локальные действия
+    /// Проверка нажатия на кнопку и локальные действия
     pub fn pressed(&mut self)->bool{
-        let position=unsafe{mouse_cursor.position()};
-        let x=position[0];
-        let y=position[1];
+        let [x,y]=unsafe{mouse_cursor.position()};
 
         if self.rect.x1<x && self.rect.x2>x && self.rect.y1<y && self.rect.y2>y{
             self.pressed=true;
@@ -140,9 +138,9 @@ impl ButtonBase{
         }
     }
 
-    // Проверка находится ли курсор на кнопке при освобождении кнопки мыши
-    // и локальные действия
-    // Функции лучше подходит название "clicked"
+    /// Проверка находится ли курсор на кнопке при освобождении кнопки мыши
+    /// и локальные действия.
+    /// Функции лучше подходит название "clicked"
     pub fn released(&mut self)->bool{
         if self.pressed{
             self.release_colour();
@@ -174,7 +172,9 @@ impl ButtonBase{
     }
 }
 
-// Настройки для построения кнопок
+/// Настройки для построения кнопок
+/// 
+/// Settings for building buttons
 pub struct ButtonSettings<S:Into<String>>{
     rect:[f32;4],
     background_colour:Colour,

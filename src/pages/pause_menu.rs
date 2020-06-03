@@ -86,7 +86,7 @@ impl<'a> PauseMenu<'a>{
                                         0=>return Game::ContinueGamePlay, // Кнопка продолжить
                                         1=>return Game::MainMenu, // Кнопка главного меню
                                         2=>{ // Кнопка настроек
-                                            match SettingsPage::new().start(window,music){
+                                            match SettingsPage::new(window).start(window,music){
                                                 Game::Exit=>return Game::Exit,
                                                 Game::Back=>continue 'page,
                                                 _=>{}

@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use super::{
     graphics::{Graphics2D,Graphics,GraphicsSettings},
     mouse_cursor::{MouseCursor,MouseCursorIcon},
@@ -33,7 +34,7 @@ use glium::glutin::{
         ModifiersState,
     },
     event_loop::{ControlFlow,EventLoop},
-    window::WindowBuilder,
+    window::{WindowBuilder,Fullscreen},
     ContextBuilder,
     platform::desktop::EventLoopExtDesktop,
     NotCurrent,
@@ -46,23 +47,7 @@ use image::{
     DynamicImage
 };
 
-// Окно с вписанными в него графическими функциями,
-// а также обработчиками событий
-/*
-    EventLoop - минимум четыре шага для моей схемы с мгновенным закрытием цикла обработки событий:
-    1) NewEvent
-    2) MainEventsCleared
-    (RedrawRequested всегда идет после MainEventsCleared)
-    3) RedrawEventsCleared
-    4) LoopDestroyed
 
-
-    Все события обрабатываются и добавляются в очередь внешней обработки (Window.events)
-        для работы с ними вне структуры окна
-
-    При потере фокуса игра сворачивается, передача событий внешнему управлению прекращается
-    При получении фокуса игра возвращается в исходное состояние
-*/
 
 pub static mut mouse_cursor:MouseCursor=MouseCursor::new(); // Положение курсора мыши
 
@@ -70,30 +55,57 @@ pub static mut window_width:f32=0f32;
 pub static mut window_height:f32=0f32;
 pub static mut window_center:[f32;2]=[0f32;2]; // Центр окна
 
+/// Окно с вписанными в него графическими функциями,
+/// а также обработчиками событий.
+/// 
+/*
+    EventLoop - минимум четыре шага для моей схемы с мгновенным закрытием цикла обработки событий:
+    1) NewEvent
+    2) MainEventsCleared
+    (RedrawRequested всегда идет после MainEventsCleared)
+    3) RedrawEventsCleared
+    4) LoopDestroyed
+*/
+
+/// Все события обрабатываются и добавляются в очередь внешней обработки (Window.events)
+/// для работы с ними вне структуры окна.
+/// 
+/// При потере фокуса окно сворачивается,
+/// передача событий внешнему управлению прекращается (передаётся только событие о получении фокуса).
+/// При получении фокуса окно возвращается в исходное состояние.
+
 pub struct Window{
-    event_loop:EventLoop<()>,
     display:Display,
     graphics:Graphics2D,
-    mouse_icon:MouseCursorIcon,
+
+    event_loop:EventLoop<()>,
     events:VecDeque<WindowEvent>,
     events_handler:fn(&mut Self),
 
     alpha_channel:f32,  // Для плавных
     smooth:f32,         // переходов
 
+    #[cfg(feature="mouse_cursor_icon")]
+    mouse_icon:MouseCursorIcon,
+
     // Поля для отладки
     #[cfg(debug_assertions)]
     focusable_option:bool, // Включение/отключение возможности сворачивания во время отладки
 }
 
-#[derive(Clone)] // Внешние события окна
+/// Внешние события окна
+#[derive(Clone)]
 pub enum WindowEvent{
     None,
     Draw,
 
-    // Получение/потеря фокуса, true/false
-    Hide(bool), // При потере фокуса игра сворачивается
-    Resize((u32,u32)), // Изменение размера окна
+    /// Получение/потеря фокуса, true/false
+    /// 
+    /// При потере фокуса игра сворачивается
+    Hide(bool),
+
+    /// Изменение размера окна
+    Resize((u32,u32)),
 
     MouseMovementDelta((f32,f32)), // Сдвиг мышки (сдвиг за пределы экрана игнорируется)
     MousePressed(MouseButton),
@@ -108,7 +120,7 @@ pub enum WindowEvent{
     Exit,
 }
 
-// Кнопки мыши, без дополнительных кнопок
+/// Кнопки мыши, без дополнительных кнопок
 #[derive(Clone)]
 pub enum MouseButton{
     Left,
@@ -119,7 +131,9 @@ pub enum MouseButton{
 use WindowEvent::*;
 
 impl Window{
-    #[inline(always)] // Создание окна с функцией настройки
+    /// Создание окна с функцией настройки
+    ///
+    /// Create new window with setting function
     pub fn new<F>(setting:F)->Result<Window,DisplayCreationError>
         where
             F:FnOnce(Vec<MonitorHandle>,&mut WindowBuilder,&mut ContextBuilder<NotCurrent>,&mut GraphicsSettings){
@@ -130,7 +144,7 @@ impl Window{
         let mut window_builder=WindowBuilder::new();
         let mut context_builder=ContextBuilder::new();
 
-        // настройка
+        // Настройка
         setting(monitors,&mut window_builder,&mut context_builder,&mut graphics_settings);
 
         // Создание окна и привязывание графической библиотеки
@@ -160,15 +174,20 @@ impl Window{
 
         // Отлючение курсора системы
         // Заменил его своим
+        #[cfg(feature="mouse_cursor_icon")]
         display.gl_window().window().set_cursor_visible(false);
 
         Ok(Self{
-            event_loop,
-            graphics:Graphics2D::new(&display,graphics_settings,glsl),
+            #[cfg(feature="mouse_cursor_icon")]
             mouse_icon:MouseCursorIcon::new(&display),
+
+            graphics:Graphics2D::new(&display,graphics_settings,glsl),
             display:display,
+
+            event_loop,
             events:VecDeque::with_capacity(32),
             events_handler:Window::event_listener,
+
             alpha_channel:0f32,
             smooth:0f32,
 
@@ -187,7 +206,14 @@ impl Window{
         &mut self.graphics
     }
 
-    // Получение событий
+    #[inline(always)]
+    pub fn available_monitors(&self)->impl std::iter::Iterator<Item=MonitorHandle>{
+        self.event_loop.available_monitors()
+    }
+
+    /// Следующее событие окна
+    ///
+    /// Next window event
     pub fn next_event(&mut self)->Option<WindowEvent>{
         if self.events.is_empty(){
             (self.events_handler)(self); // Вызов функции обработки событий
@@ -195,11 +221,24 @@ impl Window{
         self.events.pop_front()
     }
 
-    #[inline(always)]
-    pub fn request_redraw(&self){
-        self.display.gl_window().window().request_redraw();
+    pub fn choose_fullscreen_monitor(&self,monitor:usize)->Result<(),()>{
+        if let Some(m)=self.available_monitors().nth(monitor){
+            self.display.gl_window().window().set_fullscreen(Some(Fullscreen::Borderless(m)));
+            Ok(())
+        }
+        else{
+            Err(())
+        }
+        
     }
 
+    pub fn set_fullscreen(&self,fullscreen:Fullscreen){
+        self.display.gl_window().window().set_fullscreen(Some(fullscreen))
+    }
+
+    /// Спрятать окно
+    ///
+    /// Hide the window
     #[inline(always)]
     pub fn set_hide(&self,hide:bool){
         self.display.gl_window().window().set_minimized(hide);
@@ -207,9 +246,13 @@ impl Window{
 
     #[inline(always)]
     pub fn set_cursor_visible(&mut self,visible:bool){
+        #[cfg(feature="mouse_cursor_icon")]
         self.mouse_icon.set_visible(visible);
+        #[cfg(not(feature="mouse_cursor_icon"))]
+        self.display.gl_window().window().set_cursor_visible(visible);
     }
 
+    #[cfg(feature="mouse_cursor_icon")]
     #[inline(always)]
     pub fn switch_cursor_visibility(&mut self){
         self.mouse_icon.switch_visibility()
@@ -218,9 +261,11 @@ impl Window{
 
 // Связанное с версиями OpenGL
 impl Window{
+    #[inline(always)]
     pub fn get_supported_glsl_version(&self)->Version{
         self.display.get_supported_glsl_version()
     }
+    #[inline(always)]
     pub fn get_opengl_version(&self)->&Version{
         self.display.get_opengl_version()
     }
@@ -228,14 +273,18 @@ impl Window{
 
 // Функции для сглаживания
 impl Window{
+    /// Set alpha channel for smooth drawing
     pub fn set_alpha(&mut self,alpha:f32){
         self.alpha_channel=alpha;
     }
 
+    /// Set smooth for smooth drawing
     pub fn set_smooth(&mut self,smooth:f32){
         self.smooth=smooth
     }
 
+    /// Set smooth and zero alpha channel
+    /// for smooth drawing
     pub fn set_new_smooth(&mut self,smooth:f32){
         self.alpha_channel=0f32;
         self.smooth=smooth
@@ -244,14 +293,14 @@ impl Window{
 
 // Функции для рисования
 impl Window{
-    // Даёт прямое управление буфером кадра
+    /// Даёт прямое управление буфером кадра
     pub fn draw_raw<F:FnOnce(&mut Frame)>(&self,f:F){
         let mut frame=self.display().draw();
         f(&mut frame);
         frame.finish();
     }
 
-    // Выполняет замыкание и рисует курсор
+    /// Выполняет замыкание и рисует курсор
     pub fn draw<F:FnOnce(&mut DrawParameters,&mut Graphics)>(&self,f:F){
         let mut draw_parameters=default_draw_parameters();
 
@@ -261,14 +310,17 @@ impl Window{
 
         f(&mut draw_parameters,&mut g);
 
+        #[cfg(feature="mouse_cursor_icon")]
         self.mouse_icon.draw(&mut draw_parameters,&mut g);
 
         frame.finish();
     }
 
-    // Выполняет замыкание и рисует курсор
-    // Нужна для правных переходов с помощью альфа-канала
-    // Выдаёт изменяющийся альфа-канал для рисования, возвращает следующее значение альфа-канала
+    /// Выполняет замыкание и рисует курсор
+    /// 
+    /// Нужна для правных переходов с помощью альфа-канала
+    /// 
+    /// Выдаёт изменяющийся альфа-канал для рисования, возвращает следующее значение альфа-канала
     pub fn draw_smooth<F:FnOnce(f32,&mut DrawParameters,&mut Graphics)>(&mut self,f:F)->f32{
         let mut draw_parameters=default_draw_parameters();
 
@@ -278,6 +330,7 @@ impl Window{
 
         f(self.alpha_channel,&mut draw_parameters,&mut g);
 
+        #[cfg(feature="mouse_cursor_icon")]
         self.mouse_icon.draw(&mut draw_parameters,&mut g);
 
         frame.finish();
@@ -286,8 +339,9 @@ impl Window{
         self.alpha_channel
     }
 
-    // Игнорирует все события, кроме рендеринга и закрытия окна
-    // Рисует один кадр
+    /// Игнорирует все события, кроме рендеринга и закрытия окна
+    /// 
+    /// Рисует один кадр
     pub fn draw_event_once<F:FnOnce(&mut DrawParameters,&mut Graphics)>(&mut self,f:F)->WindowEvent{
         while let Some(event)=self.next_event(){
             match event{
@@ -305,7 +359,9 @@ impl Window{
 
 // Дополнительные функции
 impl Window{
-    // Сохраняет скриншот в формате png
+    /// Сохраняет скриншот в формате png
+    /// 
+    /// Save screenshot in png format
     pub fn screenshot<P:AsRef<Path>>(&self,path:P){
         // Копирование буфера окна
         let image:RawImage2d<u8>=match self.display.read_front_buffer(){
@@ -330,9 +386,16 @@ impl Window{
 //    ЛОКАЛЬНЫЕ ФУНКЦИИ    \\
 //                         \\
 
+impl Window{
+    #[inline(always)]
+    fn request_redraw(&self){
+        self.display.gl_window().window().request_redraw();
+    }
+}
+
 // Функции обработки событий
 impl Window{
-    // Обычная функция обработки событий
+    /// Обычная функция обработки событий
     fn event_listener(&mut self){
         let el=&mut self.event_loop as *mut EventLoop<()>;
         let event_loop=unsafe{&mut *el};
@@ -363,8 +426,12 @@ impl Window{
 
                             let dx=position[0]-last_position[0];
                             let dy=position[1]-last_position[1];
+
                             mouse_cursor.set_position(position);
+
+                            #[cfg(feature="mouse_cursor_icon")]
                             self.mouse_icon.set_position(position);
+
                             MouseMovementDelta((dx,dy))
                         }
 
@@ -373,7 +440,9 @@ impl Window{
                             if state==ElementState::Pressed{
                                 match button{
                                     GMouseButton::Left=>{
+                                        #[cfg(feature="mouse_cursor_icon")]
                                         self.mouse_icon.pressed();
+
                                         MousePressed(MouseButton::Left)
                                     }
                                     GMouseButton::Middle=>MousePressed(MouseButton::Middle),
@@ -384,7 +453,9 @@ impl Window{
                             else{
                                 match button{
                                     GMouseButton::Left=>{
+                                        #[cfg(feature="mouse_cursor_icon")]
                                         self.mouse_icon.released();
+
                                         MouseReleased(MouseButton::Left)
                                     }
                                     GMouseButton::Middle=>MouseReleased(MouseButton::Middle),
@@ -408,6 +479,7 @@ impl Window{
                                 KeyboardPressed(key)
                             }
                             else{
+                                #[cfg(feature="mouse_cursor_icon")]
                                 if key==KeyboardButton::F8{
                                     self.switch_cursor_visibility()
                                 }
@@ -468,7 +540,7 @@ impl Window{
         });
     }
 
-    // Функция ожидания получения фокуса - перехватывает управление до получения окном фокуса
+    /// Функция ожидания получения фокуса - перехватывает управление до получения окном фокуса
     fn wait_until_focused(&mut self){
         let el=&mut self.event_loop as *mut EventLoop<()>;
         let event_loop=unsafe{&mut *el};
@@ -502,7 +574,7 @@ impl Window{
 
 // Функции внутренней обработки событий
 impl Window{
-    // При потере фокуса - для отладки
+    /// При потере фокуса - для отладки
     #[cfg(debug_assertions)]
     fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
 
@@ -517,7 +589,7 @@ impl Window{
         WindowEvent::Hide(true) // Передача события во внешнее управление
     }
 
-    // При потере фокуса - релиз
+    /// При потере фокуса - релиз
     #[cfg(not(debug_assertions))]
     fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
         self.display.gl_window().window().set_minimized(true); // Сворацивание окна
@@ -528,7 +600,7 @@ impl Window{
         WindowEvent::Hide(true) // Передача события во внешнее управление
     }
 
-    // При получении фокуса
+    /// При получении фокуса
     fn gained_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
         self.events_handler=Window::event_listener; // Смена фукции обработки событий
         self.display.gl_window().window().set_minimized(false);
