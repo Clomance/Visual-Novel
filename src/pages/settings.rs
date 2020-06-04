@@ -67,14 +67,8 @@ impl<'a> SettingsPage<'a>{
         let mut monitors:Vec<String>=Vec::new();
         let available_monitors=window.available_monitors();
 
-        for monitor in available_monitors{
-            monitors.push(if let Some(m)=monitor.name(){
-                    m
-                }
-                else{
-                    "Недоступен".to_string()
-                }
-            )
+        for (c,_) in available_monitors.enumerate(){
+            monitors.push(format!("Монитор {}",c+1))
         }
 
         let monitor_list_head_settings=TextViewSettings::new("Выбор монитора",

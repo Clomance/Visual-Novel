@@ -280,7 +280,7 @@ impl Line{
             colour,
         }
     }
-    
+
     pub fn position(&self)->[f32;4]{
         [
             self.x1,

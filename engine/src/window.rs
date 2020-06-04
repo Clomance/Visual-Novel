@@ -107,7 +107,8 @@ pub enum WindowEvent{
     /// Изменение размера окна
     Resize((u32,u32)),
 
-    MouseMovementDelta((f32,f32)), // Сдвиг мышки (сдвиг за пределы экрана игнорируется)
+    /// Сдвиг мышки (сдвиг за пределы экрана игнорируется)
+    MouseMovementDelta((f32,f32)),
     MousePressed(MouseButton),
     MouseReleased(MouseButton),
 
@@ -230,6 +231,10 @@ impl Window{
             Err(())
         }
         
+    }
+
+    pub fn disable_fullscreen(&self){
+        self.display.gl_window().window().set_fullscreen(Option::None)
     }
 
     pub fn set_fullscreen(&self,fullscreen:Fullscreen){

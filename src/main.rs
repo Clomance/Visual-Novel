@@ -116,6 +116,7 @@ fn main(){
 
     // Настройка и создание окна и загрузка функций OpenGL
     let mut window:Window=match Window::new(|mut monitors,window_builder,context_builder,graphics_sets|{
+        // Установка полноэкранного режима для нужного экрана
         let monitor=unsafe{Settings.monitor};
         let monitor=if monitor<monitors.len(){
             monitors.remove(monitor)

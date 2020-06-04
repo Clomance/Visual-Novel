@@ -30,6 +30,3 @@ pub use list::*;
 
 mod wallpaper;
 pub use wallpaper::*;
-
-mod mouse_cursor_icon;
-pub use mouse_cursor_icon::MouseCursorIcon;
