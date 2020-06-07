@@ -90,6 +90,7 @@ fn main(){
             }
         }
 
+        // Построение таблицы ресурсов
         if changed{
             // Поиск текстур персонажей и сохранение названий файлов
             let char_meta=metadata("./resources/images/characters").unwrap();
@@ -233,8 +234,12 @@ pub fn read_characters(reader:&mut BufReader<File>)->Vec<(String,u8)>{
         if bytes==0{
             panic!("Ошибка в диалоге: нет конца заголовка");
         }
-        // Проверка на завершение заголовка
         let line_str=line.trim();
+        // Пропуск пустых строк
+        if line_str.is_empty(){
+            continue
+        }
+        // Проверка на завершение заголовка
         if line_str=="}"{
             return names
         }
@@ -266,8 +271,7 @@ pub fn read_characters(reader:&mut BufReader<File>)->Vec<(String,u8)>{
             let name=split_line[1].split("(").next().unwrap().trim().to_string();
             names.push((name,location));
         };
-        // Сохранение
-        
+
         line.clear()
     }
 

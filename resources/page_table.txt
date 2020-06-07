@@ -1,10 +1,21 @@
+Начало - {
+    wallpaper = Общага
+    dialogue = Начало
+}
+
+Начало дня - {
+    wallpaper = Общага
+    dialogue = Начало дня
+}
+
 Опоздание - {
     wallpaper = аудитория
-    dialogue = dialogue0
+    dialogue = До пересдачи
 }
+
 1 - {
     wallpaper = аудитория
-    dialogue = dialogue1
+    dialogue = На пересдаче
 }
 
 После пересдачи - {
