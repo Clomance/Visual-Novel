@@ -13,6 +13,7 @@ use super::{
 };
 
 use glium::{
+    DrawError,
     DrawParameters,
     index::{
         NoIndices,
@@ -52,7 +53,7 @@ impl MonoColourPolygon{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
         graphics.draw_simple(self,draw_parameters)
     }
 }
@@ -109,12 +110,12 @@ impl Rectangle{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
         graphics.draw_simple(self,draw_parameters)
     }
 
     #[inline(always)]
-    pub fn draw_move(&self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+    pub fn draw_move(&self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
         graphics.draw_move_simple(self,movement,draw_parameters)
     }
 }
@@ -187,13 +188,13 @@ impl RectangleBorder{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
         draw_parameters.line_width=Some(self.width);
         graphics.draw_simple(self,draw_parameters)
     }
 
     #[inline(always)]
-    pub fn draw_move(&self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+    pub fn draw_move(&self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
         draw_parameters.line_width=Some(self.width);
         graphics.draw_move_simple(self,movement,draw_parameters)
     }
@@ -252,10 +253,10 @@ impl RectangleWithBorder{
         self
     }
 
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.rect.draw(draw_parameters,graphics);
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
+        self.rect.draw(draw_parameters,graphics)?;
         let border=RectangleBorder::rectangle_base(self.rect.clone(),self.border_width,self.border_colour);
-        border.draw(draw_parameters,graphics);
+        border.draw(draw_parameters,graphics)
     }
 }
 
@@ -353,7 +354,7 @@ impl Circle{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
         graphics.draw_simple(self,draw_parameters)
     }
 }

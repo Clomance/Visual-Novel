@@ -97,6 +97,14 @@ impl<'a> Menu<'a>{
         }
     }
 
+    pub fn shift(&mut self,[dx,dy]:[f32;2]){
+        self.head.shift(dx,dy);
+
+        for button in self.buttons.iter_mut(){
+            button.shift(dx,dy)
+        }
+    }
+
     // Проверка: нажата ли кнопка в меню
     pub fn pressed(&mut self)->Option<usize>{
         for (c,button) in self.buttons.iter_mut().enumerate(){
@@ -115,20 +123,6 @@ impl<'a> Menu<'a>{
             }
         }
         None
-    }
-
-    pub fn draw_move(&mut self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.head.draw_move(movement,draw_parameters,graphics);
-
-        for button in &mut self.buttons{
-            button.draw_move(movement,draw_parameters,graphics);
-        }
-    }
-
-    pub fn draw_move_smooth(&mut self,alpha:f32,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.set_alpha_channel(alpha);
-
-        self.draw_move(movement,draw_parameters,graphics)
     }
 }
 

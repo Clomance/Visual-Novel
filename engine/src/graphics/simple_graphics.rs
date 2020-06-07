@@ -27,9 +27,16 @@ impl Point2D{
             position:[x,y]
         }
     }
+
+    pub fn convert(&mut self){
+        unsafe{
+            self.position[0]=self.position[0]/window_center[0]-1f32;
+            self.position[1]=1f32-self.position[1]/window_center[1];
+        }
+    }
 }
 
-// Графическая основа для простых одноцветных объектов
+/// Графическая основа для простых одноцветных объектов.
 pub struct SimpleGraphics{
     vertex_buffer:VertexBuffer<Point2D>,
     vertex_buffer_ranges:Vec<Range<usize>>,
@@ -40,9 +47,9 @@ pub struct SimpleGraphics{
 impl SimpleGraphics{
     pub fn new(display:&Display,buffer_size:usize,glsl:u16)->SimpleGraphics{
         let (movement,vertex_shader,fragment_shader)=if glsl==120{(
-            include_str!("shaders/120/simple_movement_vertex_shader_120.glsl"),
-            include_str!("shaders/120/simple_vertex_shader_120.glsl"),
-            include_str!("shaders/120/simple_fragment_shader_120.glsl"),
+            include_str!("shaders/120/simple_movement_vertex_shader.glsl"),
+            include_str!("shaders/120/simple_vertex_shader.glsl"),
+            include_str!("shaders/120/simple_fragment_shader.glsl"),
         )}
         else{(
             include_str!("shaders/simple_movement_vertex_shader.glsl"),
@@ -58,7 +65,7 @@ impl SimpleGraphics{
         }
     }
 
-    // Вписывает в буфер данные
+    /// Вписывает в буфер данные, начиная с начала.
     pub fn write_vertex(&self,data:&[Point2D])->Option<VertexBufferSlice<Point2D>>{
         let slice=self.vertex_buffer.slice(0..data.len())?;
         slice.write(&data);
@@ -70,14 +77,11 @@ impl SimpleGraphics{
         object:&O,
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
-    ){
+    )->Result<(),DrawError>{
         let mut points=object.point_buffer();
 
         for point in points.iter_mut(){
-            *point=unsafe{Point2D::new(
-                point.position[0]/window_center[0]-1f32,
-                1f32-point.position[1]/window_center[1]
-            )};
+            point.convert();
         }
 
         let slice=self.write_vertex(&points).unwrap();
@@ -86,7 +90,7 @@ impl SimpleGraphics{
             colour:object.colour()
         };
 
-        frame.draw(slice,indices,&self.draw,&uni,draw_parameters);
+        frame.draw(slice,indices,&self.draw,&uni,draw_parameters)
     }
 
     pub fn draw_move<'a,O:SimpleObject<'a>>(
@@ -95,14 +99,11 @@ impl SimpleGraphics{
         [dx,dy]:[f32;2],
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
-    ){
+    )->Result<(),DrawError>{
         let mut points=object.point_buffer();
 
         for point in points.iter_mut(){
-            *point=unsafe{Point2D::new(
-                point.position[0]/window_center[0]-1f32,
-                1f32-point.position[1]/window_center[1]
-            )};
+            point.convert();
         }
 
         let movement=unsafe{[
@@ -117,16 +118,17 @@ impl SimpleGraphics{
             movement:movement,
         };
 
-        frame.draw(slice,indices,&self.draw_move,&uni,draw_parameters);
+        frame.draw(slice,indices,&self.draw_move,&uni,draw_parameters)
     }
 }
 
 // Функции для работы с областями
 impl SimpleGraphics{
-    // Добавляет область
-    // Записывает в неё данны
-    // Возвращает номер (индекс) области
-    // Области могут пересекаться
+    /// Добавляет область и записывает в неё данные.
+    /// 
+    /// Возвращает номер (индекс) области.
+    /// 
+    /// Области могут пересекаться.
     pub fn bind_range(&mut self,range:Range<usize>,data:&[Point2D])->Option<usize>{
         let i=self.vertex_buffer_ranges.len();
 
@@ -138,11 +140,12 @@ impl SimpleGraphics{
         Some(i)
     }
 
-    // Удаляет выбранную область
+    /// Удаляет выбранную область, без проверки.
     pub fn unbind(&mut self,index:usize){
         self.vertex_buffer_ranges.remove(index);
     }
 
+    /// Рисует выбранную область, без проверки.
     pub fn draw_range(
         &self,
         index:usize,
@@ -168,12 +171,18 @@ impl SimpleGraphics{
     }
 }
 
-
+/// Типаж для создания собственных простых одноцветных объектов
 pub trait SimpleObject<'a>{
-    //type Points:Iterator;
     type Indices:Into<IndicesSource<'a>>;
+
+    /// Цвет объекта.
+    /// 
+    /// Object's colour.
     fn colour(&self)->Colour;
-    // Точки объекта в стандартом виде (без приведению к формату OpenGL)
+
+    /// Точки объекта в оконных координатах (без приведению к формату OpenGL).
     fn point_buffer(&self)->Vec<Point2D>;
+
+    /// Индексы для построения объекта.
     fn indices(&self)->Self::Indices;
 }

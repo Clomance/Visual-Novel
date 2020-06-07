@@ -2,46 +2,64 @@ use std::path::Path;
 
 use glium::{
     Display,
-    texture::{RawImage2d,TextureCreationError,srgb_texture2d::SrgbTexture2d},
+    texture::{
+        RawImage2d,
+        TextureCreationError as CrateTextureCreationError,
+        srgb_texture2d::SrgbTexture2d
+    },
 };
 
 use image::{RgbaImage,DynamicImage};
+use image::error::ImageError;
 
-// Обёртка для 2D текстуры
+/// Error that can happen when creating a texture.
+#[derive(Debug)]
+pub enum TextureCreationError{
+    TextureError(CrateTextureCreationError),
+    ImageError(ImageError)
+}
+
+/// Обёртка для 2D текстуры.
 pub struct Texture(pub SrgbTexture2d);
 
 impl Texture{
-    // Создание текстуры из массива байт
+    /// Создание текстуры из массива байт.
     pub fn create<S:Into<[u32;2]>>(factory:&Display,memory:&[u8],size:S)->Result<Self,TextureCreationError>{
-        let size=size.into();
+        let [w,h]=size.into();
 
-        let image=RawImage2d::from_raw_rgba_reversed(memory,(size[0],size[1]));
+        let image=RawImage2d::from_raw_rgba_reversed(memory,(w,h));
 
-        let texture=SrgbTexture2d::new(factory,image)?;
-
-        Ok(Texture(texture))
+        match SrgbTexture2d::new(factory,image){
+            Ok(texture)=>Ok(Texture(texture)),
+            Err(e)=>{
+                let error=TextureCreationError::TextureError(e);
+                return Err(error)
+            }
+        }
     }
 
-    // Загрузка текстуры из файла
-    pub fn from_path<P:AsRef<Path>>(factory:&Display,path:P)->Result<Self,String>{
-        let img=image::open(path).map_err(|e|e.to_string())?;
-
-        let img=match img{
-            DynamicImage::ImageRgba8(img)=>img,
-            img=>img.to_rgba(),
-        };
-
-        Texture::from_image(factory,&img).map_err(|e|format!("{:?}", e))
+    /// Загрузка текстуры из файла.
+    pub fn from_path<P:AsRef<Path>>(path:P,factory:&Display)->Result<Self,TextureCreationError>{
+        match image::open(path){
+            Ok(image)=>{
+                let image=match image{
+                    DynamicImage::ImageRgba8(img)=>img,
+                    img=>img.to_rgba(),
+                };
+                Texture::from_image(&image,factory)
+            },
+            Err(e)=>return Err(TextureCreationError::ImageError(e))
+        }
     }
 
-    // Создание текстуры из изображения
-    pub fn from_image(factory:&Display,img:&RgbaImage)->Result<Self,TextureCreationError>{
+    /// Создание текстуры из изображения.
+    pub fn from_image(img:&RgbaImage,factory:&Display)->Result<Self,TextureCreationError>{
         let (width,height)=img.dimensions();
         Texture::create(factory,img,[width,height])
     }
 
-    // Обновляет изображение текстуры, сохраняя размеры
-    // При не совпадающих размерых появляются пробелы
+    /// Обновляет изображение текстуры, сохраняя размеры.
+    /// При не совпадающих размерых появляются пробелы.
     pub fn update(&mut self,img:&RgbaImage){
         let (width,height)=img.dimensions();
 

@@ -26,6 +26,8 @@ use engine::{
     window_width,
     window_height,
     window_center,
+    // fns
+    window_rect,
     // types
     Colour,
     // enums
@@ -58,7 +60,7 @@ impl<'a> SettingsPage<'a>{
         let head_settings=TextViewSettings::new("Настройки",[
                     0f32,
                     0f32,
-                    window_width as f32,
+                    window_width,
                     80f32,
                 ])
                 .font_size(40f32)
@@ -157,80 +159,75 @@ impl<'a> SettingsPage<'a>{
                     self.signs_per_sec.grab();
                     self.volume.grab();
                 }
-                
-                WindowEvent::Draw=>{ //Рендеринг
-                    window.draw(|c,g|{
+
+                //Рендеринг
+                WindowEvent::Draw=>window.draw(|c,g|{
+                    g.clear_colour(background_color);
+
+                    self.head.draw(c,g);
+
+                    self.monitor_head.draw(c,g);
+                    self.monitor_label.draw(c,g);
+                    self.monitor_list.draw(c,g);
+
+                    self.signs_per_sec.draw(c,g);
+                    self.volume.draw(c,g);
+
+                    self.back_button.draw(c,g);
+                }),
+
+                WindowEvent::MousePressed(button)=>match button{
+                    MouseButton::Left=>{
+                        self.monitor_list.pressed();
+                        self.back_button.pressed();
+                        self.signs_per_sec.pressed();
+                        self.volume.pressed();
+                    },
+                    _=>{}
+                }
+
+                WindowEvent::MouseReleased(button)=>match button{
+                    MouseButton::Left=>{
+                        if let ListFocus::Item(m)=self.monitor_list.released(){
+                            if Settings.monitor!=m{
+                                //window.choose_fullscreen_monitor(m);
+                                Settings.monitor=m;
+                            }
+                            
+                        }
+
+                        Settings.signs_per_frame=self.signs_per_sec.released()/60f32;
+
+                        Settings.volume=(self.volume.released()/100f32*128f32) as u8;
+                        music.set_volume(Settings.volume); // Установка громкости
+
+
+                        if self.back_button.released(){ // Кнопка "Назад"
+                            return Game::Back
+                        }
+                    }
+                    _=>{}
+                }
+
+                WindowEvent::KeyboardReleased(button)=>match button{
+                    KeyboardButton::F5=>make_screenshot(window,|p,g|{
                         g.clear_colour(background_color);
 
-                        self.head.draw(c,g);
+                        self.head.draw(p,g);
 
-                        self.monitor_head.draw(c,g);
-                        self.monitor_label.draw(c,g);
-                        self.monitor_list.draw(c,g);
+                        self.monitor_head.draw(p,g);
+                        self.monitor_label.draw(p,g);
+                        self.monitor_list.draw(p,g);
 
-                        self.signs_per_sec.draw(c,g);
-                        self.volume.draw(c,g);
+                        self.signs_per_sec.draw(p,g);
+                        self.volume.draw(p,g);
 
-                        self.back_button.draw(c,g);
-                    });
-                }
-            
-                WindowEvent::MousePressed(button)=>{
-                    match button{
-                        MouseButton::Left=>{
-                            self.monitor_list.pressed();
-                            self.back_button.pressed();
-                            self.signs_per_sec.pressed();
-                            self.volume.pressed();
-                        },
-                        _=>{}
-                    }
-                }
+                        self.back_button.draw(p,g);
+                    }),
 
-                WindowEvent::MouseReleased(button)=>{
-                    match button{
-                        MouseButton::Left=>{
-                            if let ListFocus::Item(m)=self.monitor_list.released(){
-                                if Settings.monitor!=m{
-                                    //window.choose_fullscreen_monitor(m);
-                                    Settings.monitor=m;
-                                }
-                                
-                            }
+                    KeyboardButton::Escape=>return Game::Back,
 
-                            Settings.signs_per_frame=self.signs_per_sec.released()/60f32;
-
-                            Settings.volume=(self.volume.released()/100f32*128f32) as u8;
-                            music.set_volume(Settings.volume); // Установка громкости
-
-
-                            if self.back_button.released(){ // Кнопка "Назад"
-                                return Game::Back
-                            }
-                        }
-                        _=>{}
-                    }
-                }
-
-                WindowEvent::KeyboardReleased(button)=>{
-                    match button{
-                        KeyboardButton::F5=>make_screenshot(window,|p,g|{
-                            g.clear_colour(background_color);
-
-                            self.head.draw(p,g);
-
-                            self.monitor_head.draw(p,g);
-                            self.monitor_label.draw(p,g);
-                            self.monitor_list.draw(p,g);
-
-                            self.signs_per_sec.draw(p,g);
-                            self.volume.draw(p,g);
-
-                            self.back_button.draw(p,g);
-                        }),
-                        KeyboardButton::Escape=>return Game::Back,
-                        _=>{}
-                    }
+                    _=>{}
                 }
 
                 _=>{} // Остальные события
@@ -240,19 +237,12 @@ impl<'a> SettingsPage<'a>{
         Game::Exit
     }
 
+    // Плавное открытие
     pub unsafe fn smooth(&mut self,window:&mut Window)->Game{
         window.set_new_smooth(page_smooth);
 
-        let mut background=Rectangle::new([
-                0f32,
-                0f32,
-                window_width,
-                window_height
-            ],
-            Settings_page_colour
-        );
+        let mut background=Rectangle::new(window_rect(),Settings_page_colour);
 
-        // Плавное открытие
         while let Some(event)=window.next_event(){
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
@@ -276,19 +266,17 @@ impl<'a> SettingsPage<'a>{
                     }
                 }
 
-                WindowEvent::KeyboardReleased(button)=>{
-                    match button{
-                        KeyboardButton::F5=>make_screenshot(window,|d,g|{
-                            self.head.draw(d,g);
+                WindowEvent::KeyboardReleased(button)=>match button{
+                    KeyboardButton::F5=>make_screenshot(window,|d,g|{
+                        self.head.draw(d,g);
 
-                            self.signs_per_sec.draw(d,g);
-                            self.volume.draw(d,g);
-    
-                            self.back_button.draw(d,g);
-                        }),
-                        KeyboardButton::Escape=>return Game::Back,
-                        _=>{}
-                    }
+                        self.signs_per_sec.draw(d,g);
+                        self.volume.draw(d,g);
+
+                        self.back_button.draw(d,g);
+                    }),
+                    KeyboardButton::Escape=>return Game::Back,
+                    _=>{}
                 }
 
                 _=>{}

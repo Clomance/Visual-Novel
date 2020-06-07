@@ -41,7 +41,7 @@ impl LoadingScreen{
         Self{
             range,
             filter:White,
-            logo:Texture::from_path(window.display(),"./resources/images/logo.png").unwrap(),
+            logo:Texture::from_path("./resources/images/logo.png",window.display()).unwrap(),
         }
     }
 
@@ -74,9 +74,6 @@ impl LoadingScreen{
                         );
                     });
                     t+=0.05f32;
-                    if t>360f32{
-                        t=0f32;
-                    }
                 }
 
                 WindowEvent::KeyboardReleased(button)=>{

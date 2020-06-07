@@ -62,54 +62,50 @@ impl<'a> PauseMenu<'a>{
                 match event{
                     WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                    WindowEvent::Draw=>{ // Рендеринг
-                        window.draw(|c,g|{
-                            g.clear_colour(background_color);
-                            self.menu.draw(c,g);
-                        });
+                    // Рендеринг
+                    WindowEvent::Draw=>window.draw(|c,g|{
+                        g.clear_colour(background_color);
+                        self.menu.draw(c,g);
+                    }),
+
+
+                    WindowEvent::MousePressed(button)=>match button{
+                        MouseButton::Left=>{
+                            self.menu.pressed();
+                        },
+                        _=>{}
                     }
 
-                    WindowEvent::MousePressed(button)=>{
-                        match button{
-                            MouseButton::Left=>{
-                                self.menu.pressed();
-                            },
-                            _=>{}
-                        }
-                    }
-
-                    WindowEvent::MouseReleased(button)=>{
-                        match button{
-                            MouseButton::Left=>{
-                                if let Some(button_id)=self.menu.clicked(){
-                                    match button_id{
-                                        0=>return Game::ContinueGamePlay, // Кнопка продолжить
-                                        1=>return Game::MainMenu, // Кнопка главного меню
-                                        2=>{ // Кнопка настроек
-                                            match SettingsPage::new(window).start(window,music){
-                                                Game::Exit=>return Game::Exit,
-                                                Game::Back=>continue 'page,
-                                                _=>{}
-                                            }
+                    WindowEvent::MouseReleased(button)=>match button{
+                        MouseButton::Left=>{
+                            if let Some(button_id)=self.menu.clicked(){
+                                match button_id{
+                                    0=>return Game::ContinueGamePlay, // Кнопка продолжить
+                                    1=>return Game::MainMenu, // Кнопка главного меню
+                                    2=>{ // Кнопка настроек
+                                        match SettingsPage::new(window).start(window,music){
+                                            Game::Exit=>return Game::Exit,
+                                            Game::Back=>continue 'page,
+                                            _=>{}
                                         }
-                                        3=>return Game::Exit, // Кнопка выхода
-                                        _=>{}
                                     }
+                                    3=>return Game::Exit, // Кнопка выхода
+                                    _=>{}
                                 }
-                            },
-                            _=>{}
-                        }
+                            }
+                        },
+                        _=>{}
                     }
 
-                    WindowEvent::KeyboardReleased(button)=>{
-                        match button{
-                            KeyboardButton::F5=>make_screenshot(window,|p,g|{
-                                g.clear_colour(background_color);
-                                self.menu.draw(p,g);
-                            }),
-                            KeyboardButton::Escape=>return Game::ContinueGamePlay,
-                            _=>{}
-                        }
+                    WindowEvent::KeyboardReleased(button)=>match button{
+                        KeyboardButton::F5=>make_screenshot(window,|p,g|{
+                            g.clear_colour(background_color);
+                            self.menu.draw(p,g);
+                        }),
+
+                        KeyboardButton::Escape=>return Game::ContinueGamePlay,
+
+                        _=>{}
                     }
                     _=>{}
                 }
@@ -136,15 +132,15 @@ impl<'a> PauseMenu<'a>{
                     }
                 }
 
-                WindowEvent::KeyboardReleased(button)=>{
-                    match button{
-                        KeyboardButton::F5=>make_screenshot(window,|p,g|{
-                            background.draw(p,g);
-                            self.menu.draw(p,g);
-                        }),
-                        KeyboardButton::Escape=>return Game::ContinueGamePlay,
-                        _=>{}
-                    }
+                WindowEvent::KeyboardReleased(button)=>match button{
+                    KeyboardButton::F5=>make_screenshot(window,|p,g|{
+                        background.draw(p,g);
+                        self.menu.draw(p,g);
+                    }),
+
+                    KeyboardButton::Escape=>return Game::ContinueGamePlay,
+
+                    _=>{}
                 }
                 _=>{}
             }

@@ -16,6 +16,7 @@ use lib::{
     Wallpaper,
     Menu,
     MenuSettings,
+    Drawable,
 };
 
 use engine::{
@@ -64,7 +65,6 @@ impl MenuButtons{
 // Главное меню
 pub struct MainMenu<'a,'wallpaper>{
     pub menu:Menu<'a>,
-    pub menu_shift:[f32;2],
     pub wallpaper:&'wallpaper mut Wallpaper
 }
 
@@ -88,7 +88,6 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
 
         Self{
             menu:Menu::new(menu_settings,Main_font!()), // Создание меню
-            menu_shift:[0f32;2],
             wallpaper,
         }
     }
@@ -108,24 +107,20 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                 match event{
                     WindowEvent::Exit=>return Game::Exit, // Закрытие игры
                     //Рендеринг
-                    WindowEvent::Draw=>{ 
-                        window.draw(|c,g|{
-                            self.draw(c,g);
-                        });
-                    }
+                    WindowEvent::Draw=>window.draw(|c,g|{
+                        self.draw(c,g);
+                    }),
+                    
                     // Движение мышки
-                    WindowEvent::MouseMovementDelta(_)=>unsafe{
-                        self.mouse_shift(mouse_cursor.center_radius());
-                    }
+                    WindowEvent::MouseMovementDelta(shift)=>self.mouse_shift(shift),
                     // Кнопка мышки нажата
-                    WindowEvent::MousePressed(button)=>{
-                        match button{
-                            MouseButton::Left=>{
-                                self.menu.pressed();
-                            }
-                            _=>{}
+                    WindowEvent::MousePressed(button)=>match button{
+                        MouseButton::Left=>{
+                            self.menu.pressed();
                         }
+                        _=>{}
                     }
+
                     // Кнопка мышки отпущена
                     WindowEvent::MouseReleased(button)=>{
                         match button{
@@ -135,20 +130,20 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                                     match MenuButtons::button(button_id as u8){
                                         MenuButtons::Continue=>return Game::ContinueGamePlay,
 
-                                        MenuButtons::New=>{ // Кнопка начала нового игрового процесса
-                                            // Окно ввода имени захватывает управление над меню
-                                            match EnterUserName::new(&mut self).start(window){
-                                                Game::NewGamePlay=>return Game::NewGamePlay,
-                                                Game::Exit=>return Game::Exit,
-                                                _=>{}
-                                            }
+                                        // Кнопка начала нового игрового процесса
+                                        // Окно ввода имени захватывает управление над меню
+                                        MenuButtons::New=>match EnterUserName::new(&mut self).start(window){
+                                            Game::NewGamePlay=>return Game::NewGamePlay,
+                                            Game::Exit=>return Game::Exit,
+                                            _=>{}
                                         }
 
                                         MenuButtons::Settings=>unsafe{
+                                            mouse_cursor.save_position();
                                             match SettingsPage::new(window).start(window,music){
                                                 Game::Exit=>return Game::Exit,
                                                 Game::Back=>{
-                                                    self.mouse_shift(mouse_cursor.center_radius());
+                                                    self.mouse_shift(mouse_cursor.saved_shift());
                                                     continue 'main
                                                 }
                                                 _=>{}
@@ -188,13 +183,10 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
         window.set_new_smooth(page_smooth);
 
         while let Some(event)=window.next_event(){
-            
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::MouseMovementDelta(_)=>unsafe{
-                    self.mouse_shift(mouse_cursor.center_radius());
-                }
+                WindowEvent::MouseMovementDelta(shift)=>self.mouse_shift(shift),
 
                 WindowEvent::Draw=>{
                     if 1f32<window.draw_smooth(|alpha,c,g|{
@@ -206,22 +198,22 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                 _=>{}
             }
         }
-
         Game::Current
     }
 
     pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.wallpaper.draw_move(draw_parameters,graphics);
-        self.menu.draw_move(self.menu_shift,draw_parameters,graphics);
+        self.menu.draw(draw_parameters,graphics);
     }
 
     pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.wallpaper.draw_move_smooth(alpha,draw_parameters,graphics);
-        self.menu.draw_move_smooth(alpha,self.menu_shift,draw_parameters,graphics);
+        self.menu.draw_smooth(alpha,draw_parameters,graphics);
     }
 
     pub fn mouse_shift(&mut self,[dx,dy]:[f32;2]){
-        self.menu_shift=[dx/menu_movement_scale,dy/menu_movement_scale];
-        self.wallpaper.mouse_shift([dx,dy]);
+        let [dx,dy]=[dx/menu_movement_scale,dy/menu_movement_scale];
+        self.menu.shift([dx,dy]);
+        self.wallpaper.mouse_shift(unsafe{mouse_cursor.center_radius()});
     }
 }

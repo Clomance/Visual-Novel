@@ -66,7 +66,7 @@ impl<'b,'c> DialogueBox<'b,'c>{
                 Point2D::new(460f32,y1-dibw),
             ];
 
-            let texture=Texture::from_image(display,texture).unwrap();
+            let texture=Texture::from_image(texture,display).unwrap();
 
             // Позиция имени
             let name_position=[

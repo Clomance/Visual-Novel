@@ -100,7 +100,7 @@ impl CharactersView{
 
         let character=Character{
             image:ImageBase::new(White,rect),
-            texture:Texture::from_image(display,character).unwrap(),
+            texture:Texture::from_image(character,display).unwrap(),
         };
 
         self.characters.push(character)

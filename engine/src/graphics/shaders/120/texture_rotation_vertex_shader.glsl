@@ -1,9 +1,9 @@
-#version 140
+#version 120
 
-in vec2 position;
-in vec2 tex_coords;
+attribute vec2 position;
+attribute vec2 tex_coords;
 
-out vec2 v_tex_coords;
+varying vec2 v_tex_coords;
 
 uniform float cos;
 uniform float sin;

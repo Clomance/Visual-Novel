@@ -11,11 +11,14 @@ use glium::{
     // macroses
     implement_vertex,
     uniform,
+    // enums
+    DrawError,
+    // traits
+    Surface,
     // structs
     Program,
     Frame,
     DrawParameters,
-    Surface,
     VertexBuffer,
     Display,
     index::{NoIndices,PrimitiveType},
@@ -36,11 +39,11 @@ pub struct TextGraphics{
 }
 
 impl TextGraphics{
-    // 
+    /// 
     pub fn new(display:&Display,buffer_size:usize,glsl:u16)->TextGraphics{
         let (vertex_shader,fragment_shader)=if glsl==120{(
-            include_str!("shaders/120/text_vertex_shader_120.glsl"),
-            include_str!("shaders/120/text_fragment_shader_120.glsl"),
+            include_str!("shaders/120/text_vertex_shader.glsl"),
+            include_str!("shaders/120/text_fragment_shader.glsl"),
         )}
         else{(
             include_str!("shaders/text_vertex_shader.glsl"),
@@ -53,14 +56,14 @@ impl TextGraphics{
         }
     }
 
-    // Выводит символ на позицию, которая записана в нём
+    /// Выводит символ на позицию, которая записана в нём
     pub fn draw_character(
         &self,
         character:&Character,
         colour:Colour,
         draw_parameters:&DrawParameters,
         frame:&mut Frame
-    ){
+    )->Result<(),DrawError>{
         // Если у символа есть размерная область (не является пробелом)
         if let Some(rect)=character.pixel_bounding_box(){
             let mut len=(rect.width()*rect.height()) as usize;
@@ -94,7 +97,10 @@ impl TextGraphics{
                 &self.program,
                 &uniform!{colour:colour},
                 draw_parameters,
-            );
+            )
+        }
+        else{
+            Ok(())
         }
     }
 }

@@ -14,9 +14,13 @@ use super::{
 };
 
 use glium::{
+    // enums
+    DrawError,
+    // traits
+    Surface,
+    // structs
     Frame,
     DrawParameters,
-    Surface,
     Display,
     index::{
         PrimitiveType, // enum
@@ -95,7 +99,7 @@ impl Graphics2D{
         colour_filter:Colour,
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
-    ){
+    )->Result<(),DrawError>{
         let indices=NoIndices(PrimitiveType::TriangleStrip);
         self.texture.draw_range(
             index,
@@ -104,7 +108,7 @@ impl Graphics2D{
             indices,
             draw_parameters,
             frame
-        );
+        )
     }
 
     pub fn draw_move_range_image(
@@ -112,20 +116,20 @@ impl Graphics2D{
         index:usize,
         texture:&Texture,
         colour_filter:Colour,
-        movement:[f32;2],
+        [dx,dy]:[f32;2],
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
-    ){
+    )->Result<(),DrawError>{
         let indices=NoIndices(PrimitiveType::TriangleStrip);
         self.texture.draw_move_range(
             index,
             texture,
             colour_filter,
-            movement,
+            [dx,-dy],
             indices,
             draw_parameters,
             frame
-        );
+        )
     }
 
     pub fn draw_rotate_range_image(
@@ -136,7 +140,7 @@ impl Graphics2D{
         angle:f32,
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
-    ){
+    )->Result<(),DrawError>{
         let indices=NoIndices(PrimitiveType::TriangleStrip);
         self.texture.draw_rotate_range(
             index,
@@ -146,7 +150,7 @@ impl Graphics2D{
             indices,
             draw_parameters,
             frame
-        );
+        )
     }
 }
 
@@ -176,28 +180,53 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
     }
 
     #[inline(always)] // Рисует простой объект
-    pub fn draw_simple<'a,O:SimpleObject<'a>>(&mut self,object:&O,draw_parameters:&mut DrawParameters){
+    pub fn draw_simple<'a,O:SimpleObject<'a>>(
+        &mut self,
+        object:&O,
+        draw_parameters:&mut DrawParameters
+    )->Result<(),DrawError>{
         self.graphics.simple.draw(object,draw_parameters,self.frame)
     }
 
     #[inline(always)] // Рисует и сдвигает простой объект
-    pub fn draw_move_simple<'a,O:SimpleObject<'a>>(&mut self,object:&O,movement:[f32;2],draw_parameters:&mut DrawParameters){
+    pub fn draw_move_simple<'a,O:SimpleObject<'a>>(
+        &mut self,
+        object:&O,
+        movement:[f32;2],
+        draw_parameters:&mut DrawParameters
+    )->Result<(),DrawError>{
         self.graphics.simple.draw_move(object,movement,draw_parameters,self.frame)
     }
 
     #[inline(always)] // Рисует один символ
-    pub fn draw_character(&mut self,colour:Colour,character:&Character,draw_parameters:&mut DrawParameters){
-        self.graphics.text.draw_character(character,colour,draw_parameters,self.frame);
+    pub fn draw_character(
+        &mut self,
+        colour:Colour,
+        character:&Character,
+        draw_parameters:&mut DrawParameters
+    )->Result<(),DrawError>{
+        self.graphics.text.draw_character(character,colour,draw_parameters,self.frame)
     }
 
     #[inline(always)] // Рисует изображение на основе image_base
-    pub fn draw_image(&mut self,image_base:&ImageBase,texture:&Texture,draw_parameters:&mut DrawParameters){
-        self.graphics.texture.draw_image(image_base,texture,draw_parameters,self.frame);
+    pub fn draw_image(
+        &mut self,
+        image_base:&ImageBase,
+        texture:&Texture,
+        draw_parameters:&mut DrawParameters
+    )->Result<(),DrawError>{
+        self.graphics.texture.draw_image(image_base,texture,draw_parameters,self.frame)
     }
 
     #[inline(always)] // Рисует изображение на основе image_base c поворотом в 'angle' градусов
-    pub fn draw_rotate_image(&mut self,image_base:&ImageBase,texture:&Texture,angle:f32,draw_parameters:&mut DrawParameters){
-        self.graphics.texture.draw_rotate_image(image_base,texture,angle,self.frame,draw_parameters);
+    pub fn draw_rotate_image(
+        &mut self,
+        image_base:&ImageBase,
+        texture:&Texture,
+        angle:f32,
+        draw_parameters:&mut DrawParameters
+    )->Result<(),DrawError>{
+        self.graphics.texture.draw_rotate_image(image_base,texture,angle,self.frame,draw_parameters)
     }
 }
 
@@ -212,7 +241,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         texture:&Texture,
         colour_filter:Colour,
         draw_parameters:&mut DrawParameters
-    ){
+    )->Result<(),DrawError>{
         self.graphics.draw_range_image(
             index,
             texture,
@@ -232,7 +261,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         colour_filter:Colour,
         movement:[f32;2],
         draw_parameters:&mut DrawParameters
-    ){
+    )->Result<(),DrawError>{
         self.graphics.draw_move_range_image(
             index,
             texture,
@@ -240,7 +269,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
             movement,
             draw_parameters,
             &mut self.frame
-        );
+        )
     }
 
     // Рисует изображение с поворотом в 'angle' градусов на основе
@@ -253,7 +282,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         colour_filter:Colour,
         angle:f32,
         draw_parameters:&mut DrawParameters
-    ){
+    )->Result<(),DrawError>{
         self.graphics.draw_rotate_range_image(
             index,
             texture,
@@ -261,6 +290,6 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
             angle,
             draw_parameters,
             &mut self.frame
-        );
+        )
     }
 }

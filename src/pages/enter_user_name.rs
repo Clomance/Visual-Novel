@@ -23,7 +23,6 @@ use engine::{
     // statics
     window_width,
     window_height,
-    mouse_cursor,
     // enums
     WindowEvent,
     MouseButton,
@@ -80,20 +79,17 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
                 // Движение мыши
-                WindowEvent::MouseMovementDelta(_)=>unsafe{
-                    self.main_menu.mouse_shift(mouse_cursor.center_radius())
+                WindowEvent::MouseMovementDelta(shift)=>self.main_menu.mouse_shift(shift),
+
+                WindowEvent::MouseReleased(button)=>match button{
+                    MouseButton::Left=>{
+                        if !self.input.clicked(){
+                            return Game::Back
+                        }
+                    }
+                    _=>{}
                 }
 
-                WindowEvent::MouseReleased(button)=>{
-                    match button{
-                        MouseButton::Left=>{
-                            if !self.input.clicked(){
-                                return Game::Back
-                            }
-                        }
-                        _=>{}
-                    }
-                }
                 // Рендеринг
                 WindowEvent::Draw=>window.draw(|c,g|{
                     self.main_menu.draw(c,g);
@@ -102,30 +98,24 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                 }),
 
                 // Ввод символов
-                WindowEvent::CharacterInput(character)=>{
-                    self.input.push_char(character);
-                },
+                WindowEvent::CharacterInput(character)=>self.input.push_char(character),
 
-                WindowEvent::KeyboardPressed(button)=>{
-                    match button{
-                        KeyboardButton::Backspace=>self.input.pop_char(), // Удаление
-                        _=>{}
-                    }
+                WindowEvent::KeyboardPressed(button)=>match button{
+                    KeyboardButton::Backspace=>self.input.pop_char(), // Удаление
+                    _=>{}
                 }
 
-                WindowEvent::KeyboardReleased(button)=>{
-                    match button{
-                        KeyboardButton::Escape=>return Game::Back,
-                        
-                        KeyboardButton::Enter=>unsafe{
-                            let name=self.input.text().clone();
-                            if !name.is_empty(){
-                                Settings.user_name=name;
-                                return Game::NewGamePlay
-                            }
+                WindowEvent::KeyboardReleased(button)=>match button{
+                    KeyboardButton::Escape=>return Game::Back,
+
+                    KeyboardButton::Enter=>unsafe{
+                        let name=self.input.text().clone();
+                        if !name.is_empty(){
+                            Settings.user_name=name;
+                            return Game::NewGamePlay
                         }
-                        _=>{}
                     }
+                    _=>{}
                 }
                 _=>{}
             }
@@ -141,9 +131,7 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::MouseMovementDelta(_)=>unsafe{
-                        self.main_menu.mouse_shift(mouse_cursor.center_radius())
-                }
+                WindowEvent::MouseMovementDelta(shift)=>self.main_menu.mouse_shift(shift),
                 // Рендеринг
                 WindowEvent::Draw=>{
                     if 1f32<window.draw_smooth(|alpha,c,g|{
@@ -156,12 +144,11 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                     }
                 }
 
-                WindowEvent::KeyboardReleased(button)=>{
-                    match button{
-                        KeyboardButton::Escape=>return Game::Back,
-                        _=>{}
-                    }
+                WindowEvent::KeyboardReleased(button)=>match button{
+                    KeyboardButton::Escape=>return Game::Back,
+                    _=>{}
                 }
+
                 _=>{}
             }
         }

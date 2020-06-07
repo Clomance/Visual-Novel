@@ -51,7 +51,7 @@ impl Wallpaper{
             let range=window.graphics().bind_image(4..8usize,image_base).unwrap();
 
             Self{
-                texture:Texture::from_image(window.display(),image).unwrap(),
+                texture:Texture::from_image(image,window.display()).unwrap(),
                 range,
                 filter:White,
                 movement:[0f32;2]
@@ -84,7 +84,7 @@ impl Wallpaper{
             &self.texture,
             self.filter,
             draw_parameters
-        )
+        );
     }
 
     pub fn draw_move(
@@ -98,7 +98,7 @@ impl Wallpaper{
             self.filter,
             self.movement,
             draw_parameters
-        )
+        );
     }
 
     pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
@@ -119,7 +119,7 @@ impl Wallpaper{
             self.filter,
             self.movement,
             draw_parameters
-        )
+        );
     }
 }
 

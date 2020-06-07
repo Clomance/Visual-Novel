@@ -16,13 +16,36 @@ use glium::{
 
 pub struct MouseCursor{
     position:[f32;2],
+    saved_position:[f32;2],
 }
 
 impl MouseCursor{
     pub const fn new()->MouseCursor{
         Self{
             position:[0f32;2],
+            saved_position:[0f32;2],
         }
+    }
+
+    pub fn save_position(&mut self){
+        self.saved_position=self.position
+    }
+
+    pub fn saved_shift(&self)->[f32;2]{
+        [
+            self.position[0]-self.saved_position[0],
+            self.position[1]-self.saved_position[1]
+        ]
+    }
+
+    #[inline(always)]
+    pub fn x(&self)->f32{
+        self.position[0]
+    }
+
+    #[inline(always)]
+    pub fn y(&self)->f32{
+        self.position[1]
     }
 
     #[inline(always)]
@@ -60,18 +83,21 @@ pub struct MouseCursorIcon{
 impl MouseCursorIcon{
     pub fn new(display:&Display)->MouseCursorIcon{
         Self{
-            image_base:ImageBase::new([1f32;4],[0f32,0f32,radius,radius]),
-            texture:Texture::from_path(display,"resources/images/mouse_icon.png").unwrap(),
+            image_base:ImageBase::new([1f32;4],[0f32,0f32,2f32*radius,2f32*radius]),
+            texture:Texture::from_path("resources/images/mouse_icon.png",display).unwrap(),
             radius:radius/2f32,
             visible:true,
         }
     }
 
     pub fn set_position(&mut self,position:[f32;2]){
-        self.image_base.x1=position[0]-self.radius;
-        self.image_base.y1=position[1]-self.radius;
-        self.image_base.x2=position[0]+self.radius;
-        self.image_base.y2=position[1]+self.radius;
+        let x=unsafe{position[0]-window_center[0]};
+        let y=unsafe{window_center[1]-position[1]};
+
+        self.image_base.x1=x-self.radius;
+        self.image_base.y1=y+self.radius;
+        self.image_base.x2=x+self.radius;
+        self.image_base.y2=y-self.radius;
     }
 
     pub fn set_visible(&mut self,visible:bool){
@@ -85,18 +111,18 @@ impl MouseCursorIcon{
     // При нажатии кнопки мыши
     pub fn pressed(&mut self){
         self.image_base.x1+=d_radius;
-        self.image_base.y1+=d_radius;
+        self.image_base.y1-=d_radius;
         self.image_base.x2-=d_radius;
-        self.image_base.y2-=d_radius;
+        self.image_base.y2+=d_radius;
         self.radius-=d_radius;
     }
 
     // При освобождении кнопки мыши
     pub fn released(&mut self){
         self.image_base.x1-=d_radius;
-        self.image_base.y1-=d_radius;
+        self.image_base.y1+=d_radius;
         self.image_base.x2+=d_radius;
-        self.image_base.y2+=d_radius;
+        self.image_base.y2-=d_radius;
         self.radius+=d_radius;
     }
 

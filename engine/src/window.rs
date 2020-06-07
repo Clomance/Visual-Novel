@@ -105,10 +105,10 @@ pub enum WindowEvent{
     Hide(bool),
 
     /// Изменение размера окна
-    Resize((u32,u32)),
+    Resize([u32;2]),
 
     /// Сдвиг мышки (сдвиг за пределы экрана игнорируется)
-    MouseMovementDelta((f32,f32)),
+    MouseMovementDelta([f32;2]),
     MousePressed(MouseButton),
     MouseReleased(MouseButton),
 
@@ -174,7 +174,7 @@ impl Window{
         frame.finish().unwrap();            //
 
         // Отлючение курсора системы
-        // Заменил его своим
+        // Замена его собственным
         #[cfg(feature="mouse_cursor_icon")]
         display.gl_window().window().set_cursor_visible(false);
 
@@ -420,7 +420,7 @@ impl Window{
                             window_width=size.width as f32;
                             window_height=size.height as f32;
                             window_center=[window_width/2f32,window_height/2f32];
-                            Resize((size.width,size.height))
+                            Resize([size.width,size.height])
                         }
 
                         // Сдвиг мыши (сдвиг за пределы окна игнорируется)
@@ -437,7 +437,7 @@ impl Window{
                             #[cfg(feature="mouse_cursor_icon")]
                             self.mouse_icon.set_position(position);
 
-                            MouseMovementDelta((dx,dy))
+                            MouseMovementDelta([dx,dy])
                         }
 
                         // Обработка действий с кнопками мыши (только стандартные кнопки)

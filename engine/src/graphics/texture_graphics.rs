@@ -63,10 +63,10 @@ pub struct TextureGraphics{
 impl TextureGraphics{
     pub fn new(display:&Display,buffer_size:usize,glsl:u16)->TextureGraphics{
         let (rotation,moving,vertex_shader,fragment_shader)=if glsl==120{(
-            include_str!("shaders/120/texture_rotation_vertex_shader_120.glsl"),
-            include_str!("shaders/120/texture_movement_vertex_shader_120.glsl"),
-            include_str!("shaders/120/texture_vertex_shader_120.glsl"),
-            include_str!("shaders/120/texture_fragment_shader_120.glsl")
+            include_str!("shaders/120/texture_rotation_vertex_shader.glsl"),
+            include_str!("shaders/120/texture_movement_vertex_shader.glsl"),
+            include_str!("shaders/120/texture_vertex_shader.glsl"),
+            include_str!("shaders/120/texture_fragment_shader.glsl")
         )}
         else{(
             include_str!("shaders/texture_rotation_vertex_shader.glsl"),
@@ -122,6 +122,17 @@ impl TextureGraphics{
     )->Result<(),DrawError>{
         let indices=NoIndices(PrimitiveType::TriangleStrip);
 
+        let (sin,cos)=angle.sin_cos();
+
+        let uni=uniform!{
+            tex:&texture.0,
+            cos:cos,
+            sin:sin,
+            window_center:unsafe{window_center},
+            colour_filter:image_base.colour_filter,
+        };
+
+
         let slice=self.vertex_buffer.slice(0..4).unwrap();
         slice.write(&image_base.rotation_vertex_buffer());
 
@@ -129,12 +140,7 @@ impl TextureGraphics{
             slice,
             indices,
             &self.draw_rotate,
-            &uniform!{
-                tex:&texture.0,
-                angle:angle,
-                window_center:unsafe{window_center},
-                colour_filter:image_base.colour_filter,
-            },
+            &uni,
             draw_parameters
         )
     }
@@ -213,7 +219,7 @@ impl TextureGraphics{
 
         let movement=unsafe{[
             dx/window_center[0],
-            -dy/window_center[1]
+            dy/window_center[1]
         ]};
 
         let uni=uniform!{
@@ -245,9 +251,13 @@ impl TextureGraphics{
     )->Result<(),DrawError>{
         let range=self.vertex_buffer_ranges[index].clone();
         let slice=self.vertex_buffer.slice(range).unwrap();
+
+        let (sin,cos)=angle.sin_cos();
+
         let uni=uniform!{
             tex:&texture.0,
-            angle:angle,
+            cos:cos,
+            sin:sin,
             window_center:unsafe{window_center},
             colour_filter:colour_filter,
         };
