@@ -35,7 +35,7 @@ fn main(){
         }
     }
 
-    #[cfg(not(debug_assertions))]
+    #[cfg(any(not(debug_assertions),feature="qrelease"))]
     { // Сброс настроек игры при релизе
         let mut game_settings=OpenOptions::new().truncate(true).write(true).open("settings/game_settings").unwrap();
 
@@ -91,7 +91,7 @@ fn main(){
         }
 
         // Построение таблицы ресурсов
-        if changed{
+        if changed || cfg!(not(debug_assertions)) || cfg!(feature="qrelease"){
             // Поиск текстур персонажей и сохранение названий файлов
             let char_meta=metadata("./resources/images/characters").unwrap();
             let mut char_names=Vec::with_capacity(char_meta.len() as usize); // Имена персонажей

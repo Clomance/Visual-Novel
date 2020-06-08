@@ -5,6 +5,9 @@ authors = ["Clomance"]
 edition = "2018"
 build = "build.rs"
 
+[features]
+qrelease = []
+
 [dependencies.engine]
 path = "engine"
 features = ["mouse_cursor_icon"]

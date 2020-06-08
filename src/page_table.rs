@@ -8,7 +8,7 @@ use std::{
     path::PathBuf,
 };
 
-// Таблица распределения ресурсов (картинок, диалогов, персонажей) по страницам
+/// Таблица распределения ресурсов (картинок, диалогов, персонажей) по страницам.
 pub struct PageTable<'a,'c>{
     wallpapers:Vec<&'a PathBuf>,
     dialogues:Vec<&'c Dialogue>,
@@ -30,13 +30,10 @@ impl<'a,'c> PageTable<'a,'c>{
         let mut table_file=OpenOptions::new().read(true).open("settings/page_table").unwrap();
 
         let mut buffer=[0u8;8];
-
         while let Ok(_)=table_file.read_exact(&mut buffer){
             let wallpaper=usize::from_be_bytes(buffer);
-
             table_file.read_exact(&mut buffer).unwrap();
             let dialogue=usize::from_be_bytes(buffer);
-
             table_file.read_exact(&mut buffer[0..1]).unwrap();
             let char_len=buffer[0] as usize;
 
@@ -49,7 +46,7 @@ impl<'a,'c> PageTable<'a,'c>{
                 let location:CharacterLocation=unsafe{std::mem::transmute(buffer[0])};
                 characters.push((textures.character(character),location));
             }
-            // Проверка на начало блока страницы
+
             len+=1;
             table.wallpapers.push(&textures.wallpaper(wallpaper));
             table.dialogues.push(&dialogues[dialogue]);
