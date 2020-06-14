@@ -1,14 +1,14 @@
 #![allow(dead_code)]
 
+use super::window_center;
+
+#[cfg(feature="mouse_cursor_icon")]
 use super::{
-    window_center,
     graphics::Graphics,
-    image::{
-        ImageBase,
-        Texture,
-    },
+    image::{ImageBase,Texture}
 };
 
+#[cfg(feature="mouse_cursor_icon")]
 use glium::{
     Display,
     DrawParameters,
@@ -71,8 +71,10 @@ impl MouseCursor{
 const radius:f32=30f32;
 const d_radius:f32=5f32;
 
-// Иконка курсора мышки
-// Загружает картинку их папки ресурсов
+/// Иконка курсора мышки.
+/// 
+/// Загружает картинку из папки ресурсов.
+#[cfg(feature="mouse_cursor_icon")]
 pub struct MouseCursorIcon{
     image_base:ImageBase,
     texture:Texture,
@@ -80,6 +82,7 @@ pub struct MouseCursorIcon{
     visible:bool,
 }
 
+#[cfg(feature="mouse_cursor_icon")]
 impl MouseCursorIcon{
     pub fn new(display:&Display)->MouseCursorIcon{
         Self{
@@ -108,7 +111,7 @@ impl MouseCursorIcon{
         self.visible=!self.visible
     }
 
-    // При нажатии кнопки мыши
+    /// При нажатии кнопки мыши
     pub fn pressed(&mut self){
         self.image_base.x1+=d_radius;
         self.image_base.y1-=d_radius;
@@ -117,7 +120,7 @@ impl MouseCursorIcon{
         self.radius-=d_radius;
     }
 
-    // При освобождении кнопки мыши
+    /// При освобождении кнопки мыши
     pub fn released(&mut self){
         self.image_base.x1-=d_radius;
         self.image_base.y1+=d_radius;

@@ -30,7 +30,7 @@ use engine::{
     KeyboardButton,
     MouseButton,
     glium::DrawParameters,
-    music::Music,
+    audio::Audio,
 };
 
 const page_smooth:f32=default_page_smooth; // Сглаживание переходов - 1 к количеству кадров перехода
@@ -92,7 +92,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
         }
     }
 
-    pub fn start(mut self,window:&mut Window,music:&Music)->Game{
+    pub fn start(mut self,window:&mut Window,music:&Audio)->Game{
         self.mouse_shift(unsafe{
             mouse_cursor.center_radius()
         });

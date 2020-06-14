@@ -1,6 +1,6 @@
 [package]
 name = "Visual_Novel"
-version = "1.4.1"
+version = "1.5.0"
 authors = ["Clomance"]
 edition = "2018"
 build = "build.rs"
@@ -10,7 +10,8 @@ qrelease = []
 
 [dependencies.engine]
 path = "engine"
-features = ["mouse_cursor_icon"]
+
+features = ["mouse_cursor_icon","audio"]
 
 [lib]
 name="lib"

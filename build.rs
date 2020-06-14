@@ -1,40 +1,11 @@
 #![allow(non_upper_case_globals)]
 
 use std::{
-    env,
-    path::PathBuf,
     fs::{OpenOptions,metadata,read_dir,File},
     io::{Write,BufReader,BufRead},
 };
 
 fn main(){
-    #[cfg(target_os="windows")]
-    { // Подключение звуковых библиотек SDL2 для Windows
-        let manifest_dir=PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-
-        let mut lib_dir=manifest_dir.clone();
-        let mut dll_dir=manifest_dir.clone();
-
-        lib_dir.push("sdl2/msvc/lib");
-        dll_dir.push("sdl2/msvc/dll");
-
-        println!("cargo:rustc-link-search=all={}",lib_dir.display());
-        for entry in read_dir(dll_dir).expect("Can't read DLL dir"){
-            let entry_path=entry.expect("Invalid fs entry").path();
-            let file_name_result=entry_path.file_name();
-
-            let mut new_file_path=manifest_dir.clone();
-
-            if let Some(file_name)=file_name_result{
-                let file_name=file_name.to_str().unwrap();
-                if file_name.ends_with(".dll"){
-                    new_file_path.push(file_name);
-                    std::fs::copy(&entry_path,new_file_path.as_path()).expect("Can't copy from DLL dir");
-                }
-            }
-        }
-    }
-
     #[cfg(any(not(debug_assertions),feature="qrelease"))]
     { // Сброс настроек игры при релизе
         let mut game_settings=OpenOptions::new().truncate(true).write(true).open("settings/game_settings").unwrap();
@@ -47,10 +18,11 @@ fn main(){
         // Текущее положение в диалоге на странице
         game_settings.write_all(&buffer).unwrap();
         // Количество символов в секунду
-        let buffer=0.25f32.to_be_bytes();
+        let mut buffer=0.25f32.to_be_bytes();
         game_settings.write_all(&buffer).unwrap();
         // Значение громкости
-        game_settings.write_all(&[64u8]).unwrap();
+        buffer=0.5f32.to_be_bytes();
+        game_settings.write_all(&buffer).unwrap();
         // Количество сделанных скриншотов (номер следующего)
         game_settings.write_all(&[0u8;4]).unwrap();
         // Выбранный монитор

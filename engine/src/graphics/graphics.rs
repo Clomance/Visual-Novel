@@ -1,17 +1,20 @@
-use crate::{
-    // types
-    Colour,
-    // structs
-    image::{ImageBase,Texture},
-    text::Character,
-};
+#![allow(unused_imports)]
 
-use super::{
-    SimpleGraphics,
-    SimpleObject,
-    TextureGraphics,
-    TextGraphics,
-};
+//#[cfg(any(feature="texture_graphics",feature="simple_graphics",feature="text_graphics"))]
+use crate::Colour;
+
+#[cfg(feature="texture_graphics")]
+use crate::image::{ImageBase,Texture};
+#[cfg(feature="texture_graphics")]
+use super::TextureGraphics;
+
+#[cfg(feature="simple_graphics")]
+use super::{SimpleGraphics,SimpleObject};
+
+#[cfg(feature="text_graphics")]
+use crate::text::Character;
+#[cfg(feature="text_graphics")]
+use super::TextGraphics;
 
 use glium::{
     // enums
@@ -30,34 +33,47 @@ use glium::{
 
 use core::ops::Range;
 
-// Настройки графических основ
+/// Настройки графических основ
 pub struct GraphicsSettings{
+    #[cfg(feature="texture_graphics")]
     pub texture_vertex_buffer_size:usize,
+    #[cfg(feature="simple_graphics")]
     pub simple_vertex_buffer_size:usize,
+    #[cfg(feature="text_graphics")]
     pub text_vertex_buffer_size:usize,
 }
 
 impl GraphicsSettings{
-    pub fn new()->GraphicsSettings{
+    pub const fn new()->GraphicsSettings{
         Self{
+            #[cfg(feature="texture_graphics")]
             texture_vertex_buffer_size:8usize,
+            #[cfg(feature="simple_graphics")]
             simple_vertex_buffer_size:100usize,
+            #[cfg(feature="text_graphics")]
             text_vertex_buffer_size:2000usize,
         }
     }
 }
 
+/// Графические основы.
 pub struct Graphics2D{
+    #[cfg(feature="texture_graphics")]
     texture:TextureGraphics,
+    #[cfg(feature="simple_graphics")]
     simple:SimpleGraphics,
+    #[cfg(feature="text_graphics")]
     text:TextGraphics,
 }
 
 impl Graphics2D{
     pub fn new(window:&Display,settings:GraphicsSettings,glsl:u16)->Graphics2D{
         Self{
+            #[cfg(feature="texture_graphics")]
             texture:TextureGraphics::new(window,settings.texture_vertex_buffer_size,glsl),
+            #[cfg(feature="simple_graphics")]
             simple:SimpleGraphics::new(window,settings.simple_vertex_buffer_size,glsl),
+            #[cfg(feature="text_graphics")]
             text:TextGraphics::new(window,settings.text_vertex_buffer_size,glsl),
         }
     }
@@ -67,6 +83,7 @@ impl Graphics2D{
     // Используется только для невращающихся изображений
     // Для вывода изображения из этой области используется функция 'draw_range_image'
     // Возращает номер области, если она не выходит за границы буфера
+    #[cfg(feature="texture_graphics")]
     pub fn bind_image(&mut self,range:Range<usize>,image_base:ImageBase)->Option<usize>{
         let data=image_base.vertex_buffer();
         self.texture.bind_range(range,&data)
@@ -77,21 +94,25 @@ impl Graphics2D{
     // Используется только для вращающихся изображений
     // Для вывода изображения из этой области используется функция 'draw_rotate_range_image'
     // Возращает номер области, если она не выходит за границы буфера
+    #[cfg(feature="texture_graphics")]
     pub fn bind_rotating_image(&mut self,range:Range<usize>,image_base:ImageBase)->Option<usize>{
         let data=image_base.rotation_vertex_buffer();
         self.texture.bind_range(range,&data)
     }
 
+    #[cfg(feature="texture_graphics")]
     pub fn rewrite_range_image(&mut self,range:usize,image_base:ImageBase)->Option<()>{
         let data=image_base.rotation_vertex_buffer();
         self.texture.rewrite_range(range,&data)
     }
 
     #[inline(always)]
+    #[cfg(feature="texture_graphics")]
     pub fn unbind_texture(&mut self,index:usize){
         self.texture.unbind(index)
     }
 
+    #[cfg(feature="texture_graphics")]
     pub fn draw_range_image(
         &self,
         index:usize,
@@ -111,6 +132,7 @@ impl Graphics2D{
         )
     }
 
+    #[cfg(feature="texture_graphics")]
     pub fn draw_move_range_image(
         &self,
         index:usize,
@@ -132,6 +154,7 @@ impl Graphics2D{
         )
     }
 
+    #[cfg(feature="texture_graphics")]
     pub fn draw_rotate_range_image(
         &self,
         index:usize,
@@ -154,7 +177,7 @@ impl Graphics2D{
     }
 }
 
-// Простой интерфейс для связи кадра и графических функций
+/// Простой интерфейс для связи кадра и графических функций
 pub struct Graphics<'graphics,'frame>{
     graphics:&'graphics Graphics2D,
     frame:&'frame mut Frame,
@@ -179,7 +202,9 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         self.frame.clear_color(colour[0],colour[1],colour[2],colour[3]);
     }
 
-    #[inline(always)] // Рисует простой объект
+    /// Рисует простой объект.
+    #[inline(always)]
+    #[cfg(feature="simple_graphics")]
     pub fn draw_simple<'a,O:SimpleObject<'a>>(
         &mut self,
         object:&O,
@@ -188,7 +213,9 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         self.graphics.simple.draw(object,draw_parameters,self.frame)
     }
 
-    #[inline(always)] // Рисует и сдвигает простой объект
+    /// Рисует и сдвигает простой объект.
+    #[inline(always)] 
+    #[cfg(feature="simple_graphics")]
     pub fn draw_move_simple<'a,O:SimpleObject<'a>>(
         &mut self,
         object:&O,
@@ -198,7 +225,9 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         self.graphics.simple.draw_move(object,movement,draw_parameters,self.frame)
     }
 
-    #[inline(always)] // Рисует один символ
+    /// Рисует один символ.
+    #[inline(always)]
+    #[cfg(feature="text_graphics")]
     pub fn draw_character(
         &mut self,
         colour:Colour,
@@ -208,7 +237,9 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         self.graphics.text.draw_character(character,colour,draw_parameters,self.frame)
     }
 
-    #[inline(always)] // Рисует изображение на основе image_base
+    /// Рисует изображение на основе image_base.
+    #[inline(always)] 
+    #[cfg(feature="texture_graphics")]
     pub fn draw_image(
         &mut self,
         image_base:&ImageBase,
@@ -218,7 +249,9 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         self.graphics.texture.draw_image(image_base,texture,draw_parameters,self.frame)
     }
 
-    #[inline(always)] // Рисует изображение на основе image_base c поворотом в 'angle' градусов
+    /// Рисует изображение на основе image_base c поворотом в 'angle' градусов
+    #[inline(always)]
+    #[cfg(feature="texture_graphics")]
     pub fn draw_rotate_image(
         &mut self,
         image_base:&ImageBase,
@@ -232,9 +265,10 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
 // Функции для работы с областями
 impl<'graphics,'frame> Graphics<'graphics,'frame>{
-    // Рисует изображение на основе
-    // данных из области
+    /// Рисует изображение на основе
+    /// данных из области.
     #[inline(always)]
+    #[cfg(feature="texture_graphics")]
     pub fn draw_range_image(
         &mut self,
         index:usize,
@@ -251,9 +285,10 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         )
     }
 
-    // Рисует и сдвигает изображение на основе
-    // данных из области
+    /// Рисует и сдвигает изображение на основе
+    /// данных из области.
     #[inline(always)]
+    #[cfg(feature="texture_graphics")]
     pub fn draw_move_range_image(
         &mut self,
         index:usize,
@@ -272,9 +307,10 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         )
     }
 
-    // Рисует изображение с поворотом в 'angle' градусов на основе
-    // данных из области
+    /// Рисует изображение с поворотом в 'angle' градусов на основе
+    /// данных из области.
     #[inline(always)]
+    #[cfg(feature="texture_graphics")]
     pub fn draw_rotate_range_image(
         &mut self,
         index:usize,

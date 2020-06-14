@@ -7,6 +7,7 @@ pub use glium;
 //      Character,
 //      TextBase
 // }
+#[cfg(feature="text_graphics")]
 pub mod text;
 
 mod mouse_cursor;
@@ -31,11 +32,13 @@ pub use window::*;
 //      Texture,
 //      ImageBase
 // }
+
 pub mod image;
 
 pub mod graphics;
 
-pub mod music;
+#[cfg(feature="audio")]
+pub mod audio;
 
 pub type Colour=[f32;4];
 

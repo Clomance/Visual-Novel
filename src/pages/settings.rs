@@ -34,7 +34,7 @@ use engine::{
     WindowEvent,
     MouseButton,
     KeyboardButton,
-    music::Music,
+    audio::Audio,
     // structs
     Window,
     graphics::Rectangle,
@@ -118,7 +118,7 @@ impl<'a> SettingsPage<'a>{
                 .length(250f32)
                 .min_value(0f32)
                 .max_value(100f32)
-                .current_value(Settings.volume as f32*100f32/128f32);
+                .current_value(Settings.volume as f32*100f32);
 
 
         let volume=Slider::new(volume_settings,Main_font!());
@@ -143,7 +143,7 @@ impl<'a> SettingsPage<'a>{
         }
     }
 
-    pub unsafe fn start(mut self,window:&mut Window,music:&Music)->Game{
+    pub unsafe fn start(mut self,window:&mut Window,music:&Audio)->Game{
 
         match self.smooth(window){
             Game::Back=>return Game::Back,
@@ -198,7 +198,7 @@ impl<'a> SettingsPage<'a>{
 
                         Settings.signs_per_frame=self.signs_per_sec.released()/60f32;
 
-                        Settings.volume=(self.volume.released()/100f32*128f32) as u8;
+                        Settings.volume=self.volume.released()/100f32;
                         music.set_volume(Settings.volume); // Установка громкости
 
 

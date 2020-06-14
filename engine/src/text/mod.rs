@@ -1,3 +1,4 @@
+#![cfg(feature="text_graphics")]
 mod text_base;
 pub use text_base::TextBase;
 

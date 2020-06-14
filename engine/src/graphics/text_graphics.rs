@@ -1,3 +1,4 @@
+#![cfg(feature="text_graphics")]
 use crate::{
     // statics
     window_center,

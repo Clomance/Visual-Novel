@@ -1,8 +1,11 @@
 #![allow(unused_imports)]
 use super::{
     graphics::{Graphics2D,Graphics,GraphicsSettings},
-    mouse_cursor::{MouseCursor,MouseCursorIcon},
+    mouse_cursor::MouseCursor,
 };
+
+#[cfg(feature="mouse_cursor_icon")]
+use super::mouse_cursor::MouseCursorIcon;
 
 use std::{
     collections::VecDeque,

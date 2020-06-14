@@ -29,7 +29,7 @@ use engine::{
         glutin::dpi::Size
     },
     // mods
-    music,
+    audio::Audio,
 };
 
 use std::{
@@ -105,6 +105,7 @@ static mut _textures:Textures=Textures::new(); // Хранилище текту�
 static mut _dialogues:Vec<Dialogue>=Vec::new();
 
 fn main(){
+    
     unsafe{
         let mut glyphs=Glyphs::load("./resources/fonts/main.font");
         glyph_cache.push(glyphs);
@@ -158,6 +159,8 @@ fn main(){
             return
         }
     };
+
+    let mut music=Audio::new();
 
     unsafe{
         let wallpaper_size={
@@ -230,11 +233,9 @@ fn main(){
 
         let mut dialogue_box=DialogueBox::new(texture_base.dialogue_box(),window.display(),Dialogue_font!()); // Диалоговое окно
 
-        let mut music=music::Music::new();
-        music.add_music("./resources/music/audio.mp3");
+        music.add_track("./resources/music/audio.mp3");
         music.set_volume(Settings.volume);
-        music.start_music(0);
-
+        music.play_track(0);
 
         // Полный цикл игры
         'game:loop{
@@ -334,7 +335,7 @@ fn main(){
                                 MouseButton::Left=>{
                                     if dialogue_box.next_page(){
                                         if page_table.next_page(){
-                                            break 'page_inner // Переход к следующей странице (break 'page)
+                                            break 'page_inner // Переход к следующей странице
                                         }
                                         else{
                                             break 'gameplay
@@ -348,7 +349,7 @@ fn main(){
                                 KeyboardButton::Space=>{
                                     if dialogue_box.next_page(){
                                         if page_table.next_page(){
-                                            break 'page_inner // Переход к следующей странице (break 'page)
+                                            break 'page_inner // Переход к следующей странице
                                         }
                                         else{
                                             break 'gameplay

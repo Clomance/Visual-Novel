@@ -25,7 +25,7 @@ use engine::{
     WindowEvent,
     MouseButton,
     KeyboardButton,
-    music::Music,
+    audio::Audio,
     // structs
     Window,
     graphics::Rectangle,
@@ -51,7 +51,7 @@ impl<'a> PauseMenu<'a>{
         }
     }
 
-    pub unsafe fn start(mut self,window:&mut Window,music:&Music)->Game{
+    pub unsafe fn start(mut self,window:&mut Window,music:&Audio)->Game{
         'page:loop{
             match self.smooth(window){
                 Game::Exit=>return Game::Exit,
