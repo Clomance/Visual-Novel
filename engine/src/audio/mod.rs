@@ -15,6 +15,7 @@ use rodio::{
 enum AudioCommand{
     Add(Buffered<Decoder<File>>),
     SetVolume(f32),
+    Pause,
     Clear,
     Close,
 }
@@ -44,6 +45,9 @@ impl Audio{
                             AudioCommand::SetVolume(volume)=>{
                                 sink.set_volume(volume)
                             }
+                            AudioCommand::Pause=>{
+                                sink.pause()
+                            }
                             AudioCommand::Clear=>{
                                 sink.stop()
                             }
@@ -68,14 +72,29 @@ impl Audio{
         self.command.send(AudioCommand::SetVolume(volume));
     }
 
-    pub fn add_track<P:AsRef<Path>>(&mut self,path:P){
-        let file=File::open(path).unwrap();
-        let track=rodio::Decoder::new(file).unwrap().buffered();
-        self.tracks.push(track)
+    pub fn add_track<P:AsRef<Path>>(&mut self,path:P)->Result<(),()>{
+        let file=match File::open(path){
+            Ok(file)=>file,
+            Err(_)=>return Err(())
+        };
+        let track=match rodio::Decoder::new(file){
+            Ok(track)=>track.buffered(),
+            Err(_)=>return Err(())
+        };
+        self.tracks.push(track);
+        Ok(())
     }
 
     pub fn play_track(&self,index:usize){
         self.command.send(AudioCommand::Add(self.tracks[index].clone()));
+    }
+
+    pub fn pause(&self){
+        self.command.send(AudioCommand::Pause);
+    }
+
+    pub fn clear_audio_buffer(&self){
+        self.command.send(AudioCommand::Clear);
     }
 }
 

@@ -105,7 +105,6 @@ static mut _textures:Textures=Textures::new(); // Хранилище текту�
 static mut _dialogues:Vec<Dialogue>=Vec::new();
 
 fn main(){
-    
     unsafe{
         let mut glyphs=Glyphs::load("./resources/fonts/main.font");
         glyph_cache.push(glyphs);
