@@ -16,7 +16,7 @@ use lib::{
     MenuSettings,
 };
 
-use engine::{
+use cat_engine::{
     // fns
     window_rect,
     // types

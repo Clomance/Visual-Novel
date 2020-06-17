@@ -1,5 +1,5 @@
 [package]
-name = "engine"
+name = "cat_engine"
 version = "0.0.0"
 authors = ["Clomance"]
 edition = "2018"

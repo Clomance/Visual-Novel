@@ -3,7 +3,7 @@ use lib::{
     load_wallpaper_image,
 };
 
-use engine::{
+use cat_engine::{
     // statics
     window_width,
     window_height,

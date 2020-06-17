@@ -1,4 +1,4 @@
-use engine::Colour;
+use cat_engine::Colour;
 
 // Простые цвета
 

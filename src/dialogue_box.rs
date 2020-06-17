@@ -12,7 +12,7 @@ use lib::{
     TextViewSettings
 };
 
-use engine::{
+use cat_engine::{
     // statics
     window_height,
     window_width,

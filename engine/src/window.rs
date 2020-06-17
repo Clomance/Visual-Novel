@@ -51,21 +51,26 @@ use image::{
 };
 
 
+/// Положение курсора мыши. The mouse cursor position.
+pub static mut mouse_cursor:MouseCursor=MouseCursor::new();
 
-pub static mut mouse_cursor:MouseCursor=MouseCursor::new(); // Положение курсора мыши
-
+/// Ширина окна. The window width.
 pub static mut window_width:f32=0f32;
+/// Высота окна. The window height.
 pub static mut window_height:f32=0f32;
-pub static mut window_center:[f32;2]=[0f32;2]; // Центр окна
+/// Центр окна. The window center. [x, y]
+pub static mut window_center:[f32;2]=[0f32;2];
 
-/// Окно с вписанными в него графическими функциями,
-/// а также обработчиками событий.
+/// Окно, включает в себя графические функциями
+/// и обработчик событий.
+/// Window with graphical functions and an event listener included.
 /// 
 /*
-    EventLoop - минимум четыре шага для моей схемы с мгновенным закрытием цикла обработки событий:
+    EventLoop - минимум четыре шага:
     1) NewEvent
+    (Основные события)
     2) MainEventsCleared
-    (RedrawRequested всегда идет после MainEventsCleared)
+    (RedrawRequested)
     3) RedrawEventsCleared
     4) LoopDestroyed
 */
@@ -96,7 +101,9 @@ pub struct Window{
     focusable_option:bool, // Включение/отключение возможности сворачивания во время отладки
 }
 
-/// Внешние события окна
+/// Внешнии события окна.
+/// 
+/// Outer window events.
 #[derive(Clone)]
 pub enum WindowEvent{
     None,
@@ -124,7 +131,9 @@ pub enum WindowEvent{
     Exit,
 }
 
-/// Кнопки мыши, без дополнительных кнопок
+/// Кнопки мыши, без дополнительных кнопок.
+/// 
+/// Mouse buttons without additional buttons.
 #[derive(Clone)]
 pub enum MouseButton{
     Left,
@@ -135,9 +144,9 @@ pub enum MouseButton{
 use WindowEvent::*;
 
 impl Window{
-    /// Создание окна с функцией настройки
+    /// Создаёт окно. Принимает функцию для настройки.
     ///
-    /// Create new window with setting function
+    /// Creates the window. 
     pub fn new<F>(setting:F)->Result<Window,DisplayCreationError>
         where
             F:FnOnce(Vec<MonitorHandle>,&mut WindowBuilder,&mut ContextBuilder<NotCurrent>,&mut GraphicsSettings){
@@ -365,7 +374,7 @@ impl Window{
     }
 }
 
-// Дополнительные функции
+/// Дополнительные функции
 impl Window{
     /// Сохраняет скриншот в формате png
     /// 
@@ -582,7 +591,7 @@ impl Window{
 
 // Функции внутренней обработки событий
 impl Window{
-    /// При потере фокуса - для отладки
+    /// При потере фокуса - отладка
     #[cfg(debug_assertions)]
     fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
 

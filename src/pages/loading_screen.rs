@@ -6,7 +6,7 @@ use crate::{
 
 use lib::colours::White;
 
-use engine::{
+use cat_engine::{
     // statics
     window_width,
     window_height,

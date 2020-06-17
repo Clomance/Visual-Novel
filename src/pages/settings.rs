@@ -21,7 +21,7 @@ use lib::{
     ListFocus
 };
 
-use engine::{
+use cat_engine::{
     // statics
     window_width,
     window_height,

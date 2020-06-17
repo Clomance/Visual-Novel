@@ -1,6 +1,6 @@
 use crate::{CharacterLocation,Dialogue,Settings,Textures};
 
-use engine::image::image::RgbaImage;
+use cat_engine::image::image::RgbaImage;
 
 use std::{
     fs::OpenOptions,

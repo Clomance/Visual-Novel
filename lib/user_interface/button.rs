@@ -6,7 +6,7 @@ use super::{
     TextViewStaticLine,
 };
 
-use engine::{
+use cat_engine::{
     // statics
     mouse_cursor,
     // types
@@ -160,8 +160,8 @@ impl ButtonBase{
         self.rect.draw(draw_parameters,g);
     }
 
-    pub fn draw_move(&self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.rect.draw_move(movement,draw_parameters,graphics);
+    pub fn draw_shift(&self,shift:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        self.rect.draw_shift(shift,draw_parameters,graphics);
     }
 }
 

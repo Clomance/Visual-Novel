@@ -9,7 +9,7 @@ use super::{
     White,
 };
 
-use engine::{
+use cat_engine::{
     // statics
     mouse_cursor,
     // types

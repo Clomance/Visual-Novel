@@ -19,7 +19,7 @@ use lib::{
     Drawable,
 };
 
-use engine::{
+use cat_engine::{
     // statics
     mouse_cursor,
     // structs

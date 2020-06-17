@@ -41,18 +41,18 @@ pub struct SimpleGraphics{
     vertex_buffer:VertexBuffer<Point2D>,
     vertex_buffer_ranges:Vec<Range<usize>>,
     draw:Program,
-    draw_move:Program,
+    draw_shift:Program,
 }
 
 impl SimpleGraphics{
     pub fn new(display:&Display,buffer_size:usize,glsl:u16)->SimpleGraphics{
         let (movement,vertex_shader,fragment_shader)=if glsl==120{(
-            include_str!("shaders/120/simple_movement_vertex_shader.glsl"),
+            include_str!("shaders/120/simple_shift_vertex_shader.glsl"),
             include_str!("shaders/120/simple_vertex_shader.glsl"),
             include_str!("shaders/120/simple_fragment_shader.glsl"),
         )}
         else{(
-            include_str!("shaders/simple_movement_vertex_shader.glsl"),
+            include_str!("shaders/simple_shift_vertex_shader.glsl"),
             include_str!("shaders/simple_vertex_shader.glsl"),
             include_str!("shaders/simple_fragment_shader.glsl"),
         )};
@@ -61,7 +61,7 @@ impl SimpleGraphics{
             vertex_buffer:VertexBuffer::empty_dynamic(display,buffer_size).unwrap(),
             vertex_buffer_ranges:Vec::<Range<usize>>::with_capacity(buffer_size),
             draw:Program::from_source(display,vertex_shader,fragment_shader,None).unwrap(),
-            draw_move:Program::from_source(display,movement,fragment_shader,None).unwrap(),
+            draw_shift:Program::from_source(display,movement,fragment_shader,None).unwrap(),
         }
     }
 
@@ -93,7 +93,7 @@ impl SimpleGraphics{
         frame.draw(slice,indices,&self.draw,&uni,draw_parameters)
     }
 
-    pub fn draw_move<'a,O:SimpleObject<'a>>(
+    pub fn draw_shift<'a,O:SimpleObject<'a>>(
         &self,
         object:&O,
         [dx,dy]:[f32;2],
@@ -106,7 +106,7 @@ impl SimpleGraphics{
             point.convert();
         }
 
-        let movement=unsafe{[
+        let shift=unsafe{[
             dx/window_center[0],
             -dy/window_center[1]
         ]};
@@ -115,10 +115,10 @@ impl SimpleGraphics{
         let indices:O::Indices=object.indices();
         let uni=uniform!{
             colour:object.colour(),
-            movement:movement,
+            shift:shift,
         };
 
-        frame.draw(slice,indices,&self.draw_move,&uni,draw_parameters)
+        frame.draw(slice,indices,&self.draw_shift,&uni,draw_parameters)
     }
 }
 

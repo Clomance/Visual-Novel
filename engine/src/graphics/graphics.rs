@@ -216,13 +216,13 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
     /// Рисует и сдвигает простой объект.
     #[inline(always)] 
     #[cfg(feature="simple_graphics")]
-    pub fn draw_move_simple<'a,O:SimpleObject<'a>>(
+    pub fn draw_shift_simple<'a,O:SimpleObject<'a>>(
         &mut self,
         object:&O,
-        movement:[f32;2],
+        shift:[f32;2],
         draw_parameters:&mut DrawParameters
     )->Result<(),DrawError>{
-        self.graphics.simple.draw_move(object,movement,draw_parameters,self.frame)
+        self.graphics.simple.draw_shift(object,shift,draw_parameters,self.frame)
     }
 
     /// Рисует один символ.

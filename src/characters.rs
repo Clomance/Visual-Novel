@@ -5,7 +5,7 @@ use lib::{
     colours::White,
 };
 
-use engine::{
+use cat_engine::{
     window_center,
     window_height,
     window_width,

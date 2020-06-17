@@ -6,7 +6,7 @@ use lib::{
     colours::*,
 };
 
-use engine::{
+use cat_engine::{
     // fns
     window_rect,
     // traits
@@ -29,7 +29,7 @@ use engine::{
         glutin::dpi::Size
     },
     // mods
-    audio::Audio,
+    audio::{Audio,Repeat},
 };
 
 use std::{
@@ -129,7 +129,7 @@ fn main(){
 
         let size=monitor.size();
 
-        let fullscreen=engine::glium::glutin::window::Fullscreen::Borderless(monitor);
+        let fullscreen=cat_engine::glium::glutin::window::Fullscreen::Borderless(monitor);
 
         let icon=load_window_icon();
 
@@ -234,7 +234,7 @@ fn main(){
 
         music.add_track("./resources/music/audio.mp3");
         music.set_volume(Settings.volume);
-        music.play_track(0);
+        music.play_track(0,Repeat::Forever);
 
         // Полный цикл игры
         'game:loop{
@@ -504,7 +504,7 @@ pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut 
 
 /// Загрузка иконки окна
 fn load_window_icon()->Icon{
-    let image=engine::image::image::open("./resources/images/window_icon.png").unwrap();
+    let image=cat_engine::image::image::open("./resources/images/window_icon.png").unwrap();
     let vec=image.to_bytes();
     let (width,height)=image.dimensions();
 

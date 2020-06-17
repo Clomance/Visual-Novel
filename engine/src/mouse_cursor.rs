@@ -14,12 +14,17 @@ use glium::{
     DrawParameters,
 };
 
+/// Положение курсора мыши.
+/// The mouse cursor position.
 pub struct MouseCursor{
     position:[f32;2],
     saved_position:[f32;2],
 }
 
 impl MouseCursor{
+    /// Инициирует новую позицию курсора.
+    /// 
+    /// Initiates new cursor position.
     pub const fn new()->MouseCursor{
         Self{
             position:[0f32;2],
@@ -27,10 +32,16 @@ impl MouseCursor{
         }
     }
 
+    /// Сохраняет текущую позицию курсора мыши.
+    /// 
+    /// Saves the current mouse cursor position.
     pub fn save_position(&mut self){
         self.saved_position=self.position
     }
 
+    /// Вычисляет перемещение от сохранённой позиции.
+    /// 
+    /// Calculates movement from the saved position.
     pub fn saved_shift(&self)->[f32;2]{
         [
             self.position[0]-self.saved_position[0],
@@ -48,12 +59,15 @@ impl MouseCursor{
         self.position[1]
     }
 
+    /// Позиция курсора мыши.
+    /// 
+    /// The mouse cursor position.
     #[inline(always)]
     pub fn position(&self)->[f32;2]{
         self.position
     }
 
-    // Расстояние от курсора до центра экрана
+    /// Расстояние от курсора до центра экрана.
     pub fn center_radius(&self)->[f32;2]{
         unsafe{[
             self.position[0]-window_center[0],
@@ -61,6 +75,9 @@ impl MouseCursor{
         ]}
     }
 
+    /// Уставливает позицию курсора мыши.
+    /// 
+    /// Sets the mouse cursor position.
     #[inline(always)]
     pub fn set_position(&mut self,position:[f32;2]){
         self.position=position;
@@ -103,15 +120,19 @@ impl MouseCursorIcon{
         self.image_base.y2=y-self.radius;
     }
 
+    #[inline(always)]
     pub fn set_visible(&mut self,visible:bool){
         self.visible=visible
     }
 
+    #[inline(always)]
     pub fn switch_visibility(&mut self){
         self.visible=!self.visible
     }
 
-    /// При нажатии кнопки мыши
+    /// При нажатии кнопки мыши.
+    /// 
+    /// On a mouse button pressed.
     pub fn pressed(&mut self){
         self.image_base.x1+=d_radius;
         self.image_base.y1-=d_radius;
@@ -120,7 +141,9 @@ impl MouseCursorIcon{
         self.radius-=d_radius;
     }
 
-    /// При освобождении кнопки мыши
+    /// При освобождении кнопки мыши.
+    /// 
+    /// On a mouse button released.
     pub fn released(&mut self){
         self.image_base.x1-=d_radius;
         self.image_base.y1+=d_radius;
@@ -131,7 +154,8 @@ impl MouseCursorIcon{
 
     #[inline(always)]
     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        draw_parameters.color_mask=(self.visible,self.visible,self.visible,self.visible);
-        self.image_base.draw(&self.texture,draw_parameters,graphics);
+        if self.visible{
+            self.image_base.draw(&self.texture,draw_parameters,graphics);
+        }
     }
 }

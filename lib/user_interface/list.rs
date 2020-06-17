@@ -1,4 +1,4 @@
-use engine::{
+use cat_engine::{
     mouse_cursor,
     Colour,
     graphics::{

@@ -14,7 +14,7 @@ use lib::{
     TextViewStaticLined,
 };
 
-use engine::{
+use cat_engine::{
     // fns
     window_rect,
     // statics

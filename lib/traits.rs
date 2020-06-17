@@ -1,5 +1,5 @@
-use engine::graphics::Graphics;
-use engine::glium::DrawParameters;
+use cat_engine::graphics::{Graphics};
+use cat_engine::glium::DrawParameters;
 
 
 pub trait Drawable{

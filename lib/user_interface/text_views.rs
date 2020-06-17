@@ -5,7 +5,7 @@ use super::{
     Black,
 };
 
-use engine::{
+use cat_engine::{
     // types
     Colour,
     // structs

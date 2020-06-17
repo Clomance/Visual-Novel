@@ -116,8 +116,8 @@ impl Rectangle{
     }
 
     #[inline(always)]
-    pub fn draw_move(&self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
-        graphics.draw_move_simple(self,movement,draw_parameters)
+    pub fn draw_shift(&self,shift:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
+        graphics.draw_shift_simple(self,shift,draw_parameters)
     }
 }
 
@@ -195,9 +195,9 @@ impl RectangleBorder{
     }
 
     #[inline(always)]
-    pub fn draw_move(&self,movement:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
+    pub fn draw_shift(&self,shift:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
         draw_parameters.line_width=Some(self.width);
-        graphics.draw_move_simple(self,movement,draw_parameters)
+        graphics.draw_shift_simple(self,shift,draw_parameters)
     }
 }
 
