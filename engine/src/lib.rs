@@ -1,13 +1,19 @@
 #![allow(non_upper_case_globals,unused_must_use)]
-// reimports
-pub use glium;
+
+/*!
+ * # Графический движок с поддержкой аудио.
+ * Graphics engine with audio support.
+ * 
+*/
+
+pub use glium; // reimports
 
 // text::{
 //      Glyphs,
 //      Character,
 //      TextBase
 // }
-/// Основы работы с текстом/Text basics - `feature = "text_graphics"`, `default-features`.
+/// Основы работы с текстом. Text basics. `feature = "text_graphics"`, `default-features`.
 #[cfg(feature="text_graphics")]
 pub mod text;
 
@@ -34,13 +40,14 @@ pub use window::*;
 //      ImageBase
 // }
 
-/// Основы работы с изображениями/Image basics.
+/// Основы работы с изображениями. Image basics. `feature = "texture_graphics"`, `default-features`.
+#[cfg(feature="texture_graphics")]
 pub mod image;
 
-/// Графические основы/Graphical basics.
+/// Графические основы. Graphical basics.
 pub mod graphics;
 
-/// Простая аудио система/Simple audio system - `feature = "audio"`.
+/// Простая аудио система. Simple audio system - `feature = "audio"`.
 #[cfg(feature="audio")]
 pub mod audio;
 

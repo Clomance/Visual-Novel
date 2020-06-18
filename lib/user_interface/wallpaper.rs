@@ -31,7 +31,7 @@ pub struct Wallpaper{
     texture:Texture,
     range:usize,
     filter:Colour,
-    movement:[f32;2],
+    shift:[f32;2],
 }
 
 impl Wallpaper{
@@ -54,14 +54,14 @@ impl Wallpaper{
                 texture:Texture::from_image(image,window.display()).unwrap(),
                 range,
                 filter:White,
-                movement:[0f32;2]
+                shift:[0f32;2]
             }
         }
     }
 
     #[inline(always)]
     pub fn mouse_shift(&mut self,[dx,dy]:[f32;2]){
-        self.movement=[
+        self.shift=[
             dx/wallpaper_movement_scale,
             dy/wallpaper_movement_scale,
         ]
@@ -87,16 +87,16 @@ impl Wallpaper{
         );
     }
 
-    pub fn draw_move(
+    pub fn draw_shift(
         &mut self,
         draw_parameters:&mut DrawParameters,
         graphics:&mut Graphics
     ){
-        graphics.draw_move_range_image(
+        graphics.draw_shift_range_image(
             self.range,
             &self.texture,
             self.filter,
-            self.movement,
+            self.shift,
             draw_parameters
         );
     }
@@ -106,18 +106,18 @@ impl Wallpaper{
         self.draw(draw_parameters,graphics);
     }
 
-    pub fn draw_move_smooth(
+    pub fn draw_shift_smooth(
         &mut self,
         alpha:f32,
         draw_parameters:&mut DrawParameters,
         graphics:&mut Graphics
     ){
         self.filter[3]=alpha;
-        graphics.draw_move_range_image(
+        graphics.draw_shift_range_image(
             self.range,
             &self.texture,
             self.filter,
-            self.movement,
+            self.shift,
             draw_parameters
         );
     }

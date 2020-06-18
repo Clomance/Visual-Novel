@@ -63,7 +63,8 @@ pub static mut window_center:[f32;2]=[0f32;2];
 
 /// Окно, включает в себя графические функциями
 /// и обработчик событий.
-/// Window with graphical functions and an event listener included.
+/// Window with graphical functions
+/// and an event listener included.
 /// 
 /*
     EventLoop - минимум четыре шага:
@@ -81,7 +82,13 @@ pub static mut window_center:[f32;2]=[0f32;2];
 /// При потере фокуса окно сворачивается,
 /// передача событий внешнему управлению прекращается (передаётся только событие о получении фокуса).
 /// При получении фокуса окно возвращается в исходное состояние.
-
+///
+/// All events are handled and added to the outer handling queue (Window.events)
+/// to work with them outside of the window structure.
+/// 
+/// The window gets minimized when it loses focus and
+/// it stops sending outer events, except gained focus event.
+/// The window gets back when it gains focus.
 pub struct Window{
     display:Display,
     graphics:Graphics2D,
@@ -101,7 +108,7 @@ pub struct Window{
     focusable_option:bool, // Включение/отключение возможности сворачивания во время отладки
 }
 
-/// Внешнии события окна.
+/// Внешние события окна.
 /// 
 /// Outer window events.
 #[derive(Clone)]
@@ -109,15 +116,15 @@ pub enum WindowEvent{
     None,
     Draw,
 
-    /// Получение/потеря фокуса, true/false
+    /// Сворачивание окна.
     /// 
-    /// При потере фокуса игра сворачивается
+    /// Minimizing the window.
     Hide(bool),
 
-    /// Изменение размера окна
+    /// Изменение размера окна.
     Resize([u32;2]),
 
-    /// Сдвиг мышки (сдвиг за пределы экрана игнорируется)
+    /// Сдвиг мышки (сдвиг за пределы экрана игнорируется).
     MouseMovementDelta([f32;2]),
     MousePressed(MouseButton),
     MouseReleased(MouseButton),
@@ -146,7 +153,7 @@ use WindowEvent::*;
 impl Window{
     /// Создаёт окно. Принимает функцию для настройки.
     ///
-    /// Creates the window. 
+    /// Creates the window.
     pub fn new<F>(setting:F)->Result<Window,DisplayCreationError>
         where
             F:FnOnce(Vec<MonitorHandle>,&mut WindowBuilder,&mut ContextBuilder<NotCurrent>,&mut GraphicsSettings){
@@ -276,7 +283,7 @@ impl Window{
     }
 }
 
-// Связанное с версиями OpenGL
+/// Связанное с версиями OpenGL.
 impl Window{
     #[inline(always)]
     pub fn get_supported_glsl_version(&self)->Version{
@@ -288,7 +295,7 @@ impl Window{
     }
 }
 
-// Функции для сглаживания
+/// Функции для сглаживания.
 impl Window{
     /// Set alpha channel for smooth drawing
     pub fn set_alpha(&mut self,alpha:f32){
@@ -410,7 +417,9 @@ impl Window{
     }
 }
 
-// Функции обработки событий
+/// Функции обработки событий.
+/// 
+/// Event handlers.
 impl Window{
     /// Обычная функция обработки событий
     fn event_listener(&mut self){
@@ -589,7 +598,9 @@ impl Window{
     }
 }
 
-// Функции внутренней обработки событий
+/// Функции внутренней обработки событий.
+/// 
+/// Inner event handling functions.
 impl Window{
     /// При потере фокуса - отладка
     #[cfg(debug_assertions)]

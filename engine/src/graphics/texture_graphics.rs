@@ -45,33 +45,33 @@ impl TexturedVertex{
     }
 }
 
-/// Графическая основа для отрисовки текстур (картинок).
+/// Графическая основа для отрисовки текстур (изображений).
 /// 
 /// Размер буферов регулируется вручную при создании.
-
+/// 
 /// Чтобы постоянно не загружать координаты для вывода,
 /// можно сохранить нужную область буфера и использовать её.
 /// Лучше использовать конец для сохранения областей,
-/// а начало - для постоянно обновляющихся значений.
+/// так как начало используется для постоянно обновляющихся значений.
 pub struct TextureGraphics{
     vertex_buffer:VertexBuffer<TexturedVertex>,
     vertex_buffer_ranges:Vec<Range<usize>>,
     draw:Program,
     draw_rotate:Program,
-    draw_move:Program,
+    draw_shift:Program,
 }
 
 impl TextureGraphics{
     pub fn new(display:&Display,buffer_size:usize,glsl:u16)->TextureGraphics{
-        let (rotation,moving,vertex_shader,fragment_shader)=if glsl==120{(
+        let (rotation,shift,vertex_shader,fragment_shader)=if glsl==120{(
             include_str!("shaders/120/texture_rotation_vertex_shader.glsl"),
-            include_str!("shaders/120/texture_movement_vertex_shader.glsl"),
+            include_str!("shaders/120/texture_shift_vertex_shader.glsl"),
             include_str!("shaders/120/texture_vertex_shader.glsl"),
             include_str!("shaders/120/texture_fragment_shader.glsl")
         )}
         else{(
             include_str!("shaders/texture_rotation_vertex_shader.glsl"),
-            include_str!("shaders/texture_movement_vertex_shader.glsl"),
+            include_str!("shaders/texture_shift_vertex_shader.glsl"),
             include_str!("shaders/texture_vertex_shader.glsl"),
             include_str!("shaders/texture_fragment_shader.glsl")
         )};
@@ -81,7 +81,7 @@ impl TextureGraphics{
             vertex_buffer_ranges:Vec::<Range<usize>>::with_capacity(buffer_size),
             draw:Program::from_source(display,vertex_shader,fragment_shader,None).unwrap(),
             draw_rotate:Program::from_source(display,rotation,fragment_shader,None).unwrap(),
-            draw_move:Program::from_source(display,moving,fragment_shader,None).unwrap(),
+            draw_shift:Program::from_source(display,shift,fragment_shader,None).unwrap(),
         }
     }
 
@@ -147,7 +147,7 @@ impl TextureGraphics{
     }
 }
 
-// Функции для работы с областями
+/// Функции для работы с областями.
 impl TextureGraphics{
     /// Добавляет область и записывает в неё данные.
     /// Возвращает номер (индекс) области.
@@ -204,7 +204,7 @@ impl TextureGraphics{
     }
 
     /// Рисует выбранную область, сдвигая координаты.
-    pub fn draw_move_range<'a,I:Into<IndicesSource<'a>>>(
+    pub fn draw_shift_range<'a,I:Into<IndicesSource<'a>>>(
         &self,
         index:usize,
         texture:&Texture,
@@ -217,21 +217,21 @@ impl TextureGraphics{
         let range=self.vertex_buffer_ranges[index].clone();
         let slice=self.vertex_buffer.slice(range).unwrap();
 
-        let movement=unsafe{[
+        let shift=unsafe{[
             dx/window_center[0],
-            dy/window_center[1]
+            -dy/window_center[1]
         ]};
 
         let uni=uniform!{
             tex:&texture.0,
             colour_filter:colour_filter,
-            movement:movement
+            shift:shift
         };
 
         frame.draw(
             slice,
             indices,
-            &self.draw_move,
+            &self.draw_shift,
             &uni,
             draw_parameters
         )

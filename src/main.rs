@@ -159,7 +159,7 @@ fn main(){
         }
     };
 
-    let mut music=Audio::new();
+    let mut music=Audio::new(2);
 
     unsafe{
         let wallpaper_size={
@@ -235,7 +235,6 @@ fn main(){
         music.add_track("./resources/music/audio.mp3");
         music.set_volume(Settings.volume);
         music.play_track(0,Repeat::Forever);
-
         // Полный цикл игры
         'game:loop{
             wallpaper.update_image(texture_base.main_menu_wallpaper()); // Устрановка обоев главного меню
@@ -287,7 +286,7 @@ fn main(){
                             WindowEvent::Draw=>{ //Рендеринг
                                 if 1f32<window.draw_smooth(|alpha,c,g|{
                                     g.clear_colour(White);
-                                    wallpaper.draw_move_smooth(alpha,c,g);
+                                    wallpaper.draw_shift_smooth(alpha,c,g);
                                     characters_view.draw_smooth(alpha,c,g);
                                     dialogue_box.set_alpha_channel(alpha);
                                     dialogue_box.draw(c,g);
@@ -324,7 +323,7 @@ fn main(){
 
                             WindowEvent::Draw=>{ //Рендеринг
                                 window.draw(|c,g|{
-                                    wallpaper.draw_move(c,g);
+                                    wallpaper.draw_shift(c,g);
                                     characters_view.draw(c,g);
                                     dialogue_box.draw(c,g);
                                 });
@@ -378,7 +377,7 @@ fn main(){
 
                                 KeyboardButton::F5=>{
                                     make_screenshot(&mut window,|p,g|{
-                                        wallpaper.draw_move(p,g);
+                                        wallpaper.draw_shift(p,g);
                                         characters_view.draw(p,g);
                                         dialogue_box.draw(p,g);
                                     })
@@ -415,7 +414,7 @@ fn main(){
                                 if button==KeyboardButton::F5{
                                     make_screenshot(&mut window,|p,g|{
                                         g.clear_colour(White);
-                                        wallpaper.draw_move(p,g);
+                                        wallpaper.draw_shift(p,g);
                                         characters_view.draw(p,g);
                                         dialogue_box.draw_without_text(p,g);
                                     })

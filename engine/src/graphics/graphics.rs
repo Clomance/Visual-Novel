@@ -133,21 +133,21 @@ impl Graphics2D{
     }
 
     #[cfg(feature="texture_graphics")]
-    pub fn draw_move_range_image(
+    pub fn draw_shift_range_image(
         &self,
         index:usize,
         texture:&Texture,
         colour_filter:Colour,
-        [dx,dy]:[f32;2],
+        shift:[f32;2],
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
     )->Result<(),DrawError>{
         let indices=NoIndices(PrimitiveType::TriangleStrip);
-        self.texture.draw_move_range(
+        self.texture.draw_shift_range(
             index,
             texture,
             colour_filter,
-            [dx,-dy],
+            shift,
             indices,
             draw_parameters,
             frame
@@ -289,19 +289,19 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
     /// данных из области.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
-    pub fn draw_move_range_image(
+    pub fn draw_shift_range_image(
         &mut self,
         index:usize,
         texture:&Texture,
         colour_filter:Colour,
-        movement:[f32;2],
+        shift:[f32;2],
         draw_parameters:&mut DrawParameters
     )->Result<(),DrawError>{
-        self.graphics.draw_move_range_image(
+        self.graphics.draw_shift_range_image(
             index,
             texture,
             colour_filter,
-            movement,
+            shift,
             draw_parameters,
             &mut self.frame
         )

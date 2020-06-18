@@ -1,4 +1,3 @@
-#![cfg(feature="texture_graphics")]
 use super::{
     // statics
     window_center,

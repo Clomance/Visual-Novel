@@ -202,12 +202,12 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
     }
 
     pub fn draw(&mut self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.wallpaper.draw_move(draw_parameters,graphics);
+        self.wallpaper.draw_shift(draw_parameters,graphics);
         self.menu.draw(draw_parameters,graphics);
     }
 
     pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.wallpaper.draw_move_smooth(alpha,draw_parameters,graphics);
+        self.wallpaper.draw_shift_smooth(alpha,draw_parameters,graphics);
         self.menu.draw_smooth(alpha,draw_parameters,graphics);
     }
 
