@@ -8,7 +8,7 @@ Viimane stabiilne Rust, minimaalne OpenGL-i versioon - `2.0`.
  - Graafika - [glium](https://github.com/glium/glium)
  - Pildid - [image](https://github.com/image-rs/image)
  - Fondid - [rusttype](https://gitlab.redox-os.org/redox-os/rusttype)
- - Hääl - [rodio](https://github.com/RustAudio/rodio)
+ - Hääl - [cpal](https://github.com/RustAudio/cpal)
 
 Töötab stabiilselt 64-bitisel Windows 10 versioonil. Pole veel testinud teistel süsteemidel.
 
