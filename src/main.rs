@@ -29,7 +29,7 @@ use cat_engine::{
         glutin::dpi::Size
     },
     // mods
-    audio::{Audio,Repeat},
+    audio::Audio,
 };
 
 use std::{
@@ -159,7 +159,7 @@ fn main(){
         }
     };
 
-    let mut music=Audio::new(2);
+    let mut music=Audio::new();
 
     unsafe{
         let wallpaper_size={
@@ -232,9 +232,9 @@ fn main(){
 
         let mut dialogue_box=DialogueBox::new(texture_base.dialogue_box(),window.display(),Dialogue_font!()); // Диалоговое окно
 
-        music.add_track("./resources/music/audio.mp3");
+        music.add_music("./resources/music/audio.mp3");
         music.set_volume(Settings.volume);
-        music.play_track(0,Repeat::Forever);
+        music.play_forever(0);
         // Полный цикл игры
         'game:loop{
             wallpaper.update_image(texture_base.main_menu_wallpaper()); // Устрановка обоев главного меню

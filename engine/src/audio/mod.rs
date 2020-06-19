@@ -1,25 +1,34 @@
-use std::{
-    path::Path,
-    fs::File,
-    thread::JoinHandle,
-    sync::mpsc::{channel,Sender},
+mod audio_track;
+mod sample;
+mod sample_rate;
+mod channels;
+
+use audio_track::*;
+use sample_rate::*;
+
+use cpal::{
+    Device,
+    traits::{
+        HostTrait,
+        DeviceTrait,
+        EventLoopTrait
+    },
+    UnknownTypeOutputBuffer,
+    StreamData,
+    SampleFormat,
+    StreamId,
+    EventLoop,
 };
 
-use rodio::{
-    Source,
-    Sink,
-    Decoder,
-    source::Buffered,
-};
+use std::path::Path;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::thread::JoinHandle;
 
-/// Результат выполнения команды. The result of an audio command.
-#[derive(Debug,Clone,Copy,PartialEq)]
+#[derive(Debug,PartialEq)]
 pub enum AudioCommandResult{
     Ok,
-    NoSuchTrack,
-    AudioThreadClosed,
-    FileError,
-    DecodeError,
+    ThreadClosed,
 }
 
 impl AudioCommandResult{
@@ -36,213 +45,167 @@ impl AudioCommandResult{
     }
 }
 
-/// Повторение трека. Repeating a track.
-pub enum Repeat{
-    Once,
-    Forever,
-}
-
-enum AudioCommand{
-    PlayOnce(Buffered<Decoder<File>>),
-    PlayForever(Buffered<Decoder<File>>),
-    SetChannel(usize),
+enum AudioSystemCommand{
+    AddTrack(Track),
+    PlayOnce(usize),
+    PlayForever(usize),
     SetVolume(f32),
-    Pause,
-    Unpause,
     Close,
 }
 
-unsafe impl std::marker::Sync for AudioCommand{}
-unsafe impl std::marker::Send for AudioCommand{}
+enum Play{
+    None,
+    Once(SampleRateConverter<std::vec::IntoIter<i16>>),
+    Forever(SampleRateConverter<std::iter::Cycle<std::vec::IntoIter<i16>>>),
+}
 
-/// Система управления звуком. Audio operation system.
-///
-/// Пока что только для вывода. Output only for now.
-/// 
-/// Запускается в отдельном потоке, чтобы WINAPI не ругался.
-/// Передача команд осуществляется с помощью `std::sync::mpsc::Sender` и `std::sync::mpsc::Receiver`.
-/// 
-/// Так же хранит звуковые треки, которые можно запустить.
+unsafe impl std::marker::Sync for AudioSystemCommand{}
+unsafe impl std::marker::Send for AudioSystemCommand{}
+
 pub struct Audio{
-    command:Sender<AudioCommand>,
+    event_loop:Arc<EventLoop>,
+    streams:Arc<Mutex<Vec<StreamId>>>,
+    command:std::sync::mpsc::Sender<AudioSystemCommand>,
     thread:Option<JoinHandle<()>>,
-    tracks:Vec<Buffered<Decoder<File>>>
 }
 
 impl Audio{
-    /// Подключение к текущему устройству.
-    /// Запуск потока и подключение канала связи.
-    /// 
-    /// Connects to the current device.
-    /// Spawns a thread and creates communication channels.
-    pub fn new(channels:usize)->Audio{
-        let (sender,receiver)=channel();
+    pub fn new()->Audio{
+        let mut volume=0.5f32;
+        let mut tracks:Vec<Track>=Vec::with_capacity(2);
+        let channels=Arc::new(Mutex::new(Vec::with_capacity(1)));
+
+        let c=channels.clone();
+
+        let host=cpal::default_host();
+        let event_loop=Arc::new(host.event_loop());
+        let el=event_loop.clone();
+        // Передача команд от управляющего потока выполняющему
+        let (sender,receiver)=std::sync::mpsc::channel::<AudioSystemCommand>();
+
         let thread=std::thread::spawn(move||{
-            let device=rodio::default_output_device().unwrap();
-            let mut sinks=Vec::with_capacity(channels);
-            for _ in 0..channels{
-                sinks.push(Sink::new(&device))
-            }
 
-            let mut current_channel=&mut sinks[0];
+            let mut play=Play::None;
 
-            loop{
-                match receiver.recv(){
-                    Ok(command)=>{
-                        match command{
-                            AudioCommand::PlayOnce(track)=>{
-                                *current_channel=Sink::new(&device);
-                                current_channel.append(track.stoppable());
-                            }
-                            AudioCommand::PlayForever(track)=>{
-                                current_channel.append(track.stoppable().repeat_infinite());
-                            }
-                            AudioCommand::SetChannel(channel)=>{
-                                current_channel=&mut sinks[channel]
-                            }
-                            AudioCommand::SetVolume(volume)=>{
-                                current_channel.set_volume(volume)
-                            }
-                            AudioCommand::Pause=>{
-                                current_channel.pause()
-                            }
-                            AudioCommand::Unpause=>{
-                                current_channel.play()
-                            }
-                            AudioCommand::Close=>{
-                                break
+            let device=host.default_output_device().unwrap();
+            let mut format=device.default_output_format().unwrap();
+            format.data_type=SampleFormat::I16;
+            let device_sample_rate=format.sample_rate;
+            let main_stream=event_loop.build_output_stream(&device,&format).expect("stream");
+
+            c.lock().unwrap().push(main_stream.clone());
+
+            event_loop.play_stream(main_stream.clone()).unwrap();
+            event_loop.clone().run(move|stream,result|{
+                match receiver.try_recv(){
+                    Ok(command)=>match command{
+                        AudioSystemCommand::AddTrack(new_track)=>{
+                            if tracks.len()<tracks.capacity(){
+                                tracks.push(new_track)
                             }
                         }
+                        AudioSystemCommand::PlayOnce(i)=>{
+                            play=Play::Once(tracks[i].clone().toSampleRateConverter(device_sample_rate));
+                        }
+                        AudioSystemCommand::PlayForever(i)=>{
+                            play=Play::Forever(tracks[i].clone().endless_iter(device_sample_rate));
+                        }
+                        AudioSystemCommand::SetVolume(v)=>{
+                            volume=v;
+                        }
+                        AudioSystemCommand::Close=>{
+                            panic!("Closing audio thread")
+                        },
                     }
-                    Err(_)=>break
+                    Err(_)=>{}
                 }
-            }
+
+                match result{
+                    Ok(data)=>{
+                        match data{
+                            StreamData::Output{buffer:UnknownTypeOutputBuffer::I16(mut buffer)}=>{
+                                match &mut play{
+                                    Play::None=>{}
+                                    Play::Once(track)=>{
+                                        for b in buffer.iter_mut(){
+                                            *b=(track.next().unwrap_or(0i16) as f32 * volume) as i16;
+                                        }
+                                    }
+                                    Play::Forever(track)=>{
+                                        for b in buffer.iter_mut(){
+                                            *b=(track.next().unwrap_or(0i16) as f32 * volume) as i16;
+                                        }
+                                    }
+                                }
+                            }
+                            _=>{}
+                        }
+                    }
+                    Err(e)=>{eprintln!("an error occurred on stream {:?}: {}",stream,e);return}
+                }
+
+                
+            });
         });
 
         Self{
+            event_loop:el,
+            streams:channels,
             command:sender,
             thread:Some(thread),
-            tracks:Vec::new(),
         }
     }
 
-    /// Добавляет звуковой трек.
-    /// 
-    /// Adds sound track.
-    pub fn add_track<P:AsRef<Path>>(&mut self,path:P)->AudioCommandResult{
-        let file=match File::open(path){
-            Ok(file)=>file,
-            Err(_)=>return AudioCommandResult::FileError
-        };
-        let track=match rodio::Decoder::new(file){
-            Ok(track)=>track.buffered(),
-            Err(_)=>return AudioCommandResult::DecodeError
-        };
-        self.tracks.push(track);
-        AudioCommandResult::Ok
+    pub fn default_output_device()->Option<Device>{
+        cpal::default_host().default_output_device()
     }
 
-    /// Удаляет звуковой трек.
-    /// 
-    /// Removes sound track.
-    pub fn remove_track(&mut self,index:usize){
-        self.tracks.remove(index);
-    }
-
-    /// Возвращает количество доступных треков.
-    /// 
-    /// Returns amount of tracks.
-    pub fn tracks_len(&self)->usize{
-        self.tracks.len()
-    }
-
-    /// Удаляет все аудио треки.
-    /// 
-    /// Deletes all audio tracks.
-    pub fn delete_tracks(&mut self){
-        self.tracks.clear()
-    }
-
-    /// Запускает трек.
-    /// 
-    /// Передаёт трек аудио потоку, отчищает звуковой буфер,
-    /// добавляет трек и запускает его.
-    /// 
-    /// Starts playing a track.
-    /// 
-    /// Sends the track to the audio thread, clears the audio buffer,
-    /// adds the track and starts playing it.
-    pub fn play_track(&self,index:usize,repeat:Repeat)->AudioCommandResult{
-        let track=match self.tracks.get(index){
-            Some(track)=>track.clone(),
-            None=>return AudioCommandResult::NoSuchTrack
-        };
-        let command=match repeat{
-            Repeat::Once=>AudioCommand::PlayOnce(track),
-            Repeat::Forever=>AudioCommand::PlayForever(track),
-        };
-        match self.command.send(command){
+    pub fn add_music<P:AsRef<Path>>(&mut self,path:P)->AudioCommandResult{
+        let track=Track::new(path);
+        match self.command.send(AudioSystemCommand::AddTrack(track)){
             Ok(())=>AudioCommandResult::Ok,
-            Err(_)=>AudioCommandResult::AudioThreadClosed
+            Err(_)=>AudioCommandResult::ThreadClosed
         }
     }
 
-    /// Устанавливает громкость.
-    /// 
-    /// Sets the volume.
-    /// 
-    /// 0 <= volume <= 1
+    pub fn play_once(&mut self,index:usize)->AudioCommandResult{
+        match self.command.send(AudioSystemCommand::PlayOnce(index)){
+            Ok(())=>AudioCommandResult::Ok,
+            Err(_)=>AudioCommandResult::ThreadClosed
+        }
+    }
+
+    pub fn play_forever(&mut self,index:usize)->AudioCommandResult{
+        match self.command.send(AudioSystemCommand::PlayForever(index)){
+            Ok(())=>AudioCommandResult::Ok,
+            Err(_)=>AudioCommandResult::ThreadClosed
+        }
+    }
+
+    pub fn pause(&mut self){
+        let stream=self.streams.lock().unwrap().get(0).unwrap().clone();
+        self.event_loop.pause_stream(stream);
+    }
+
+    pub fn play(&mut self){
+        let stream=self.streams.lock().unwrap().get(0).unwrap().clone();
+        self.event_loop.play_stream(stream);
+    }
+
     pub fn set_volume(&self,volume:f32)->AudioCommandResult{
-        match self.command.send(AudioCommand::SetVolume(volume)){
+        match self.command.send(AudioSystemCommand::SetVolume(volume)){
             Ok(())=>AudioCommandResult::Ok,
-            Err(_)=>AudioCommandResult::AudioThreadClosed
-        }
-    }
-
-
-    /// Устанавливает текущий канал для управления им.
-    /// 
-    /// Аудио поток паникует, если нет такого канала.
-    /// 
-    /// Sets current channel to operate it.
-    /// 
-    /// Audio thread panics, if there is no such channel.
-    pub fn set_channel(&self,channel:usize)->AudioCommandResult{
-        match self.command.send(AudioCommand::SetChannel(channel)){
-            Ok(())=>AudioCommandResult::Ok,
-            Err(_)=>AudioCommandResult::AudioThreadClosed
-        }
-    }
-
-    /// Остановливает проигрывание.
-    /// 
-    /// Pauses playing.
-    pub fn pause(&self)->AudioCommandResult{
-        match self.command.send(AudioCommand::Pause){
-            Ok(())=>AudioCommandResult::Ok,
-            Err(_)=>AudioCommandResult::AudioThreadClosed
-        }
-    }
-
-    /// Запускает проигрывание после паузы.
-    /// 
-    /// Starts playing after a pause.
-    pub fn unpause(&self)->AudioCommandResult{
-        match self.command.send(AudioCommand::Unpause){
-            Ok(())=>AudioCommandResult::Ok,
-            Err(_)=>AudioCommandResult::AudioThreadClosed
+            Err(_)=>AudioCommandResult::ThreadClosed
         }
     }
 }
 
-/// Посылает команду об остановке и ждёт пока поток закончил работу.
-/// 
-/// Sends stopping command and waits until thread is closed.
 impl Drop for Audio{
     fn drop(&mut self){
-        self.command.send(AudioCommand::Close);
+        let _=self.command.send(AudioSystemCommand::Close);
         if let Some(thread)=self.thread.take(){
-            thread.join();
+            let _=thread.join();
         }
+        println!("Dropped");
     }
 }
