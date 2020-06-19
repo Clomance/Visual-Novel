@@ -3,7 +3,7 @@ mod sample;
 mod sample_rate;
 mod channels;
 
-pub use audio_track::Track;
+pub use audio_track::*;
 use sample_rate::*;
 
 use cpal::{
@@ -15,7 +15,6 @@ use cpal::{
     },
     UnknownTypeOutputBuffer,
     StreamData,
-    SampleFormat,
     StreamId,
     EventLoop,
 };
@@ -23,12 +22,14 @@ use cpal::{
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::LockResult;
 use std::thread::JoinHandle;
 
 #[derive(Debug,PartialEq)]
 pub enum AudioCommandResult{
     Ok,
     ThreadClosed,
+    TrackError,
 }
 
 impl AudioCommandResult{
@@ -46,7 +47,7 @@ impl AudioCommandResult{
 }
 
 enum AudioSystemCommand{
-    AddTrack(Track),
+    AddTrack(Track<i16>),
     PlayOnce(usize),
     PlayForever(usize),
     SetVolume(f32),
@@ -73,10 +74,10 @@ pub struct Audio{
 }
 
 impl Audio{
-    pub fn new()->Audio{
+    pub fn new(settings:AudioSettings)->Audio{
         let mut volume=0.5f32;
-        let mut tracks:Vec<Track>=Vec::with_capacity(2);
-        let channels=Arc::new(Mutex::new(Vec::with_capacity(1)));
+        let mut tracks:Vec<Track<i16>>=Vec::with_capacity(settings.track_buffer_capacity);
+        let channels=Arc::new(Mutex::new(Vec::with_capacity(settings.channels)));
 
         let c=channels.clone();
 
@@ -91,8 +92,8 @@ impl Audio{
             let mut play=Play::None;
 
             let device=host.default_output_device().unwrap();
-            let mut format=device.default_output_format().unwrap();
-            format.data_type=SampleFormat::I16;
+            let format=device.default_output_format().unwrap();
+
             let device_sample_rate=format.sample_rate;
             let main_stream=event_loop.build_output_stream(&device,&format).expect("stream");
 
@@ -159,6 +160,23 @@ impl Audio{
                                     }
                                 }
                             }
+                            StreamData::Output{buffer:UnknownTypeOutputBuffer::F32(mut buffer)}=>{
+                                match &mut play{
+                                    Play::None=>{}
+                                    Play::Once(track)=>{
+                                        for b in buffer.iter_mut(){
+                                            let sample=track.next().unwrap_or(0i16) as f32 * volume;
+                                            *b=sample/(i16::max_value() as f32);
+                                        }
+                                    }
+                                    Play::Forever(track)=>{
+                                        for b in buffer.iter_mut(){
+                                            let sample=track.next().unwrap_or(0i16) as f32 * volume;
+                                            *b=sample/(i16::max_value() as f32);
+                                        }
+                                    }
+                                }
+                            }
                             _=>{}
                         }
                     }
@@ -181,8 +199,12 @@ impl Audio{
         cpal::default_host().default_output_device()
     }
 
+    /// Добавляет трек в массив треков, удаляет, если массив переполнен
     pub fn add_track<P:AsRef<Path>>(&mut self,path:P)->AudioCommandResult{
-        let track=Track::new(path);
+        let track=match Track::new(path){
+            TrackResult::Ok(track)=>track,
+            _=>return AudioCommandResult::TrackError
+        };
         match self.command.send(AudioSystemCommand::AddTrack(track)){
             Ok(())=>AudioCommandResult::Ok,
             Err(_)=>AudioCommandResult::ThreadClosed
@@ -203,14 +225,22 @@ impl Audio{
         }
     }
 
-    pub fn pause(&mut self){
-        let stream=self.streams.lock().unwrap().get(0).unwrap().clone();
+    pub fn pause(&mut self)->AudioCommandResult{
+        let stream=match self.streams.lock(){
+            LockResult::Ok(streams)=>streams.get(0).unwrap().clone(),
+            LockResult::Err(_)=>return AudioCommandResult::ThreadClosed
+        };
         self.event_loop.pause_stream(stream);
+        AudioCommandResult::Ok
     }
 
-    pub fn play(&mut self){
-        let stream=self.streams.lock().unwrap().get(0).unwrap().clone();
+    pub fn play(&mut self)->AudioCommandResult{
+        let stream=match self.streams.lock(){
+            LockResult::Ok(streams)=>streams.get(0).unwrap().clone(),
+            LockResult::Err(_)=>return AudioCommandResult::ThreadClosed
+        };
         self.event_loop.play_stream(stream);
+        AudioCommandResult::Ok
     }
 
     pub fn set_volume(&self,volume:f32)->AudioCommandResult{
@@ -231,6 +261,16 @@ impl Drop for Audio{
     }
 }
 
-pub struct AudioSystemSettings{
-    channels:usize,
+pub struct AudioSettings{
+    pub channels:usize,
+    pub track_buffer_capacity:usize,
+}
+
+impl AudioSettings{
+    pub fn new()->AudioSettings{
+        Self{
+            channels:1,
+            track_buffer_capacity:1,
+        }
+    }
 }

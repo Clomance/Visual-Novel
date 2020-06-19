@@ -3,8 +3,7 @@ use cpal;
 /// Iterator that converts from a certain channel count to another.
 #[derive(Clone, Debug)]
 pub struct ChannelCountConverter<I>
-where
-    I: Iterator,
+    where I:Iterator
 {
     input: I,
     from: cpal::ChannelCount,
@@ -14,8 +13,7 @@ where
 }
 
 impl<I> ChannelCountConverter<I>
-where
-    I: Iterator,
+    where I:Iterator
 {
     /// Initializes the iterator.
     ///
@@ -25,8 +23,10 @@ where
     ///
     #[inline]
     pub fn new(
-        input: I, from: cpal::ChannelCount, to: cpal::ChannelCount,
-    ) -> ChannelCountConverter<I> {
+        input:I,
+        from:cpal::ChannelCount,
+        to:cpal::ChannelCount,
+    )->ChannelCountConverter<I>{
         assert!(from >= 1);
         assert!(to >= 1);
 
@@ -37,12 +37,6 @@ where
             sample_repeat: None,
             next_output_sample_pos: 0,
         }
-    }
-
-    /// Destroys this iterator and returns the underlying iterator.
-    #[inline]
-    pub fn into_inner(self) -> I {
-        self.input
     }
 }
 

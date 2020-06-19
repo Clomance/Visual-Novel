@@ -29,7 +29,7 @@ use cat_engine::{
         glutin::dpi::Size
     },
     // mods
-    audio::Audio,
+    audio::{Audio,AudioSettings}
 };
 
 use std::{
@@ -159,7 +159,7 @@ fn main(){
         }
     };
 
-    let mut music=Audio::new();
+    let mut music=Audio::new(AudioSettings::new());
 
     unsafe{
         let wallpaper_size={
