@@ -3,7 +3,7 @@ mod sample;
 mod sample_rate;
 mod channels;
 
-use audio_track::*;
+pub use audio_track::Track;
 use sample_rate::*;
 
 use cpal::{
@@ -62,6 +62,9 @@ enum Play{
 unsafe impl std::marker::Sync for AudioSystemCommand{}
 unsafe impl std::marker::Send for AudioSystemCommand{}
 
+/// Простой аудио движок.
+/// Simple audio engine.
+/// 
 pub struct Audio{
     event_loop:Arc<EventLoop>,
     streams:Arc<Mutex<Vec<StreamId>>>,
@@ -105,7 +108,7 @@ impl Audio{
                             }
                         }
                         AudioSystemCommand::PlayOnce(i)=>{
-                            play=Play::Once(tracks[i].clone().toSampleRateConverter(device_sample_rate));
+                            play=Play::Once(tracks[i].clone().into_iter(device_sample_rate));
                         }
                         AudioSystemCommand::PlayForever(i)=>{
                             play=Play::Forever(tracks[i].clone().endless_iter(device_sample_rate));
@@ -138,6 +141,24 @@ impl Audio{
                                     }
                                 }
                             }
+
+                            StreamData::Output{buffer:UnknownTypeOutputBuffer::U16(mut buffer)}=>{
+                                match &mut play{
+                                    Play::None=>{}
+                                    Play::Once(track)=>{
+                                        for b in buffer.iter_mut(){
+                                            let sample=(track.next().unwrap_or(0i16) as f32 * volume) as i16;
+                                            *b=(i16::max_value()+sample) as u16;
+                                        }
+                                    }
+                                    Play::Forever(track)=>{
+                                        for b in buffer.iter_mut(){
+                                            let sample=(track.next().unwrap_or(0i16) as f32 * volume) as i16;
+                                            *b=(i16::max_value()+sample) as u16;
+                                        }
+                                    }
+                                }
+                            }
                             _=>{}
                         }
                     }
@@ -160,7 +181,7 @@ impl Audio{
         cpal::default_host().default_output_device()
     }
 
-    pub fn add_music<P:AsRef<Path>>(&mut self,path:P)->AudioCommandResult{
+    pub fn add_track<P:AsRef<Path>>(&mut self,path:P)->AudioCommandResult{
         let track=Track::new(path);
         match self.command.send(AudioSystemCommand::AddTrack(track)){
             Ok(())=>AudioCommandResult::Ok,
@@ -208,4 +229,8 @@ impl Drop for Audio{
         }
         println!("Dropped");
     }
+}
+
+pub struct AudioSystemSettings{
+    channels:usize,
 }

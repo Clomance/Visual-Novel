@@ -5,12 +5,9 @@ use std::mem;
 
 /// Iterator that converts from a certain sample rate to another.
 #[derive(Clone, Debug)]
-pub struct SampleRateConverter<I>
-where
-    I: Iterator,
-{
+pub struct SampleRateConverter<I:Iterator>{
     /// The iterator that gives us samples.
-    input: I,
+    input:I,
     /// We convert chunks of `from` samples into chunks of `to` samples.
     from: u32,
     /// We convert chunks of `from` samples into chunks of `to` samples.
@@ -29,9 +26,7 @@ where
 }
 
 impl<I> SampleRateConverter<I>
-where
-    I: Iterator,
-    I::Item: Sample,
+    where I:Iterator,I::Item:Sample
 {
     ///
     ///
@@ -41,9 +36,11 @@ where
     ///
     #[inline]
     pub fn new(
-        mut input: I, from: cpal::SampleRate, to: cpal::SampleRate,
-        num_channels: cpal::ChannelCount,
-    ) -> SampleRateConverter<I> {
+        mut input:I,
+        from:cpal::SampleRate,
+        to:cpal::SampleRate,
+        num_channels:cpal::ChannelCount,
+    )->SampleRateConverter<I>{
         let from = from.0;
         let to = to.0;
 
@@ -92,12 +89,6 @@ where
         }
     }
 
-    /// Destroys this iterator and returns the underlying iterator.
-    #[inline]
-    pub fn into_inner(self) -> I {
-        self.input
-    }
-
     fn next_input_frame(&mut self) {
         self.current_frame_pos_in_chunk += 1;
 
@@ -114,11 +105,9 @@ where
 }
 
 impl<I> Iterator for SampleRateConverter<I>
-where
-    I: Iterator,
-    I::Item: Sample + Clone,
+    where I:Iterator,I::Item:Sample+Clone
 {
-    type Item = I::Item;
+    type Item=I::Item;
 
     fn next(&mut self) -> Option<I::Item> {
         // the algorithm below doesn't work if `self.from == self.to`
@@ -233,141 +222,5 @@ where
             let (min, max) = self.input.size_hint();
             (apply(min), max.map(apply))
         }
-    }
-}
-
-impl<I> ExactSizeIterator for SampleRateConverter<I>
-where
-    I: ExactSizeIterator,
-    I::Item: Sample + Clone,
-{
-}
-
-#[cfg(test)]
-mod test {
-    use super::SampleRateConverter;
-    use cpal::SampleRate;
-
-    #[test]
-    fn zero() {
-        let input: Vec<u16> = Vec::new();
-        let output =
-            SampleRateConverter::new(input.into_iter(), SampleRate(1278), SampleRate(78923), 1);
-        //assert_eq!(output.len(), 0);
-
-        let output = output.collect::<Vec<_>>();
-        assert_eq!(output, []);
-    }
-
-    #[test]
-    fn identity_1channel() {
-        let input = vec![2u16, 16, 4, 18, 6, 20, 8, 22];
-        let output =
-            SampleRateConverter::new(input.into_iter(), SampleRate(12345), SampleRate(12345), 1);
-        assert_eq!(output.len(), 8);
-
-        let output = output.collect::<Vec<_>>();
-        assert_eq!(output, [2u16, 16, 4, 18, 6, 20, 8, 22]);
-    }
-
-    #[test]
-    fn identity_2channels() {
-        let input = vec![2u16, 16, 4, 18, 6, 20, 8, 22];
-        let output =
-            SampleRateConverter::new(input.into_iter(), SampleRate(12345), SampleRate(12345), 2);
-        assert_eq!(output.len(), 8);
-
-        let output = output.collect::<Vec<_>>();
-        assert_eq!(output, [2u16, 16, 4, 18, 6, 20, 8, 22]);
-    }
-
-    #[test]
-    fn identity_2channels_misalign() {
-        let input = vec![2u16, 16, 4, 18, 6];
-        let output =
-            SampleRateConverter::new(input.into_iter(), SampleRate(12345), SampleRate(12345), 2);
-        assert_eq!(output.len(), 5);
-
-        let output = output.collect::<Vec<_>>();
-        assert_eq!(output, [2u16, 16, 4, 18, 6]);
-    }
-
-    #[test]
-    fn identity_5channels() {
-        let input = vec![2u16, 16, 4, 18, 6, 20, 8, 22, 10, 24];
-        let output =
-            SampleRateConverter::new(input.into_iter(), SampleRate(12345), SampleRate(12345), 5);
-        assert_eq!(output.len(), 10);
-
-        let output = output.collect::<Vec<_>>();
-        assert_eq!(output, [2u16, 16, 4, 18, 6, 20, 8, 22, 10, 24]);
-    }
-
-    #[test]
-    fn half_sample_rate() {
-        let input = vec![1u16, 16, 2, 17, 3, 18, 4, 19, 5, 20, 6, 21];
-        let output =
-            SampleRateConverter::new(input.into_iter(), SampleRate(44100), SampleRate(22050), 2);
-        assert_eq!(output.len(), 6);
-
-        let output = output.collect::<Vec<_>>();
-        assert_eq!(output, [1, 16, 3, 18, 5, 20]);
-    }
-
-    #[test]
-    fn double_sample_rate() {
-        let input = vec![2u16, 16, 4, 18, 6, 20, 8, 22];
-        let output =
-            SampleRateConverter::new(input.into_iter(), SampleRate(22050), SampleRate(44100), 2);
-        //assert_eq!(output.len(), 14);
-
-        let output = output.collect::<Vec<_>>();
-        assert_eq!(output, [2, 16, 3, 17, 4, 18, 5, 19, 6, 20, 7, 21, 8, 22]);
-    }
-
-    #[test]
-    fn upsample() {
-        let input = vec![2u16, 16, 4, 18, 6, 20, 8, 22];
-        let output =
-            SampleRateConverter::new(input.into_iter(), SampleRate(2000), SampleRate(3000), 2);
-        assert_eq!(output.len(), 12);
-
-        let output = output.collect::<Vec<_>>();
-        assert_eq!(output, [2, 16, 3, 17, 4, 18, 6, 20, 7, 21, 8, 22]);
-    }
-
-    #[test]
-    #[ignore]
-    fn upsample_lengths() {
-        let input = vec![2u16, 16, 4, 18, 6, 20, 8, 22];
-        let mut output =
-            SampleRateConverter::new(input.into_iter(), SampleRate(2000), SampleRate(3000), 2);
-
-        assert_eq!(output.len(), 12);
-        assert_eq!(output.next(), Some(2));
-        assert_eq!(output.len(), 11);
-        assert_eq!(output.next(), Some(16));
-        assert_eq!(output.len(), 10);
-        assert_eq!(output.next(), Some(3));
-        assert_eq!(output.len(), 9);
-        assert_eq!(output.next(), Some(17));
-        assert_eq!(output.len(), 8);
-        assert_eq!(output.next(), Some(4));
-        assert_eq!(output.len(), 7);
-        assert_eq!(output.next(), Some(18));
-        assert_eq!(output.len(), 6);
-        assert_eq!(output.next(), Some(6));
-        assert_eq!(output.len(), 5);
-        assert_eq!(output.next(), Some(20));
-        assert_eq!(output.len(), 4);
-        assert_eq!(output.next(), Some(7));
-        assert_eq!(output.len(), 3);
-        assert_eq!(output.next(), Some(21));
-        assert_eq!(output.len(), 2);
-        assert_eq!(output.next(), Some(8));
-        assert_eq!(output.len(), 1);
-        assert_eq!(output.next(), Some(22));
-        assert_eq!(output.len(), 0);
-        assert_eq!(output.next(), None);
     }
 }

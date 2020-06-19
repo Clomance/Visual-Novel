@@ -232,7 +232,7 @@ fn main(){
 
         let mut dialogue_box=DialogueBox::new(texture_base.dialogue_box(),window.display(),Dialogue_font!()); // Диалоговое окно
 
-        music.add_music("./resources/music/audio.mp3");
+        music.add_track("./resources/music/audio.mp3");
         music.set_volume(Settings.volume);
         music.play_forever(0);
         // Полный цикл игры

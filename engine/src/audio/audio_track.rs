@@ -35,6 +35,10 @@ impl Track{
         }
     }
 
+    pub fn sample_rate(&self)->SampleRate{
+        self.sample_rate
+    }
+
     pub fn len(&self)->usize{
         self.data.len()
     }
@@ -43,7 +47,7 @@ impl Track{
         SampleRateConverter::new(self.data.into_iter().cycle(),self.sample_rate,sample_rate,2)
     }
 
-    pub fn toSampleRateConverter(self,sample_rate:SampleRate)->SampleRateConverter<std::vec::IntoIter<i16>>{
+    pub fn into_iter(self,sample_rate:SampleRate)->SampleRateConverter<std::vec::IntoIter<i16>>{
         SampleRateConverter::new(self.data.into_iter(),self.sample_rate,sample_rate,2)
     }
 }
