@@ -32,7 +32,9 @@ use glium::{
 
 use core::ops::Range;
 
-/// Настройки графических основ
+/// Настройки графических основ.
+/// 
+/// Settings for graphic basics.
 pub struct GraphicsSettings{
     #[cfg(feature="texture_graphics")]
     pub texture_vertex_buffer_size:usize,
@@ -77,26 +79,36 @@ impl Graphics2D{
         }
     }
 
-    // Сохраняет координаты картинки в выбранной области в буфере,
-    // чтобы постоянно не загружать заново при отрисовке
-    // Используется только для невращающихся изображений
-    // Для вывода изображения из этой области используется функция 'draw_range_image'
-    // Возращает номер области, если она не выходит за границы буфера
+    /// Сохраняет координаты картинки в выбранной области в буфере,
+    /// чтобы постоянно не загружать заново при отрисовке.
+    /// Возращает номер области, если она не выходит за границы буфера.
+    /// 
+    /// Используется только для невращающихся изображений.
+    /// 
+    /// Для вывода изображения из этой области используется функция 'draw_range_image'.
     #[cfg(feature="texture_graphics")]
     pub fn bind_image(&mut self,range:Range<usize>,image_base:ImageBase)->Option<usize>{
         let data=image_base.vertex_buffer();
         self.texture.bind_range(range,&data)
     }
 
-    // Сохраняет координаты картинки в выбранной области в буфере,
-    // чтобы постоянно не загружать заново при отрисовке
-    // Используется только для вращающихся изображений
-    // Для вывода изображения из этой области используется функция 'draw_rotate_range_image'
-    // Возращает номер области, если она не выходит за границы буфера
+    /// Сохраняет координаты картинки в выбранной области в буфере,
+    /// чтобы постоянно не загружать заново при отрисовке.
+    /// Возращает номер области, если она не выходит за границы буфера.
+    /// 
+    /// Используется только для вращающихся изображений.
+    /// 
+    /// Для вывода изображения из этой области используется функция 'draw_rotate_range_image'.
     #[cfg(feature="texture_graphics")]
     pub fn bind_rotating_image(&mut self,range:Range<usize>,image_base:ImageBase)->Option<usize>{
         let data=image_base.rotation_vertex_buffer();
         self.texture.bind_range(range,&data)
+    }
+
+    #[cfg(feature="simple_graphics")]
+    pub fn bind_simple<'a,O:SimpleObject<'a>>(&mut self,range:Range<usize>,object:&O)->Option<usize>{
+        let data=object.vertex_buffer();
+        self.simple.bind_range(range,&data)
     }
 
     #[cfg(feature="texture_graphics")]
@@ -109,6 +121,12 @@ impl Graphics2D{
     #[cfg(feature="texture_graphics")]
     pub fn unbind_texture(&mut self,index:usize){
         self.texture.unbind(index)
+    }
+
+    #[inline(always)]
+    #[cfg(feature="simple_graphics")]
+    pub fn unbind_simple(&mut self,index:usize){
+        self.simple.unbind(index)
     }
 
     #[cfg(feature="texture_graphics")]
@@ -170,6 +188,26 @@ impl Graphics2D{
             colour_filter,
             angle,
             indices,
+            draw_parameters,
+            frame
+        )
+    }
+
+    #[cfg(feature="texture_graphics")]
+    pub fn draw_range_simple<'a,O:SimpleObject<'a>>(
+        &self,
+        index:usize,
+        object:&O,
+        draw_parameters:&mut DrawParameters,
+        frame:&mut Frame
+    )->Result<(),DrawError>{
+        let colour=object.colour();
+        let draw_type=object.indices();
+
+        self.simple.draw_range(
+            index,
+            colour,
+            draw_type,
             draw_parameters,
             frame
         )

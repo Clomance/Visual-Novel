@@ -1,8 +1,8 @@
 #![allow(non_upper_case_globals,unused_must_use)]
 
 /*!
- * # Графический движок с поддержкой аудио.
- * Graphics engine with audio support.
+ * # Графический движок с поддержкой аудио. Graphics engine with audio support.
+ * 
  * 
 */
 

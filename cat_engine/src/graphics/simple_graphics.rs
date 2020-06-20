@@ -8,7 +8,7 @@ use glium::{
     Frame,
     DrawParameters,
     DrawError,
-    index::{NoIndices,PrimitiveType,IndicesSource},
+    index::IndicesSource,
     Surface,
     vertex::{VertexBuffer,VertexBufferSlice},
 };
@@ -84,11 +84,7 @@ impl SimpleGraphics{
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
     )->Result<(),DrawError>{
-        let mut points=object.point_buffer();
-
-        for point in points.iter_mut(){
-            point.convert();
-        }
+        let points=object.vertex_buffer();
 
         let slice=self.write_vertex(&points).unwrap();
         let indices:O::Indices=object.indices();
@@ -106,11 +102,7 @@ impl SimpleGraphics{
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
     )->Result<(),DrawError>{
-        let mut points=object.point_buffer();
-
-        for point in points.iter_mut(){
-            point.convert();
-        }
+        let points=object.vertex_buffer();
 
         let shift=unsafe{[
             dx/window_center[0],
@@ -147,22 +139,25 @@ impl SimpleGraphics{
     }
 
     /// Удаляет выбранную область, без проверки.
+    /// 
+    /// Removes a range without checking it.
     pub fn unbind(&mut self,index:usize){
         self.vertex_buffer_ranges.remove(index);
     }
 
     /// Рисует выбранную область, без проверки.
-    pub fn draw_range(
+    /// 
+    /// Draws a range without checking it.
+    pub fn draw_range<'a,I:Into<IndicesSource<'a>>>(
         &self,
         index:usize,
         colour:Colour,
-        draw_type:PrimitiveType,
+        indices:I,
         draw_parameters:&mut DrawParameters,
         frame:&mut Frame
     )->Result<(),DrawError>{
         let range=self.vertex_buffer_ranges[index].clone();
         let slice=self.vertex_buffer.slice(range).unwrap();
-        let indices=NoIndices(draw_type);
         let uni=uniform!{
             colour:colour,
         };
@@ -177,18 +172,32 @@ impl SimpleGraphics{
     }
 }
 
-/// Типаж для создания собственных простых одноцветных объектов
+/// Типаж для создания собственных простых одноцветных объектов.
+/// 
+/// Trait for creating your own simple monocolour objects.
 pub trait SimpleObject<'a>{
     type Indices:Into<IndicesSource<'a>>;
 
     /// Цвет объекта.
     /// 
-    /// Object's colour.
+    /// An object's colour.
     fn colour(&self)->Colour;
 
-    /// Точки объекта в оконных координатах (без приведению к формату OpenGL).
+    /// Точки объекта в оконных координатах (без приведения к формату OpenGL).
+    /// 
+    /// An object's points in window axes (without converting to OpenGL format).
     fn point_buffer(&self)->Vec<Point2D>;
 
     /// Индексы для построения объекта.
+    /// 
+    /// Indices to build an object.
     fn indices(&self)->Self::Indices;
+
+    fn vertex_buffer(&self)->Vec<Point2D>{
+        let mut points=self.point_buffer();
+        for point in points.iter_mut(){
+            point.convert();
+        }
+        points
+    }
 }
