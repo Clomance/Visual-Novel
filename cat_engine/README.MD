@@ -1,3 +1,3 @@
 # Cat Engine
 
-![logo](logo.png)
+![logo](https://github.com/Clomance/Visual-Novel/blob/master/cat_engine/logo.png)

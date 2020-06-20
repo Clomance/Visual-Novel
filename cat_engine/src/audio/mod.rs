@@ -3,7 +3,7 @@ mod sample;
 mod sample_rate;
 mod channels;
 
-pub use audio_track::*;
+use audio_track::*;
 use sample_rate::*;
 
 use channels::ChannelCountConverter;
