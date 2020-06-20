@@ -3,6 +3,13 @@ name = "cat_engine"
 version = "0.0.0"
 authors = ["Clomance"]
 edition = "2018"
+homepage = "https://github.com/Clomance/Visual-Novel/tree/master/engine"
+repository = "https://github.com/Clomance/Visual-Novel/tree/master/engine"
+description = "Graphics engine with audio support"
+license = "MIT"
+readme = "README.MD"
+keywords = ["graphics","opengl"]
+
 
 [features]
 default = ["text_graphics","simple_graphics","texture_graphics"]

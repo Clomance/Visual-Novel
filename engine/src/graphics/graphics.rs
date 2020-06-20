@@ -1,6 +1,5 @@
 #![allow(unused_imports)]
 
-//#[cfg(any(feature="texture_graphics",feature="simple_graphics",feature="text_graphics"))]
 use crate::Colour;
 
 #[cfg(feature="texture_graphics")]

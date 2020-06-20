@@ -44,7 +44,7 @@ pub use window::*;
 #[cfg(feature="texture_graphics")]
 pub mod image;
 
-/// Графические основы. Graphical basics.
+/// Графические основы. Graphic basics.
 pub mod graphics;
 
 /// Простая аудио система. Simple audio system - `feature = "audio"`.
