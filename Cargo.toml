@@ -9,7 +9,7 @@ build = "build.rs"
 qrelease = []
 
 [dependencies.cat_engine]
-path = "engine"
+path = "cat_engine"
 
 features = ["mouse_cursor_icon","audio"]
 

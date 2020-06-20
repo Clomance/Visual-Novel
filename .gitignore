@@ -3,5 +3,5 @@ Cargo.lock
 tmp/*
 /*.dll
 .vscode/launch.json
-engine/target
-engine/Cargo.lock
+cat_engine/target
+cat_engine/Cargo.lock
