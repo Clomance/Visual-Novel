@@ -1,3 +1,5 @@
+// taken from rodio
+
 use cpal::Sample as CpalSample;
 
 /// Represents a value of a single sample.

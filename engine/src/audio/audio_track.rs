@@ -1,4 +1,5 @@
 use super::sample_rate::SampleRateConverter;
+use super::sample::Sample;
 
 use std::path::Path;
 use std::fs::File;
@@ -24,6 +25,15 @@ impl<T:std::fmt::Debug> TrackResult<T>{
         }
         else{
             panic!("{:?}",self)
+        }
+    }
+
+    pub fn expect(self,msg:&str)->Track<T>{
+        if let TrackResult::Ok(track)=self{
+            track
+        }
+        else{
+            panic!("{:?} {}",self,msg)
         }
     }
 }
@@ -69,19 +79,15 @@ impl Track<i16>{
             sample_format,
         })
     }
-
-    pub fn endless_iter(self,sample_rate:SampleRate)->SampleRateConverter<std::iter::Cycle<std::vec::IntoIter<i16>>>{
-        SampleRateConverter::new(self.data.into_iter().cycle(),self.sample_rate,sample_rate,self.channels)
-    }
-
-    pub fn into_iter(self,sample_rate:SampleRate)->SampleRateConverter<std::vec::IntoIter<i16>>{
-        SampleRateConverter::new(self.data.into_iter(),self.sample_rate,sample_rate,self.channels)
-    }
 }
 
-impl<T> Track<T>{
+impl<T:Clone+Sample> Track<T>{
     pub fn data(&self)->&Vec<T>{
         &self.data
+    }
+
+    pub fn channels(&self)->u16{
+        self.channels
     }
 
     pub fn sample_rate(&self)->SampleRate{
@@ -94,5 +100,35 @@ impl<T> Track<T>{
 
     pub fn len(&self)->usize{
         self.data.len()
+    }
+
+    pub fn endless_iter(self,sample_rate:SampleRate)->SampleRateConverter<std::iter::Cycle<std::vec::IntoIter<T>>>{
+        SampleRateConverter::new(self.data.into_iter().cycle(),self.sample_rate,sample_rate,self.channels)
+    }
+
+    pub fn into_iter(self,sample_rate:SampleRate)->SampleRateConverter<std::vec::IntoIter<T>>{
+        SampleRateConverter::new(self.data.into_iter(),self.sample_rate,sample_rate,self.channels)
+    }
+}
+
+impl Into<Track<u16>> for Track<i16>{
+    fn into(self)->Track<u16>{
+        let mut track=Vec::<u16>::with_capacity(self.len());
+        for sample in self.data.into_iter(){
+            let sample=if sample.is_negative(){
+                (sample+i16::max_value()) as u16
+            }
+            else{
+                sample as u16+i16::max_value() as u16
+            };
+            track.push(sample);
+        }
+
+        Track::<u16>{
+            data:track,
+            channels:self.channels,
+            sample_rate:self.sample_rate,
+            sample_format:SampleFormat::U16,
+        }
     }
 }

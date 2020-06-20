@@ -1,3 +1,5 @@
+// taken from rodio
+
 use cpal;
 
 /// Iterator that converts from a certain channel count to another.
@@ -17,9 +19,7 @@ impl<I> ChannelCountConverter<I>
 {
     /// Initializes the iterator.
     ///
-    /// # Panic
-    ///
-    /// Panicks if `from` or `to` are equal to 0.
+    /// `from` and `to` must be greater than 0
     ///
     #[inline]
     pub fn new(
@@ -27,9 +27,6 @@ impl<I> ChannelCountConverter<I>
         from:cpal::ChannelCount,
         to:cpal::ChannelCount,
     )->ChannelCountConverter<I>{
-        assert!(from >= 1);
-        assert!(to >= 1);
-
         ChannelCountConverter {
             input: input,
             from: from,
