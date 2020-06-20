@@ -9,7 +9,6 @@ description = "Graphics engine with audio support"
 license = "MIT"
 readme = "README.MD"
 keywords = ["graphics","opengl"]
-exclude = ["logo.png"]
 
 [features]
 default = ["text_graphics","simple_graphics","texture_graphics"]
