@@ -39,6 +39,7 @@ impl<T:std::fmt::Debug> TrackResult<T>{
     }
 }
 
+
 #[derive(Clone,Debug)]
 pub struct Track<T>{
     data:Vec<T>,

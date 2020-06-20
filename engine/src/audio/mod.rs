@@ -34,6 +34,9 @@ use std::{
     thread::{Builder,JoinHandle}
 };
 
+/// Результат выполнения команды.
+/// 
+/// The result of an executed command.
 #[derive(Debug,PartialEq)]
 pub enum AudioCommandResult{
     Ok,
@@ -42,12 +45,18 @@ pub enum AudioCommandResult{
 }
 
 impl AudioCommandResult{
+    /// Паникует, если результат не `Ok`.
+    /// 
+    /// Panics, if the result isn`t `Ok`.
     pub fn unwrap(self){
         if self!=AudioCommandResult::Ok{
             panic!("{:?}",self)
         }
     }
 
+    /// Паникует и выводит сообщение, если результат не `Ok`.
+    /// 
+    /// Panics и prints the message, if the result isn`t `Ok`.
     pub fn expect(self,msg:&str){
         if self!=AudioCommandResult::Ok{
             panic!("{} {:?}",msg,self)
@@ -76,6 +85,10 @@ unsafe impl std::marker::Send for AudioSystemCommand{}
 /// Простой аудио движок.
 /// Simple audio engine.
 /// 
+/// Пока только вывод доступен.
+/// 
+/// Only output is available now.
+/// 
 pub struct Audio{
     event_loop:Arc<EventLoop>,
     streams:Arc<Mutex<Vec<StreamId>>>,
@@ -84,6 +97,7 @@ pub struct Audio{
 }
 
 impl Audio{
+    /// For default host and device.
     pub fn new(settings:AudioSettings)->io::Result<Audio>{
         let mut volume=0.5f32;
         let mut tracks:Vec<Track<i16>>=Vec::with_capacity(settings.track_buffer_capacity);
@@ -248,6 +262,8 @@ impl Audio{
         }
     }
 
+    /// Запускает трек без повторов.
+    /// 
     /// Sets a track to play once.
     pub fn play_once(&self,index:usize)->AudioCommandResult{
         match self.command.send(AudioSystemCommand::PlayOnce(index)){
@@ -256,6 +272,8 @@ impl Audio{
         }
     }
 
+    /// Запускает трек, который постоянно повторяется.
+    /// 
     /// Sets a track to play forever.
     pub fn play_forever(&self,index:usize)->AudioCommandResult{
         match self.command.send(AudioSystemCommand::PlayForever(index)){
@@ -264,6 +282,8 @@ impl Audio{
         }
     }
 
+    /// Запускает проигрывание канала.
+    /// 
     /// Starts playing the stream.
     pub fn play(self)->AudioCommandResult{
         let stream=match self.streams.lock(){
@@ -273,7 +293,8 @@ impl Audio{
         self.event_loop.play_stream(stream);
         AudioCommandResult::Ok
     }
-
+    /// Ставит на паузу проигрывание канала.
+    /// 
     /// Pauses the stream.
     pub fn pause(&self)->AudioCommandResult{
         let stream=match self.streams.lock(){
@@ -284,6 +305,8 @@ impl Audio{
         AudioCommandResult::Ok
     }
 
+    /// Останавливает проигрывание путём удаления трека из буфера для вывода.
+    /// 
     /// Stops playing by removing track from playing buffer.
     pub fn stop(&self)->AudioCommandResult{
         match self.command.send(AudioSystemCommand::Stop){
@@ -292,6 +315,8 @@ impl Audio{
         }
     }
 
+    /// Устанавливает громкость.
+    /// 
     /// Sets the volume.
     pub fn set_volume(&self,volume:f32)->AudioCommandResult{
         match self.command.send(AudioSystemCommand::SetVolume(volume)){
