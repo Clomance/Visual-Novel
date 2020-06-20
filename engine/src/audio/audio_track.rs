@@ -7,6 +7,7 @@ use std::fs::File;
 use minimp3::Decoder;
 
 use cpal::{
+    Sample as CSample,
     SampleRate,
     SampleFormat,
 };
@@ -111,17 +112,19 @@ impl<T:Clone+Sample> Track<T>{
     }
 }
 
+/// - For `i16`, silence corresponds to the value `0`. The minimum and maximum amplitudes are
+///   represented by `i16::min_value()` and `i16::max_value()` respectively.
+/// - For `u16`, silence corresponds to the value `u16::max_value() / 2`. The minimum and maximum
+///   amplitudes are represented by `0` and `u16::max_value()` respectively.
+/// - For `f32`, silence corresponds to the value `0.0`. The minimum and maximum amplitudes are
+///  represented by `-1.0` and `1.0` respectively.
+
 impl Into<Track<u16>> for Track<i16>{
     fn into(self)->Track<u16>{
         let mut track=Vec::<u16>::with_capacity(self.len());
+
         for sample in self.data.into_iter(){
-            let sample=if sample.is_negative(){
-                (sample+i16::max_value()) as u16
-            }
-            else{
-                sample as u16+i16::max_value() as u16
-            };
-            track.push(sample);
+            track.push(sample.to_u16());
         }
 
         Track::<u16>{
@@ -129,6 +132,24 @@ impl Into<Track<u16>> for Track<i16>{
             channels:self.channels,
             sample_rate:self.sample_rate,
             sample_format:SampleFormat::U16,
+        }
+    }
+}
+
+impl Into<Track<f32>> for Track<i16>{
+    fn into(self)->Track<f32>{
+        let mut track=Vec::<f32>::with_capacity(self.len());
+
+        for sample in self.data.into_iter(){
+            let sample=sample as f32/i16::max_value() as f32;
+            track.push(sample);
+        }
+
+        Track::<f32>{
+            data:track,
+            channels:self.channels,
+            sample_rate:self.sample_rate,
+            sample_format:SampleFormat::F32,
         }
     }
 }

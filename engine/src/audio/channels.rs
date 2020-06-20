@@ -4,14 +4,12 @@ use cpal;
 
 /// Iterator that converts from a certain channel count to another.
 #[derive(Clone, Debug)]
-pub struct ChannelCountConverter<I>
-    where I:Iterator
-{
-    input: I,
-    from: cpal::ChannelCount,
-    to: cpal::ChannelCount,
-    sample_repeat: Option<I::Item>,
-    next_output_sample_pos: cpal::ChannelCount,
+pub struct ChannelCountConverter<I:Iterator>{
+    input:I,
+    from:cpal::ChannelCount,
+    to:cpal::ChannelCount,
+    sample_repeat:Option<I::Item>,
+    next_output_sample_pos:cpal::ChannelCount,
 }
 
 impl<I> ChannelCountConverter<I>
@@ -27,24 +25,22 @@ impl<I> ChannelCountConverter<I>
         from:cpal::ChannelCount,
         to:cpal::ChannelCount,
     )->ChannelCountConverter<I>{
-        ChannelCountConverter {
-            input: input,
-            from: from,
-            to: to,
-            sample_repeat: None,
-            next_output_sample_pos: 0,
+        ChannelCountConverter{
+            input:input,
+            from:from,
+            to:to,
+            sample_repeat:None,
+            next_output_sample_pos:0,
         }
     }
 }
 
 impl<I> Iterator for ChannelCountConverter<I>
-where
-    I: Iterator,
-    I::Item: Clone,
+    where I:Iterator,I::Item:Clone
 {
-    type Item = I::Item;
+    type Item=I::Item;
 
-    fn next(&mut self) -> Option<I::Item> {
+    fn next(&mut self)->Option<I::Item>{
         let result = if self.next_output_sample_pos == self.from - 1 {
             let value = self.input.next();
             self.sample_repeat = value.clone();

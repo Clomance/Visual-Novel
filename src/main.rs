@@ -159,7 +159,7 @@ fn main(){
         }
     };
 
-    let mut music=Audio::new(AudioSettings::new());
+    let music=Audio::new(AudioSettings::new()).unwrap();
 
     unsafe{
         let wallpaper_size={

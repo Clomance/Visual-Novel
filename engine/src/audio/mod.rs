@@ -22,13 +22,17 @@ use cpal::{
     StreamData,
     StreamId,
     EventLoop,
+    Sample,
 };
 
-use std::path::Path;
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::sync::LockResult;
-use std::thread::JoinHandle;
+use std::{
+    io,
+    vec::IntoIter,
+    iter::Cycle,
+    path::Path,
+    sync::{Arc,Mutex,LockResult},
+    thread::{Builder,JoinHandle}
+};
 
 #[derive(Debug,PartialEq)]
 pub enum AudioCommandResult{
@@ -62,8 +66,8 @@ enum AudioSystemCommand{
 
 enum Play{
     None,
-    Once(ChannelCountConverter<SampleRateConverter<std::vec::IntoIter<i16>>>),
-    Forever(ChannelCountConverter<SampleRateConverter<std::iter::Cycle<std::vec::IntoIter<i16>>>>),
+    Once(ChannelCountConverter<SampleRateConverter<IntoIter<i16>>>),
+    Forever(ChannelCountConverter<SampleRateConverter<Cycle<IntoIter<i16>>>>),
 }
 
 unsafe impl std::marker::Sync for AudioSystemCommand{}
@@ -80,7 +84,7 @@ pub struct Audio{
 }
 
 impl Audio{
-    pub fn new(settings:AudioSettings)->Audio{
+    pub fn new(settings:AudioSettings)->io::Result<Audio>{
         let mut volume=0.5f32;
         let mut tracks:Vec<Track<i16>>=Vec::with_capacity(settings.track_buffer_capacity);
         let channels=Arc::new(Mutex::new(Vec::with_capacity(settings.channels)));
@@ -93,8 +97,7 @@ impl Audio{
         // Передача команд от управляющего потока выполняющему
         let (sender,receiver)=std::sync::mpsc::channel::<AudioSystemCommand>();
 
-        let thread=std::thread::spawn(move||{
-
+        let thread_result=Builder::new().name("Audio thread".to_string()).stack_size(2048).spawn(move||{
             let mut play=Play::None;
 
             let device=host.default_output_device().unwrap();
@@ -156,18 +159,13 @@ impl Audio{
                                     StreamData::Output{buffer:UnknownTypeOutputBuffer::U16(mut buffer)}
                                     =>for b in buffer.iter_mut(){
                                         let sample=(track.next().unwrap_or(0i16) as f32 * volume) as i16;
-                                        *b=if sample.is_negative(){
-                                            (sample+i16::max_value()) as u16
-                                        }
-                                        else{
-                                            sample as u16+i16::max_value() as u16
-                                        };
+                                        *b=sample.to_u16();
                                     }
 
                                     StreamData::Output{buffer:UnknownTypeOutputBuffer::F32(mut buffer)}
                                     =>for b in buffer.iter_mut(){
                                         let sample=track.next().unwrap_or(0i16) as f32 * volume;
-                                        *b=sample/(i16::max_value() as f32);
+                                        *b=sample.to_f32();
                                     }
 
                                     _=>{}
@@ -192,12 +190,7 @@ impl Audio{
                                     StreamData::Output{buffer:UnknownTypeOutputBuffer::U16(mut buffer)}
                                     =>for b in buffer.iter_mut(){
                                         let sample=(track.next().unwrap_or(0i16) as f32 * volume) as i16;
-                                        *b=if sample.is_negative(){
-                                            (sample+i16::max_value()) as u16
-                                        }
-                                        else{
-                                            sample as u16+i16::max_value() as u16
-                                        };
+                                        *b=sample.to_u16();
                                     }
 
                                     StreamData::Output{buffer:UnknownTypeOutputBuffer::F32(mut buffer)}
@@ -219,12 +212,17 @@ impl Audio{
             });
         });
 
-        Self{
+        let thread=match thread_result{
+            Ok(thread)=>thread,
+            Err(e)=>return Err(e),
+        };
+
+        Ok(Self{
             event_loop:el,
             streams:channels,
             command:sender,
             thread:Some(thread),
-        }
+        })
     }
 
     pub fn default_output_device()->Option<Device>{
@@ -303,6 +301,9 @@ impl Audio{
     }
 }
 
+/// Отправляет команду для остановки и ожидает окончание работы потока.
+/// 
+/// Sends closing command and then waits for the thread to finish.
 impl Drop for Audio{
     fn drop(&mut self){
         let _=self.command.send(AudioSystemCommand::Close);
@@ -313,6 +314,10 @@ impl Drop for Audio{
     }
 }
 
+
+/// Тип аудио вывода.
+/// 
+/// Audio output type.
 #[derive(Clone)]
 pub enum AudioOutputType{
     Mono,
