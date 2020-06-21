@@ -1,8 +1,10 @@
 #![allow(non_upper_case_globals,unused_must_use)]
 
 /*!
- * # Графический движок с поддержкой аудио. Graphics engine with audio support.
+ * # Графический движок с поддержкой аудио. A 2D graphics engine with audio support.
+ * Использует OpenGL 2.0 и выше.
  * 
+ * Uses OpenGL 2.0 and above.
  * 
 */
 

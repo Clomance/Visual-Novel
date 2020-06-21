@@ -24,6 +24,8 @@ audio = ["cpal","minimp3"]
 
 mouse_cursor_icon = ["texture_graphics"]
 
+[package.metadata.docs.rs]
+features = ["default","audio","mouse_cursor_icon"]
 
 [dependencies]
 image = "0.23.6"
