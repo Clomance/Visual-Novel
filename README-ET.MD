@@ -1,6 +1,6 @@
 # Rustil kirjutatud visuaalne novell.
 
-### Versioon 1.6.0
+### Versioon 1.6.1
 
 Viimane stabiilne Rust, minimaalne OpenGL-i versioon - `2.0`.
 
@@ -17,7 +17,7 @@ Alsa development on vajalik Linuxil töötamiseks:  `libasound2-dev` Debian ja U
 Mängi kompileerimiseks ja käivitamiseks kasuta käsku `cargo run --release`.
 
 ### Kuvatõmmised
-![screenshot1](https://raw.githubusercontent.com/Clomance/Visual-Novel/master/screenshots/screenshot0.png)
+![screenshot1](./screenshots/screenshot0.png)
 
 ### Muu
 

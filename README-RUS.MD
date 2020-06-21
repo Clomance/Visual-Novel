@@ -1,6 +1,6 @@
 # Визуальная новелла, написанная на Rust.
 
-## Версия 1.6.0
+## Версия 1.6.1
 
 Последняя стабильная версия Rust, минимальная версия OpenGL - `2.0`.
 
@@ -17,7 +17,7 @@
 Для сборки и запуска игры запустите команду `cargo run --release`.
 
 ### Скриншоты
-![screenshot1](https://raw.githubusercontent.com/Clomance/Visual-Novel/master/screenshots/screenshot0.png)
+![screenshot1](./screenshots/screenshot0.png)
 
 ### Некоторые возможности
 

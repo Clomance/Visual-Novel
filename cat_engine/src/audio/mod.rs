@@ -413,7 +413,6 @@ impl Drop for Audio{
         if let Some(thread)=self.thread.take(){
             let _=thread.join();
         }
-        println!("Dropped");
     }
 }
 

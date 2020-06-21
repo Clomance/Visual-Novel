@@ -10,8 +10,6 @@ use cat_engine::{
     // statics
     window_width,
     window_height,
-    // types
-    Colour,
     // structs
     Window,
     image::{ImageBase,Texture},
@@ -23,16 +21,15 @@ use cat_engine::{
 pub struct LoadingScreen{
     logo:Texture,
     range:usize,
-    filter:Colour,
 }
 
 impl LoadingScreen{
     pub fn new(window:&mut Window)->LoadingScreen{
         let image_base=ImageBase::new(White,unsafe{[
-            (window_width-200f32)/2f32,
-            (window_height-200f32)/2f32,
-            200f32,
-            200f32
+            (window_width-400f32)/2f32,
+            (window_height-400f32)/2f32,
+            400f32,
+            400f32
         ]});
 
         // Установка области для быстрой отрисовки иконки загрузки
@@ -40,7 +37,6 @@ impl LoadingScreen{
 
         Self{
             range,
-            filter:White,
             logo:Texture::from_path("./resources/images/logo.png",window.display()).unwrap(),
         }
     }
@@ -68,7 +64,7 @@ impl LoadingScreen{
                         graphics.draw_rotate_range_image(
                             self.range,
                             &self.logo,
-                            self.filter,
+                            White,
                             t,
                             parameters
                         );
@@ -83,7 +79,7 @@ impl LoadingScreen{
                             graphics.draw_rotate_range_image(
                                 self.range,
                                 &self.logo,
-                                self.filter,
+                                White,
                                 t,
                                 parameters
                             );

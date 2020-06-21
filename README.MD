@@ -3,7 +3,7 @@
  - [Russian version of README](https://github.com/Clomance/Visual-Novel/blob/master/README-RUS.MD)
  - [Estonian version of README](https://github.com/Clomance/Visual-Novel/blob/master/README-ET.MD)
 
-### Version 1.6.0
+### Version 1.6.1
 
 Latest stable Rust, minimal version of OpenGL - `2.0`.
 
@@ -20,7 +20,7 @@ Alsa delevopment libraries are required for Linux: `libasound2-dev` for Debian a
 For building and starting the game run `cargo run --release`.
 
 ### Screenshots
-![screenshot1](https://raw.githubusercontent.com/Clomance/Visual-Novel/master/screenshots/screenshot0.png)
+![screenshot1](./screenshots/screenshot0.png)
 
 ### Other
 
