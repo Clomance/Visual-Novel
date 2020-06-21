@@ -1,7 +1,7 @@
 #![allow(non_upper_case_globals,unused_must_use)]
 
 /*!
- * # Графический движок с поддержкой аудио. A 2D graphics engine with audio support.
+ * # 2D графический движок с поддержкой аудио. 2D graphics engine with audio support.
  * Использует OpenGL 2.0 и выше.
  * 
  * Uses OpenGL 2.0 and above.
@@ -42,14 +42,11 @@ pub use window::*;
 //      ImageBase
 // }
 
-/// Основы работы с изображениями. Image basics. `feature = "texture_graphics"`, `default-features`.
 #[cfg(feature="texture_graphics")]
 pub mod image;
 
-/// Графические основы. Graphic basics.
 pub mod graphics;
 
-/// Простая аудио система. Simple audio system - `feature = "audio"`.
 #[cfg(feature="audio")]
 pub mod audio;
 

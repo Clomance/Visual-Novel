@@ -174,7 +174,7 @@ impl SimpleGraphics{
 
 /// Типаж для создания собственных простых одноцветных объектов.
 /// 
-/// Trait for creating your own simple monocolour objects.
+/// Trait for creating your own plain objects.
 pub trait SimpleObject<'a>{
     type Indices:Into<IndicesSource<'a>>;
 
@@ -185,7 +185,7 @@ pub trait SimpleObject<'a>{
 
     /// Точки объекта в оконных координатах (без приведения к формату OpenGL).
     /// 
-    /// An object's points in window axes (without converting to OpenGL format).
+    /// Object's points in window axes (without converting to OpenGL format).
     fn point_buffer(&self)->Vec<Point2D>;
 
     /// Индексы для построения объекта.

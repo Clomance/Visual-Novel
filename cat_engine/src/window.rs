@@ -116,15 +116,19 @@ pub enum WindowEvent{
     None,
     Draw,
 
-    /// Сворачивание окна.
+    /// Окно свёрнуто.
     /// 
-    /// Minimizing the window.
+    /// The window is Minimized.
     Hide(bool),
 
-    /// Изменение размера окна.
+    /// Размера окна изменён.
+    /// 
+    /// The window resized.
     Resize([u32;2]),
 
     /// Сдвиг мышки (сдвиг за пределы экрана игнорируется).
+    /// 
+    /// Mouse movement (moving beyond the window border is ignored).
     MouseMovementDelta([f32;2]),
     MousePressed(MouseButton),
     MouseReleased(MouseButton),
@@ -133,6 +137,9 @@ pub enum WindowEvent{
     KeyboardReleased(KeyboardButton),
     CharacterInput(char),
 
+    /// Shift, Ctrl, Alt или Logo нажаты.
+    /// 
+    /// Shift, Ctrl, Alt or Logo pressed.
     ModifiersChanged(ModifiersState),
 
     Exit,
@@ -221,6 +228,9 @@ impl Window{
         &self.display
     }
 
+    /// Возвращает графическую основу.
+    /// 
+    /// Returns graphic base.
     #[inline(always)]
     pub fn graphics(&mut self)->&mut Graphics2D{
         &mut self.graphics
@@ -249,7 +259,6 @@ impl Window{
         else{
             Err(())
         }
-        
     }
 
     pub fn disable_fullscreen(&self){
@@ -297,18 +306,18 @@ impl Window{
 
 /// Функции для сглаживания.
 impl Window{
-    /// Set alpha channel for smooth drawing
+    /// Set alpha channel for smooth drawing.
     pub fn set_alpha(&mut self,alpha:f32){
         self.alpha_channel=alpha;
     }
 
-    /// Set smooth for smooth drawing
+    /// Set smooth for smooth drawing.
     pub fn set_smooth(&mut self,smooth:f32){
         self.smooth=smooth
     }
 
     /// Set smooth and zero alpha channel
-    /// for smooth drawing
+    /// for smooth drawing.
     pub fn set_new_smooth(&mut self,smooth:f32){
         self.alpha_channel=0f32;
         self.smooth=smooth
@@ -317,14 +326,19 @@ impl Window{
 
 // Функции для рисования
 impl Window{
-    /// Даёт прямое управление буфером кадра
-    pub fn draw_raw<F:FnOnce(&mut Frame)>(&self,f:F){
+    /// Даёт прямое управление буфером кадра.
+    /// 
+    /// Gives frame to raw drawing.
+    pub fn draw_raw<F:FnOnce(&mut DrawParameters,&mut Frame)>(&self,f:F){
         let mut frame=self.display().draw();
-        f(&mut frame);
+        let mut draw_parameters=default_draw_parameters();
+        f(&mut draw_parameters,&mut frame);
         frame.finish();
     }
 
-    /// Выполняет замыкание и рисует курсор
+    /// Выполняет замыкание (и рисует курсор, если `feature="mouse_cursor_icon"`).
+    /// 
+    /// Executes closure (and draws the mouse cursor, if `feature="mouse_cursor_icon"`).
     pub fn draw<F:FnOnce(&mut DrawParameters,&mut Graphics)>(&self,f:F){
         let mut draw_parameters=default_draw_parameters();
 
@@ -340,11 +354,15 @@ impl Window{
         frame.finish();
     }
 
-    /// Выполняет замыкание и рисует курсор
+    /// Выполняет замыкание (и рисует курсор, если `feature="mouse_cursor_icon"`).
+    /// Выдаёт альфа-канал для рисования, возвращает следующее значение канала.
     /// 
-    /// Нужна для правных переходов с помощью альфа-канала
+    /// Нужна для плавных переходов или размытия с помощью альфа-канала.
     /// 
-    /// Выдаёт изменяющийся альфа-канал для рисования, возвращает следующее значение альфа-канала
+    /// Executes closure (and draws the mouse cursor, if `feature="mouse_cursor_icon"`).
+    /// Gives alpha channel for drawing, returns next value of the channel.
+    /// 
+    /// Needed for smooth drawing or smoothing with alpha channel.
     pub fn draw_smooth<F:FnOnce(f32,&mut DrawParameters,&mut Graphics)>(&mut self,f:F)->f32{
         let mut draw_parameters=default_draw_parameters();
 
@@ -363,9 +381,9 @@ impl Window{
         self.alpha_channel
     }
 
-    /// Игнорирует все события, кроме рендеринга и закрытия окна
+    /// Игнорирует все события, кроме рендеринга и закрытия окна, и рисует один кадр.
     /// 
-    /// Рисует один кадр
+    /// Ignores all events, except rendering and closing the window, and draws one frame.
     pub fn draw_event_once<F:FnOnce(&mut DrawParameters,&mut Graphics)>(&mut self,f:F)->WindowEvent{
         while let Some(event)=self.next_event(){
             match event{
@@ -381,12 +399,31 @@ impl Window{
     }
 }
 
-/// Дополнительные функции
+/// Дополнительные функции.
+/// 
+/// Additional functions.
 impl Window{
-    /// Сохраняет скриншот в формате png
+    /// Возвращает скриншот.
     /// 
-    /// Save screenshot in png format
-    pub fn screenshot<P:AsRef<Path>>(&self,path:P){
+    /// Returns a screenshot.
+    pub fn screenshot(&self)->Option<DynamicImage>{
+        // Копирование буфера окна
+        let image:RawImage2d<u8>=match self.display.read_front_buffer(){
+            Ok(t)=>t,
+            Err(_)=>return Option::None
+        };
+        // Перевод в буфер изображения
+        let image=match ImageBuffer::from_raw(image.width,image.height,image.data.into_owned()){
+            Option::Some(i)=>i,
+            Option::None=>return Option::None
+        };
+        // Перевод в изображение
+        Some(DynamicImage::ImageRgba8(image).flipv())
+    }
+    /// Сохраняет скриншот в формате png.
+    /// 
+    /// Saves a screenshot in png format.
+    pub fn save_screenshot<P:AsRef<Path>>(&self,path:P){
         // Копирование буфера окна
         let image:RawImage2d<u8>=match self.display.read_front_buffer(){
             Ok(t)=>t,

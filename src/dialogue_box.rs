@@ -19,7 +19,7 @@ use cat_engine::{
     // structs
     image::{ImageBase,Texture,image::RgbaImage},
     text::{TextBase,Glyphs},
-    graphics::{Graphics,Point2D,MonoColourPolygon,Line},
+    graphics::{Graphics,Point2D,Quadrilateral,Line},
     glium::{Display,DrawParameters},
 };
 
@@ -31,7 +31,7 @@ const image_border_width:f32=4f32;
 const dibw:f32=image_border_width/2f32;
 
 pub struct DialogueBox<'b,'c>{
-    name_box:MonoColourPolygon,
+    name_box:Quadrilateral,
     name_base:TextBase,
 
     lines:TextViewLined<'c>, // Текстовый блок для диалогов
@@ -92,7 +92,7 @@ impl<'b,'c> DialogueBox<'b,'c>{
 
             Self{
                 // Имя
-                name_box:MonoColourPolygon::new(&polygon,Black),
+                name_box:Quadrilateral::new(polygon,Black),
                 name_base:TextBase::new(White,font_size)
                         .position([name_position[0],name_position[1]]),
 

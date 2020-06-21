@@ -1,17 +1,6 @@
-#![cfg(feature="simple_graphics")]
-use crate::{
-    // statics
-    window_center,
-    // types
-    Colour,
-};
+use crate::Colour;
 
-use super::{
-    // structs
-    Graphics,
-    SimpleObject,
-    Point2D
-};
+use super::{Graphics,SimpleObject,Point2D};
 
 use glium::{
     DrawError,
@@ -22,35 +11,19 @@ use glium::{
     },
 };
 
-// Здесь собраны простые фигуры
-// и основные функции к ним
-
-// Одноцветный многоугольник
+/// Четырёхугольник. Quadrilateral.
 #[derive(Clone)]
-pub struct MonoColourPolygon{
-    pub points:Vec<Point2D>,
+pub struct Quadrilateral{
+    pub points:[Point2D;4],
     pub colour:Colour,
 }
 
-impl MonoColourPolygon{
-    pub fn new(points:&[Point2D],colour:Colour)->MonoColourPolygon{
+impl Quadrilateral{
+    pub fn new(points:[Point2D;4],colour:Colour)->Quadrilateral{
         Self{
-            points:points.into(),
+            points,
             colour
         }
-    }
-
-    pub fn vertex_buffer(&self)->Vec<Point2D>{
-        let mut vec=Vec::with_capacity(self.points.len());
-
-        for point in &self.points{
-            vec.push(unsafe{Point2D::new(
-                point.position[0]/window_center[0]-1f32,
-                1f32-point.position[1]/window_center[1]
-            )});
-        }
-
-        vec
     }
 
     #[inline(always)]
@@ -59,14 +32,20 @@ impl MonoColourPolygon{
     }
 }
 
-impl<'a> SimpleObject<'a> for MonoColourPolygon{
+impl<'a> SimpleObject<'a> for Quadrilateral{
     type Indices=NoIndices;
     fn colour(&self)->Colour{
         self.colour
     }
 
     fn point_buffer(&self)->Vec<Point2D>{
-        self.points.clone()
+        let mut vec=Vec::with_capacity(4);
+
+        for point in &self.points{
+            vec.push(point.clone());
+        }
+
+        vec
     }
 
     fn indices(&self)->NoIndices{
@@ -76,8 +55,7 @@ impl<'a> SimpleObject<'a> for MonoColourPolygon{
 
 
 
-// Прямоугольник
-// Заполняется одним цветом
+/// Прямоугольник.
 #[derive(Clone)]
 pub struct Rectangle{
     pub x1:f32,
@@ -88,7 +66,7 @@ pub struct Rectangle{
 }
 
 impl Rectangle{
-    // rect - [x1,y1,width,height]
+    /// rect - [x1, y1, width, height]
     pub fn new(rect:[f32;4],colour:Colour)->Rectangle{
         Self{
             x1:rect[0],
@@ -99,7 +77,7 @@ impl Rectangle{
         }
     }
 
-    // rect - [x1,y1,x2,y2]
+    /// rect - [x1, y1, x2, y2]
     pub const fn raw(rect:[f32;4],colour:Colour)->Rectangle{
         Self{
             x1:rect[0],
@@ -154,7 +132,7 @@ pub struct RectangleBorder{
 }
 
 impl RectangleBorder{
-    // rect - [x1,y1,x2,y2]
+    /// rect - [x1, y1, x2, y2]
     pub const fn raw(rect:[f32;4],width:f32,colour:Colour)->RectangleBorder{
         Self{
             x1:rect[0],
@@ -166,6 +144,7 @@ impl RectangleBorder{
         }
     }
 
+    /// Converts a rectanlge to border.
     pub fn from_rectangle(rect:Rectangle,width:f32)->RectangleBorder{
         Self{
             x1:rect.x1,
@@ -223,7 +202,8 @@ impl<'a> SimpleObject<'a> for RectangleBorder{
     }
 }
 
-#[derive(Clone)] // Прямоугольник с рамкой
+/// Прямоугольник с рамкой.
+#[derive(Clone)]
 pub struct RectangleWithBorder{
     pub rect:Rectangle,
     pub border_width:f32,
@@ -231,7 +211,7 @@ pub struct RectangleWithBorder{
 }
 
 impl RectangleWithBorder{
-    // rect - [x1,y1,width,height]
+    /// rect - [x1, y1, width, height]
     pub fn new(rect:[f32;4],colour:Colour)->RectangleWithBorder{
         Self{
             rect:Rectangle::new(rect,colour),
@@ -240,7 +220,7 @@ impl RectangleWithBorder{
         }
     }
 
-    // rect - [x1,y1,x2,y2]
+    /// rect - [x1, y1, x2, y2]
     pub const fn raw(rect:[f32;4],colour:Colour,width:f32,border_colour:Colour)->RectangleWithBorder{
         Self{
             rect:Rectangle::raw(rect,colour),
@@ -271,7 +251,7 @@ pub struct Line{
 }
 
 impl Line{
-    // rect - [x1,y1,x2,y2]
+    /// rect - [x1, y1, x2, y2]
     pub const fn new(rect:[f32;4],radius:f32,colour:Colour)->Line{
         Self{
             x1:rect[0],
@@ -333,9 +313,9 @@ impl<'a> SimpleObject<'a> for Line{
 
 const ellipse_points:usize=15; // Количество точек для эллипса
 
-// Круг с центром в точке (x, y)
-// и радиусом 'radius',
-// который заполняется цветом 'colour'
+/// Круг с центром в точке (x, y)
+/// и радиусом 'radius',
+/// который заполняется цветом 'colour'.
 pub struct Circle{
     pub x:f32,
     pub y:f32,
@@ -344,12 +324,12 @@ pub struct Circle{
 }
 
 impl Circle{
-    // rect - [x,y,radius]
-    pub const fn new(rect:[f32;3],colour:Colour)->Circle{
+    /// circle - [x, y, radius]
+    pub const fn new(circle:[f32;3],colour:Colour)->Circle{
         Self{
-            x:rect[0],
-            y:rect[1],
-            radius:rect[2],
+            x:circle[0],
+            y:circle[1],
+            radius:circle[2],
             colour
         }
     }
@@ -362,9 +342,11 @@ impl Circle{
 
 impl<'a> SimpleObject<'a> for Circle{
     type Indices=NoIndices;
+
     fn colour(&self)->Colour{
         self.colour
     }
+
     fn point_buffer(&self)->Vec<Point2D>{
         let r_x=self.radius;
         let r_y=self.radius;

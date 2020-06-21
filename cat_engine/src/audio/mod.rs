@@ -1,3 +1,25 @@
+//! # Простая аудио система. Simple audio system. `feature = "audio"`.
+//! 
+//! Аудио система имеет свой поток для работы со звуком.
+//! Он контролируется через канал `std::sync::mpsc::channel()`.
+//! Также в нём есть массив аудио треков, которые можно запустить.
+//! 
+//! Пока поддерживает только один канал для проигрывания треков.
+//! 
+//! Закрывается поток с паникой, так что не паникуте!
+//! 
+//! Некоторый код был взят из [rodio](https://github.com/RustAudio/rodio).
+//! 
+//! The audio system has it's own thread for handling the sound.
+//! It's controled with channel `std::sync::mpsc::channel()`.
+//! Also it has audio track array.
+//! 
+//! The system supports only one channel for playing tracks.
+//! 
+//! The thread closes with panic, so don't panic!
+//! 
+//! Some code was taken from [rodio](https://github.com/RustAudio/rodio).
+
 mod audio_track;
 mod sample;
 mod sample_rate;
@@ -30,13 +52,16 @@ use std::{
     vec::IntoIter,
     iter::Cycle,
     path::Path,
-    sync::{Arc,Mutex,LockResult},
-    thread::{Builder,JoinHandle}
+    thread::{Builder,JoinHandle},
+    sync::{
+        Arc,
+        Mutex,
+        LockResult,
+        mpsc::{Sender,channel},
+    },
 };
 
-/// Результат выполнения команды.
-/// 
-/// The result of an executed command.
+/// Результат выполнения команды. The result of an executed command.
 #[derive(Debug,PartialEq)]
 pub enum AudioCommandResult{
     Ok,
@@ -66,9 +91,13 @@ impl AudioCommandResult{
 
 enum AudioSystemCommand{
     AddTrack(Track<i16>),
+    RemoveTrack(usize),
+    RemoveAllTracks,
+
     PlayOnce(usize),
     PlayForever(usize),
     Stop,
+
     SetVolume(f32),
     Close,
 }
@@ -92,16 +121,18 @@ unsafe impl std::marker::Send for AudioSystemCommand{}
 pub struct Audio{
     event_loop:Arc<EventLoop>,
     streams:Arc<Mutex<Vec<StreamId>>>,
-    command:std::sync::mpsc::Sender<AudioSystemCommand>,
+    command:Sender<AudioSystemCommand>,
     thread:Option<JoinHandle<()>>,
 }
 
 impl Audio{
     /// For default host and device.
     pub fn new(settings:AudioSettings)->io::Result<Audio>{
+        // Громкость
         let mut volume=0.5f32;
-        let mut tracks:Vec<Track<i16>>=Vec::with_capacity(settings.track_buffer_capacity);
-        let channels=Arc::new(Mutex::new(Vec::with_capacity(settings.channels)));
+        // Массив треков
+        let mut tracks:Vec<Track<i16>>=Vec::with_capacity(settings.track_array_capacity);
+        let channels=Arc::new(Mutex::new(Vec::with_capacity(1)));
 
         let c=channels.clone();
 
@@ -109,7 +140,7 @@ impl Audio{
         let event_loop=Arc::new(host.event_loop());
         let el=event_loop.clone();
         // Передача команд от управляющего потока выполняющему
-        let (sender,receiver)=std::sync::mpsc::channel::<AudioSystemCommand>();
+        let (sender,receiver)=channel::<AudioSystemCommand>();
 
         let thread_result=Builder::new().name("Audio thread".to_string()).stack_size(2048).spawn(move||{
             let mut play=Play::None;
@@ -124,25 +155,46 @@ impl Audio{
             c.lock().unwrap().push(main_stream.clone());
 
             event_loop.play_stream(main_stream.clone()).unwrap();
+
             event_loop.clone().run(move|stream,result|{
                 match receiver.try_recv(){
                     Ok(command)=>match command{
+                        // Добавлеяет трек в массив треков
+                        // Если превышает размер массива, то игнорирует
                         AudioSystemCommand::AddTrack(new_track)=>{
                             if tracks.len()<tracks.capacity(){
                                 tracks.push(new_track)
                             }
                         }
+
+                        // Удаляет трек из массива треков
+                        // Если нет такого трека, то игнорирует
+                        AudioSystemCommand::RemoveTrack(i)=>{
+                            if i<tracks.len(){
+                                tracks.remove(i);
+                            }
+                        }
+
+                        // Удаляет все треки из массива треков
+                        AudioSystemCommand::RemoveAllTracks=>{
+                            tracks.clear()
+                        }
+
                         AudioSystemCommand::PlayOnce(i)=>{
-                            let track_channels=tracks[i].channels();
-                            let track=tracks[i].clone().into_iter(format.sample_rate);
-                            let track=ChannelCountConverter::new(track,track_channels,format.channels);
-                            play=Play::Once(track);
+                            if i<tracks.len(){
+                                let track_channels=tracks[i].channels();
+                                let track=tracks[i].clone().into_iter(format.sample_rate);
+                                let track=ChannelCountConverter::new(track,track_channels,format.channels);
+                                play=Play::Once(track);
+                            }
                         }
                         AudioSystemCommand::PlayForever(i)=>{
-                            let track_channels=tracks[i].channels();
-                            let track=tracks[i].clone().endless_iter(format.sample_rate);
-                            let track=ChannelCountConverter::new(track,track_channels,format.channels);
-                            play=Play::Forever(track);
+                            if i<tracks.len(){
+                                let track_channels=tracks[i].channels();
+                                let track=tracks[i].clone().endless_iter(format.sample_rate);
+                                let track=ChannelCountConverter::new(track,track_channels,format.channels);
+                                play=Play::Forever(track);
+                            }
                         }
                         AudioSystemCommand::Stop=>{
                             play=Play::None;
@@ -247,7 +299,7 @@ impl Audio{
         cpal::default_host().output_devices()
     }
 
-    /// Добавляет трек в массив треков, удаляет, если массив переполнен.
+    /// Добавляет трек в массив треков. Удаляет, если массив переполнен.
     /// 
     /// Adds the track from given path to the track array.
     /// Ignores, if the array is overflown.
@@ -262,9 +314,33 @@ impl Audio{
         }
     }
 
-    /// Запускает трек без повторов.
+    /// Удаляет трек из массива треков.
+    /// Игнорирует, если нет такого индекса.
     /// 
+    /// Removes a track from track array.
+    /// Ignores, if there is no such index.
+    pub fn remove_track(&self,index:usize)->AudioCommandResult{
+        match self.command.send(AudioSystemCommand::RemoveTrack(index)){
+            Ok(())=>AudioCommandResult::Ok,
+            Err(_)=>AudioCommandResult::ThreadClosed
+        }
+    }
+
+    /// Удаляет все треки из массива треков.
+    /// 
+    /// Removes all tracks from track array.
+    pub fn remove_all_tracks(&self)->AudioCommandResult{
+        match self.command.send(AudioSystemCommand::RemoveAllTracks){
+            Ok(())=>AudioCommandResult::Ok,
+            Err(_)=>AudioCommandResult::ThreadClosed
+        }
+    }
+
+    /// Запускает трек без повторов.
+    /// Игнорирует, если нет такого индекса.
+    ///
     /// Sets a track to play once.
+    /// Ignores, if there is no such index.
     pub fn play_once(&self,index:usize)->AudioCommandResult{
         match self.command.send(AudioSystemCommand::PlayOnce(index)){
             Ok(())=>AudioCommandResult::Ok,
@@ -273,8 +349,10 @@ impl Audio{
     }
 
     /// Запускает трек, который постоянно повторяется.
+    /// Игнорирует, если нет такого индекса.
     /// 
     /// Sets a track to play forever.
+    /// Ignores, if there is no such index.
     pub fn play_forever(&self,index:usize)->AudioCommandResult{
         match self.command.send(AudioSystemCommand::PlayForever(index)){
             Ok(())=>AudioCommandResult::Ok,
@@ -285,7 +363,7 @@ impl Audio{
     /// Запускает проигрывание канала.
     /// 
     /// Starts playing the stream.
-    pub fn play(self)->AudioCommandResult{
+    pub fn play(&self)->AudioCommandResult{
         let stream=match self.streams.lock(){
             LockResult::Ok(streams)=>streams.get(0).unwrap().clone(),
             LockResult::Err(_)=>return AudioCommandResult::ThreadClosed
@@ -340,9 +418,7 @@ impl Drop for Audio{
 }
 
 
-/// Тип аудио вывода.
-/// 
-/// Audio output type.
+/// Тип аудио вывода. Audio output type.
 #[derive(Clone)]
 pub enum AudioOutputType{
     Mono,
@@ -360,16 +436,19 @@ impl AudioOutputType{
 
 pub struct AudioSettings{
     pub output_type:AudioOutputType,
-    pub channels:usize,
-    pub track_buffer_capacity:usize,
+    // pub channels:usize,
+    /// Максимальный размер
+    /// 
+    /// Maximal size of the track array.
+    pub track_array_capacity:usize,
 }
 
 impl AudioSettings{
     pub fn new()->AudioSettings{
         Self{
             output_type:AudioOutputType::Stereo,
-            channels:1,
-            track_buffer_capacity:1,
+            // channels:1,
+            track_array_capacity:1,
         }
     }
 }

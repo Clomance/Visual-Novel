@@ -193,7 +193,7 @@ impl Graphics2D{
         )
     }
 
-    #[cfg(feature="texture_graphics")]
+    #[cfg(feature="simple_graphics")]
     pub fn draw_range_simple<'a,O:SimpleObject<'a>>(
         &self,
         index:usize,
@@ -229,6 +229,9 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         }
     }
 
+    /// Возвращает ссылку на кадр.
+    /// 
+    /// Return reference to the frame.
     #[inline(always)]
     pub fn frame(&mut self)->&mut Frame{
         self.frame
@@ -240,6 +243,8 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
     }
 
     /// Рисует простой объект.
+    /// 
+    /// Draws a simple object.
     #[inline(always)]
     #[cfg(feature="simple_graphics")]
     pub fn draw_simple<'a,O:SimpleObject<'a>>(
@@ -250,7 +255,9 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         self.graphics.simple.draw(object,draw_parameters,self.frame)
     }
 
-    /// Рисует и сдвигает простой объект.
+    /// Рисует сдвинутый простой объект.
+    /// 
+    /// Draws a shifted simple object.
     #[inline(always)] 
     #[cfg(feature="simple_graphics")]
     pub fn draw_shift_simple<'a,O:SimpleObject<'a>>(
@@ -263,6 +270,8 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
     }
 
     /// Рисует один символ.
+    /// 
+    /// Draws one character.
     #[inline(always)]
     #[cfg(feature="text_graphics")]
     pub fn draw_character(
@@ -274,7 +283,9 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         self.graphics.text.draw_character(character,colour,draw_parameters,self.frame)
     }
 
-    /// Рисует изображение на основе image_base.
+    /// Рисует изображение на основе `ImageBase`.
+    /// 
+    /// Draws image based on `ImageBase`.
     #[inline(always)] 
     #[cfg(feature="texture_graphics")]
     pub fn draw_image(
@@ -286,7 +297,9 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         self.graphics.texture.draw_image(image_base,texture,draw_parameters,self.frame)
     }
 
-    /// Рисует изображение на основе image_base c поворотом в 'angle' градусов
+    /// Рисует изображение на основе `ImageBase` c поворотом в 'angle' градусов.
+    /// 
+    /// Draws image based on `ImageBase` rotated `angle` degrees.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_rotate_image(
@@ -300,10 +313,13 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
     }
 }
 
-// Функции для работы с областями
+/// Функции для работы с областями.
+/// 
+/// Function to work with ranges.
 impl<'graphics,'frame> Graphics<'graphics,'frame>{
-    /// Рисует изображение на основе
-    /// данных из области.
+    /// Рисует изображение на основе данных из области.
+    /// 
+    /// Draws image based on data from a range.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_range_image(
@@ -322,8 +338,9 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         )
     }
 
-    /// Рисует и сдвигает изображение на основе
-    /// данных из области.
+    /// Рисует сдвинутое изображение на основе данных из области.
+    /// 
+    /// Draws shifted image based on data from a range.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_shift_range_image(
@@ -346,6 +363,8 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
     /// Рисует изображение с поворотом в 'angle' градусов на основе
     /// данных из области.
+    /// 
+    /// Draws image based on data from a range rotated `angle` degrees.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_rotate_range_image(

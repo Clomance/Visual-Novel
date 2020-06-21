@@ -20,10 +20,14 @@ pub enum TextureCreationError{
 }
 
 /// Обёртка для 2D текстуры.
+/// 
+/// Wrapper for 2D texture.
 pub struct Texture(pub SrgbTexture2d);
 
 impl Texture{
-    /// Создание текстуры из массива байт.
+    /// Создаёт текстуру из массива байт.
+    /// 
+    /// Creates a texture from byte array.
     pub fn create<S:Into<[u32;2]>>(factory:&Display,memory:&[u8],size:S)->Result<Self,TextureCreationError>{
         let [w,h]=size.into();
 
@@ -38,7 +42,9 @@ impl Texture{
         }
     }
 
-    /// Загрузка текстуры из файла.
+    /// Загружает текстуру из файла.
+    /// 
+    /// Loading texture from file.
     pub fn from_path<P:AsRef<Path>>(path:P,factory:&Display)->Result<Self,TextureCreationError>{
         match image::open(path){
             Ok(image)=>{
@@ -52,14 +58,19 @@ impl Texture{
         }
     }
 
-    /// Создание текстуры из изображения.
+    /// Создаёт текстуру из изображения.
+    /// 
+    /// Creates a texture from given image.
     pub fn from_image(img:&RgbaImage,factory:&Display)->Result<Self,TextureCreationError>{
         let (width,height)=img.dimensions();
         Texture::create(factory,img,[width,height])
     }
 
     /// Обновляет изображение текстуры, сохраняя размеры.
-    /// При не совпадающих размерых появляются пробелы.
+    /// При не совпадающих размераx возникают ошибки.
+    /// 
+    /// Updates image with a new one.
+    /// If the sizes aren't equal something bad can happen :)
     pub fn update(&mut self,img:&RgbaImage){
         let (width,height)=img.dimensions();
 

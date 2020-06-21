@@ -1,3 +1,20 @@
+//! # Графические основы. Graphic basics.
+//! 
+//! Графический движок разделен на три части:
+//! 1. Простая графика - одноцветные объекты состоящие из `Point2D`.
+//! 2. Текстуры (изображения)
+//! 3. Текст
+//! 
+//! Graphics engine divided into three parts:
+//! 1. Simple graphics - plain objects composed of `Point2D`.
+//! 2. Textures (images)
+//! 3. Text
+
+mod graphics;
+pub (crate) use graphics::Graphics2D;
+pub use graphics::{Graphics,GraphicsSettings};
+
+
 #[cfg(feature="simple_graphics")]
 mod simple_graphics;
 #[cfg(feature="simple_graphics")]
@@ -8,14 +25,11 @@ pub use simple_graphics::{
     Point2D,
 };
 
-mod graphics;
-pub (crate) use graphics::Graphics2D;
-pub use graphics::{Graphics,GraphicsSettings};
-
 #[cfg(feature="simple_graphics")]
 mod graphic_basics;
 #[cfg(feature="simple_graphics")]
 pub use graphic_basics::*;
+
 
 #[cfg(feature="texture_graphics")]
 mod texture_graphics;

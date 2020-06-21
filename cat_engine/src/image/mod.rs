@@ -1,3 +1,5 @@
+//! # Основы работы с изображениями. Image basics. `feature = "texture_graphics"`, `default-features`.
+
 use super::{
     // statics
     window_center,
@@ -8,20 +10,28 @@ use super::{
 };
 
 mod texture;
-pub use texture::Texture;
+pub use texture::{Texture,TextureCreationError};
 
 pub use image;
 
 use glium::draw_parameters::DrawParameters;
 
-/// Основа для изображений (текстур) - 
-/// прямоугольник с координатами: (x1,y1), (x1,y2), (x2,y1), (x2,y2)
+/// Основа для изображений (текстур). Image (texture) base.
 /// 
-/// Цветовой фильтр - [red, green, blue, alpha]
+/// Прямоугольник с точками: (x1, y1), (x1, y2), (x2, y1), (x2, y2).
 /// 
-/// Цвет = цвет * фильтр
+/// Цветовой фильтр - [red, green, blue, alpha].
+/// Цвет = цвет * фильтр.
 /// 
-/// Изменённая система координат - начало в центре экрана, ось Y инвертирована
+/// Изменённая система координат - начало в центре экрана, ось Y инвертирована.
+/// 
+/// 
+/// Rectagle with points: (x1, y1), (x1, y2), (x2, y1), (x2, y2).
+/// 
+/// Colour filter - [red, green, blue, alpha].
+/// Colour = colour * filter.
+/// 
+/// Coordinate system is changed: origin is at the center of the screen, Y axe is reversed.
 #[derive(Clone)]
 pub struct ImageBase{
     pub x1:f32,
@@ -45,6 +55,9 @@ impl ImageBase{
         }
     }
 
+    /// Сдвигает координаты.
+    ///
+    /// Shifts coordinates.
     pub fn shift(&mut self,[dx,dy]:[f32;2]){
         self.x1+=dx;
         self.y1-=dy;
@@ -52,9 +65,11 @@ impl ImageBase{
         self.y2-=dy;
     }
 
-    /// Массив готовых для вывода координат
+    /// Массив координат
     /// для невращающихся изображений.
-    pub fn vertex_buffer(&self)->[TexturedVertex;4]{
+    /// 
+    /// Vertex array for static images.
+    pub (crate) fn vertex_buffer(&self)->[TexturedVertex;4]{
         let (x1,y1,x2,y2)=unsafe{(
             self.x1/window_center[0],
             self.y1/window_center[1],
@@ -71,9 +86,11 @@ impl ImageBase{
         ]
     }
 
-    /// Массив готовых для вывода координат
-    /// для невращающихся изображений.
-    pub fn rotation_vertex_buffer(&self)->[TexturedVertex;4]{
+    /// Массив координат
+    /// для вращающихся изображений.
+    /// 
+    /// Vertex array for rotating images.
+    pub (crate) fn rotation_vertex_buffer(&self)->[TexturedVertex;4]{
         let (x1,y1,x2,y2)=(
             self.x1,
             self.y1,

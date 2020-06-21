@@ -491,7 +491,7 @@ pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut 
     unsafe{
         let path=format!("screenshots/screenshot{}.png",Settings.screenshot);
         Settings.screenshot+=1;
-        window.screenshot(path)
+        window.save_screenshot(path)
     }
 
     window.set_cursor_visible(true);
