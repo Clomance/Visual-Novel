@@ -2,10 +2,16 @@
 
 /*!
  * # 2D графический движок с поддержкой аудио. 2D graphics engine with audio support.
+ * 
  * Использует OpenGL 2.0 и выше.
+ * 
+ * Текст рисуется поточечно. Так что важно указать правильный размер буфера.
+ * 
+ * 
  * 
  * Uses OpenGL 2.0 and above.
  * 
+ * Text is drawn pointwise. It's important to set corrent size of the text graphics buffer.
 */
 
 pub use glium; // reimports
@@ -15,7 +21,6 @@ pub use glium; // reimports
 //      Character,
 //      TextBase
 // }
-/// Основы работы с текстом. Text basics. `feature = "text_graphics"`, `default-features`.
 #[cfg(feature="text_graphics")]
 pub mod text;
 

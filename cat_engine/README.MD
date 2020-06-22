@@ -11,7 +11,7 @@ Uses OpenGL 2.0 and above.
  - Fonts - [rusttype](https://gitlab.redox-os.org/redox-os/rusttype)
  - Music - [cpal](https://github.com/RustAudio/cpal)
 
-If you use audio feature alsa delevopment libraries are required for Linux: `libasound2-dev` for Debian and Ubuntu, `alsa-lib-devel` for Fedora (check [cpal](https://github.com/RustAudio/cpal)).
+If you use audio feature alsa delevopment libraries are required for Linux: `libasound2-dev` for Debian and Ubuntu, `alsa-lib-devel` for Fedora (see [cpal](https://github.com/RustAudio/cpal)).
 
 ## Features
 

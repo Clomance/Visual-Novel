@@ -67,7 +67,9 @@ impl MouseCursor{
         self.position
     }
 
-    /// Расстояние от курсора до центра экрана.
+    /// Расстояние от курсора до центра окна.
+    /// 
+    /// Distance between the cursor and the center of the window.
     pub fn center_radius(&self)->[f32;2]{
         unsafe{[
             self.position[0]-window_center[0],

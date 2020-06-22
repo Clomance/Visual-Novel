@@ -15,7 +15,7 @@ Latest stable Rust, minimal version of OpenGL - `2.0`.
 
 Runs stable on x64 versions of Windows 10. Haven't tested other systems yet.
 
-Alsa delevopment libraries are required for Linux: `libasound2-dev` for Debian and Ubuntu, `alsa-lib-devel` for Fedora (check [cpal](https://github.com/RustAudio/cpal)).
+Alsa delevopment libraries are required for Linux: `libasound2-dev` for Debian and Ubuntu, `alsa-lib-devel` for Fedora (see [cpal](https://github.com/RustAudio/cpal)).
 
 For building and starting the game run `cargo run --release`.
 

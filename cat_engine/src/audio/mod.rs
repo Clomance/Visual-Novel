@@ -10,6 +10,8 @@
 //! 
 //! Некоторый код был взят из [rodio](https://github.com/RustAudio/rodio).
 //! 
+//! 
+//! 
 //! The audio system has it's own thread for handling the sound.
 //! It's controled with channel `std::sync::mpsc::channel()`.
 //! Also it has audio track array.
@@ -113,6 +115,8 @@ enum Play{
 unsafe impl std::marker::Sync for AudioSystemCommand{}
 unsafe impl std::marker::Send for AudioSystemCommand{}
 
+const audio_thread_stack_size:usize=1024;
+
 /// Простой аудио движок.
 /// Simple audio engine.
 /// 
@@ -130,6 +134,8 @@ pub struct Audio{
 
 impl Audio{
     /// For default host and device.
+    /// 
+    /// Returns the result of starting an audio thread.
     pub fn new(settings:AudioSettings)->io::Result<Audio>{
         // Массив треков
         let tracks=Arc::new(Mutex::new(Vec::with_capacity(settings.track_array_capacity)));
@@ -144,10 +150,69 @@ impl Audio{
         // Передача команд от управляющего потока выполняющему
         let (sender,receiver)=channel::<AudioSystemCommand>();
 
-        let thread_result=Builder::new().name("Audio thread".to_string()).stack_size(2048).spawn(move||{
+        let thread_result=Builder::new()
+                .name("Audio thread".to_string())
+                .stack_size(audio_thread_stack_size)
+                .spawn(move||{
             let play=Play::None;
 
             let device=host.default_output_device().unwrap();
+            let mut format=device.default_output_format().unwrap();
+
+            format.channels=settings.output_type.into_channels();
+
+            let main_stream=event_loop.build_output_stream(&device,&format).expect("stream");
+
+            *stream.lock().unwrap()=Some(main_stream.clone());
+
+            event_loop.play_stream(main_stream.clone()).unwrap();
+
+            Audio::event_loop_handler(
+                event_loop,
+                format,
+                receiver,
+                play,
+                tracks,
+                settings.volume,
+            );
+        });
+
+        let thread=match thread_result{
+            Ok(thread)=>thread,
+            Err(e)=>return Err(e),
+        };
+
+        Ok(Self{
+            tracks:t,
+            event_loop:el,
+            stream:s,
+            command:sender,
+            thread:Some(thread),
+        })
+    }
+
+    /// For given host and device.
+    /// 
+    /// Returns the result of starting an audio thread.
+    pub fn with_host_and_device(settings:AudioSettings,host:Host,device:Device)->io::Result<Audio>{
+        // Массив треков
+        let tracks=Arc::new(Mutex::new(Vec::with_capacity(settings.track_array_capacity)));
+        let stream=Arc::new(Mutex::new(None));
+
+        let t=tracks.clone();
+        let s=stream.clone();
+
+        let event_loop=Arc::new(host.event_loop());
+        let el=event_loop.clone();
+        // Передача команд от управляющего потока выполняющему
+        let (sender,receiver)=channel::<AudioSystemCommand>();
+
+        let thread_result=Builder::new()
+                .name("Audio thread".to_string())
+                .stack_size(audio_thread_stack_size)
+                .spawn(move||{
+            let play=Play::None;
+
             let mut format=device.default_output_format().unwrap();
 
             format.channels=settings.output_type.into_channels();

@@ -14,10 +14,12 @@ use glium::DrawParameters;
 
 const text_pixel_size:f32=1f32; // Размер одной точки (можно сделать текст жирнее)
 
-// Основа для текста
-// Выводит текст с установленным
-// цветом и размером шрифта,
-// сам шрифт задаётся отдельно
+/// Основа для текста с установленным
+/// цветом и размером шрифта.
+/// Сам шрифт задаётся отдельно во время вывода.
+/// 
+/// A base for text with set colour and font_size.
+/// The font is set at drawing.
 pub struct TextBase{
     pub position:[f32;2],
     pub font_size:f32,
@@ -41,6 +43,11 @@ impl TextBase{
     #[inline(always)]
     pub fn set_x(&mut self,x:f32){
         self.position[0]=x
+    }
+
+    #[inline(always)]
+    pub fn set_y(&mut self,y:f32){
+        self.position[1]=y
     }
 
     #[inline(always)]
@@ -74,12 +81,17 @@ impl TextBase{
         self.colour=colour
     }
 
-    #[inline(always)] // Выводит уже готовый символ
+    /// Выводит уже готовый символ.
+    /// 
+    /// Draws already built character.
+    #[inline(always)] 
     pub fn draw_character(&self,character:&Character,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.draw_character(self.colour,character,draw_parameters);
     }
 
-    // Выводит один символ
+    /// Строит и выводит один символ.
+    /// 
+    /// Builds and draws a character.
     pub fn draw_char(&self,character:char,draw_parameters:&mut DrawParameters,graphics:&mut Graphics,glyphs:Glyphs){
         let position=self.position;
 
@@ -89,7 +101,9 @@ impl TextBase{
         graphics.draw_character(self.colour,&character,draw_parameters);
     }
 
-    // Выодит весь текст в строчку
+    /// Выводит весь текст в строчку.
+    /// 
+    /// Draws a string.
     pub fn draw(&self,text:&str,draw_parameters:&mut DrawParameters,graphics:&mut Graphics,glyphs:&Glyphs){
         let mut position=self.position;
         draw_parameters.point_size=Some(text_pixel_size);
@@ -101,7 +115,11 @@ impl TextBase{
         }
     }
 
-    // Выводит часть текста в строчку, если текст выведен полностью, возвращает true
+    /// Выводит часть текста в строчку.
+    /// Если текст выведен полностью, возвращает true.
+    /// 
+    /// Draws a part of the string.
+    /// Returns true, if the whole string was drawn.
     pub fn draw_part(&self,text:&str,chars:usize,draw_parameters:&mut DrawParameters,graphics:&mut Graphics,glyphs:&Glyphs)->bool{
         let mut position=self.position;
         draw_parameters.point_size=Some(text_pixel_size);

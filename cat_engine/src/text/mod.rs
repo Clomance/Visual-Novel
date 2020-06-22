@@ -1,4 +1,6 @@
-#![cfg(feature="text_graphics")]
+//! Основы работы с текстом. Text basics. `feature = "text_graphics"`, `default-features`.
+//!
+//! See [rusttype](https://crates.io/crates/rusttype) for more details.
 mod text_base;
 pub use text_base::TextBase;
 
@@ -17,13 +19,17 @@ use rusttype::{
 
 const pixel_scale:f32=1.47; // Коэффициент для приведения к нужному размеру шрифта
 
-// Шрифт
+/// Шрифт.
+/// 
+/// Font.
 pub struct Glyphs{
     font:Font<'static>
 }
 
 impl Glyphs{
-    // Загрузка шрифта из файла
+    /// Загрузка шрифта из файла.
+    /// 
+    /// Loading font from file.
     pub fn load<P:AsRef<Path>>(path:P)->Glyphs{
         let data=fs::read(&path).unwrap();
         let font=Font::try_from_vec(data).unwrap();
@@ -32,18 +38,13 @@ impl Glyphs{
         }
     }
 
-    pub fn glyph_height_unscaled(&self)->f32{
-        let v=self.font.v_metrics_unscaled();
-        v.ascent-v.descent
-    }
-
     pub fn glyph_height(&self,font_size:f32)->f32{
         let scale=Scale::uniform(font_size);
         let v=self.font.v_metrics(scale);
         v.ascent-v.descent
     }
 
-    // Символ, определённого размера, с нулейвой позицией
+    /// Символ, определённого размера, с нулейвой позицией.
     pub fn character(&self,character:char,font_size:f32)->Character{
         let scale=Scale::uniform(font_size*pixel_scale); // Приведение к общему размеру пикселей
         let c=self.font.glyph(character).scaled(scale);
@@ -58,7 +59,9 @@ impl Glyphs{
         }
     }
 
-    // Символ, определённого размера с определённой позицией
+    /// Символ, определённого размера с определённой позицией.
+    /// 
+    /// Returns a character with given size and position.
     pub fn character_positioned(&self,character:char,font_size:f32,position:[f32;2])->Character{
         let scale=Scale::uniform(font_size*pixel_scale); // Приведение к общему размеру пикселей
         let c=self.font.glyph(character).scaled(scale);

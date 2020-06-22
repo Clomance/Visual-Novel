@@ -159,7 +159,9 @@ fn main(){
         }
     };
 
-    let music=Audio::new(AudioSettings::new()).unwrap();
+    let mut audio_settings=AudioSettings::new();
+    unsafe{audio_settings.volume=Settings.volume};
+    let music=Audio::new(audio_settings).unwrap();
 
     unsafe{
         let wallpaper_size={
@@ -233,7 +235,6 @@ fn main(){
         let mut dialogue_box=DialogueBox::new(texture_base.dialogue_box(),window.display(),Dialogue_font!()); // Диалоговое окно
 
         music.add_track("./resources/music/audio.mp3");
-        music.set_volume(Settings.volume);
         music.play_forever(0);
         // Полный цикл игры
         'game:loop{
