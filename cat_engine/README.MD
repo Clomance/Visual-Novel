@@ -31,7 +31,7 @@ It uses image to draw the cursor.
 
 The cursor points to the center of cursor image.
 
-Path to the image is `./resources/images/mouse_icon.png`.
+The default path to the image is `./mouse_cursor_icon.png`.
 
 ### auto_hide
 

@@ -4,6 +4,7 @@ use crate::{
 };
 
 use glium::glutin::{
+    ReleaseBehavior,
     NotCurrent,
     ContextBuilder,
     dpi::Size,
@@ -15,6 +16,8 @@ use glium::glutin::{
     },
 };
 
+use std::path::PathBuf;
+
 #[derive(Clone,Debug)]
 #[allow(dead_code)]
 pub struct WindowSettings{
@@ -25,7 +28,13 @@ pub struct WindowSettings{
     /// The default is None.
     pub initial_colour:Option<Colour>,
 
-
+    /// Path for the mouse cursor icon.
+    /// 
+    /// The default is `./`.
+    /// 
+    /// feature = "mouse_cursor_icon"
+    #[cfg(feature="mouse_cursor_icon")]
+    pub mouse_cursor_icon_path:PathBuf,
 
     //--Window attributes--\\
 
@@ -115,18 +124,74 @@ pub struct WindowSettings{
 
     //--Pixel format requirements--\\
 
-    /// If true, only sRGB-capable formats will be considered.
-    /// If false, don't care.
-    /// 
-    /// The default is true.
-    pub srgb:bool,
-
     /// If true, only hardware-accelerated formats will be considered.
     /// If false, only software renderers.
     /// None means "don't care".
     /// 
     /// Default is Some(true).
     pub hardware_accelerated:Option<bool>,
+
+    /// Minimum number of bits for the color buffer, excluding alpha.
+    /// None means "don't care".
+    /// 
+    /// The default is Some(24).
+    pub color_bits:Option<u8>,
+
+    /// If true, the color buffer must be in a floating point format.
+    /// Using floating points allows you to write values outside of the [0.0, 1.0] range.
+    /// 
+    /// Default is false.
+    pub float_color_buffer:bool,
+
+    /// Minimum number of bits for the alpha in the color buffer.
+    /// None means "don't care".
+    /// 
+    /// The default is Some(8).
+    pub alpha_bits:Option<u8>,
+
+    /// Minimum number of bits for the depth buffer.
+    /// None means "don't care".
+    /// 
+    /// The default value is Some(24).
+    pub depth_bits:Option<u8>,
+
+    /// Minimum number of stencil bits.
+    /// None means "don't care".
+    /// 
+    /// The default value is Some(8).
+    pub stencil_bits:Option<u8>,
+
+    /// If true, only double-buffered formats will be considered.
+    /// If false, only single-buffer formats.
+    /// None means "don't care".
+    /// 
+    /// The default is Some(true).
+    pub double_buffer:Option<bool>,
+
+    /// Contains the minimum number of samples per pixel in the color, depth and stencil buffers.
+    /// None means "don't care".
+    /// A value of Some(0) indicates that multisampling must not be enabled.
+    /// 
+    /// Default is None.
+    pub multisampling:Option<u16>,
+
+    /// If true, only stereoscopic formats will be considered.
+    /// If false, only non-stereoscopic formats.
+    /// 
+    /// The default is false.
+    pub stereoscopy:bool,
+
+    /// If true, only sRGB-capable formats will be considered.
+    /// If false, don't care.
+    /// 
+    /// The default is true.
+    pub srgb:bool,
+
+
+    /// The behavior when changing the current context.
+    /// 
+    /// Default is Flush.
+    pub release_behavior:ReleaseBehavior,
 
 
 
@@ -155,25 +220,32 @@ pub struct WindowSettings{
 impl WindowSettings{
     /// Default settings.
     pub fn new()->WindowSettings{
+
+        #[cfg(feature="mouse_cursor_icon")]
+        let mut path=PathBuf::new();
+        #[cfg(feature="mouse_cursor_icon")]
+        path.push("./mouse_cursor_icon.png");
+
         Self{
             //--General attributes--\\
-            initial_colour:Option::None,
+            initial_colour:None,
 
-
+            #[cfg(feature="mouse_cursor_icon")]
+            mouse_cursor_icon_path:path,
 
             //--Window attributes--\\
-            inner_size:Option::None,
-            min_inner_size:Option::None,
-            max_inner_size:Option::None,
+            inner_size:None,
+            min_inner_size:None,
+            max_inner_size:None,
             resizable:true,
-            fullscreen:Option::None,
+            fullscreen:None,
             title:"Window".to_string(),
             maximized:false,
             visible:true,
             transparent:true,
             decorations:true,
             always_on_top:false,
-            window_icon:Option::None,
+            window_icon:None,
 
 
 
@@ -184,9 +256,17 @@ impl WindowSettings{
 
 
             //--Pixel format requirements--\\
-            srgb:true,
             hardware_accelerated:Option::None,
-
+            color_bits:Some(24),
+            float_color_buffer:false,
+            alpha_bits:Some(8),
+            depth_bits:Some(24),
+            stencil_bits:Some(8),
+            double_buffer:Some(true),
+            multisampling:None,
+            stereoscopy:false,
+            srgb:true,
+            release_behavior:ReleaseBehavior::Flush,
 
 
             //--Local graphics attributes--\\

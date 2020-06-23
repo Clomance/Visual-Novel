@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code,unused_imports)]
 
 use super::window_center;
 
@@ -13,6 +13,8 @@ use glium::{
     Display,
     DrawParameters,
 };
+
+use std::path::PathBuf;
 
 /// Положение курсора мыши.
 /// The mouse cursor position.
@@ -103,10 +105,10 @@ pub struct MouseCursorIcon{
 
 #[cfg(feature="mouse_cursor_icon")]
 impl MouseCursorIcon{
-    pub fn new(display:&Display)->MouseCursorIcon{
+    pub fn new(display:&Display,path:PathBuf)->MouseCursorIcon{
         Self{
             image_base:ImageBase::new([1f32;4],[0f32,0f32,2f32*radius,2f32*radius]),
-            texture:Texture::from_path("resources/images/mouse_icon.png",display).unwrap(),
+            texture:Texture::from_path(path,display).unwrap(),
             radius:radius/2f32,
             visible:true,
         }
