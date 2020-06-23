@@ -231,7 +231,9 @@ impl Window{
         }
         self.events.pop_front()
     }
+}
 
+impl Window{
     pub fn set_inner_size<S:Into<Size>>(&self,size:S){
         self.display.gl_window().window().set_inner_size(size)
     }
@@ -289,6 +291,10 @@ impl Window{
 
     pub fn set_decorations(&self,decorations:bool){
         self.display.gl_window().window().set_decorations(decorations)
+    }
+
+    pub fn set_always_on_top(&self,always_on_top:bool){
+        self.display.gl_window().window().set_always_on_top(always_on_top)
     }
 
     #[inline(always)]
