@@ -1,4 +1,5 @@
 ![logo](./logo_400x400.png)
+
 # Cat Engine
 
 A 2D graphics engine with audio support.
@@ -25,14 +26,14 @@ Enables to use audio output.
 
 ### mouse_cursor_icon
 
-Replaces default mouse cursor with users one.
+Replaces the default mouse cursor with user's image.
 
-It uses image to draw the cursor.
-
-The cursor points to the center of cursor image.
+The cursor points to the center of the image.
 
 The default path to the image is `./mouse_cursor_icon.png`.
 
 ### auto_hide
 
-The window gets minimized when loses focus.
+The window gets minimized when loses focus and
+it stops sending outer events, except gained focus event.
+The window gets back when it gains focus.

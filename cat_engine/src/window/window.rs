@@ -87,13 +87,14 @@ pub static mut window_center:[f32;2]=[0f32;2];
 /// 
 /// # feature = "mouse_cursor_icon"
 /// 
-/// Замена обычного курсора своим.
+/// Замена обычного курсора пользовательской картинкой.
+/// 
 /// Путь для картинки по умолчанию - `./mouse_cursor_icon.png`.
 /// 
-/// Replaces default mouse cursor with users one.
-/// It uses image to draw the cursor.
+/// Replaces the default mouse cursor with user's image.
 /// 
-/// The cursor points to the center of cursor image.
+/// The cursor points to the center of the image.
+/// 
 /// The default path to the image is `./mouse_cursor_icon.png`.
 /// 
 /// # feature = "auto_hide"
