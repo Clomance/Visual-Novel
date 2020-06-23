@@ -10,7 +10,7 @@ qrelease = []
 
 [dependencies.cat_engine]
 path = "cat_engine"
-features = ["mouse_cursor_icon","audio"]
+features = ["mouse_cursor_icon","audio","auto_hide"]
 
 [lib]
 name="lib"

@@ -1,11 +1,13 @@
-#![allow(unused_imports)]
 use super::{
-    graphics::{Graphics2D,Graphics,GraphicsSettings},
+    graphics::{Graphics2D,Graphics},
     mouse_cursor::MouseCursor,
 };
 
 #[cfg(feature="mouse_cursor_icon")]
 use super::mouse_cursor::MouseCursorIcon;
+
+mod window_settings;
+pub use window_settings::WindowSettings;
 
 use std::{
     collections::VecDeque,
@@ -29,6 +31,8 @@ use glium::{
 };
 
 use glium::glutin::{
+    monitor::MonitorHandle,
+    event_loop::{ControlFlow,EventLoop},
     event::{
         Event,
         WindowEvent as GWindowEvent,
@@ -36,12 +40,8 @@ use glium::glutin::{
         ElementState,
         ModifiersState,
     },
-    event_loop::{ControlFlow,EventLoop},
-    window::{WindowBuilder,Fullscreen},
-    ContextBuilder,
+    window::Fullscreen,
     platform::desktop::EventLoopExtDesktop,
-    NotCurrent,
-    monitor::MonitorHandle,
 };
 
 use image::{
@@ -63,7 +63,7 @@ pub static mut window_center:[f32;2]=[0f32;2];
 
 /// Окно, включает в себя графические функциями
 /// и обработчик событий.
-/// Window with graphical functions
+/// Window with graphic functions
 /// and an event listener included.
 /// 
 /*
@@ -79,6 +79,7 @@ pub static mut window_center:[f32;2]=[0f32;2];
 /// Все события обрабатываются и добавляются в очередь внешней обработки (Window.events)
 /// для работы с ними вне структуры окна.
 /// 
+/// # feature = "auto_hide"
 /// При потере фокуса окно сворачивается,
 /// передача событий внешнему управлению прекращается (передаётся только событие о получении фокуса).
 /// При получении фокуса окно возвращается в исходное состояние.
@@ -86,15 +87,19 @@ pub static mut window_center:[f32;2]=[0f32;2];
 /// All events are handled and added to the outer handling queue (Window.events)
 /// to work with them outside of the window structure.
 /// 
+/// # feature = "auto_hide"
 /// The window gets minimized when it loses focus and
 /// it stops sending outer events, except gained focus event.
 /// The window gets back when it gains focus.
+
 pub struct Window{
     display:Display,
     graphics:Graphics2D,
 
     event_loop:EventLoop<()>,
     events:VecDeque<WindowEvent>,
+
+    #[cfg(feature="auto_hide")]
     events_handler:fn(&mut Self),
 
     alpha_channel:f32,  // Для плавных
@@ -102,10 +107,6 @@ pub struct Window{
 
     #[cfg(feature="mouse_cursor_icon")]
     mouse_icon:MouseCursorIcon,
-
-    // Поля для отладки
-    #[cfg(debug_assertions)]
-    focusable_option:bool, // Включение/отключение возможности сворачивания во время отладки
 }
 
 /// Внешние события окна.
@@ -118,8 +119,21 @@ pub enum WindowEvent{
 
     /// Окно свёрнуто.
     /// 
-    /// The window is Minimized.
+    /// The window minimized.
+    /// 
+    /// feature = "auto_hide"
+    #[cfg(feature="auto_hide")]
     Hide(bool),
+
+
+    /// Окно получило или потеряло фокус.
+    /// 
+    /// True - получило, false - потеряло.
+    /// 
+    /// The window gained or lost focus.
+    /// The parameter is true, if the window has gained focus,
+    /// and false, if it has lost focus.
+    Focused(bool),
 
     /// Размера окна изменён.
     /// 
@@ -158,21 +172,27 @@ pub enum MouseButton{
 use WindowEvent::*;
 
 impl Window{
+    //pub fn new_settings(settigs:WindowSettings)->Result<Window,DisplayCreationError>{}
+
     /// Создаёт окно. Принимает функцию для настройки.
     ///
     /// Creates the window.
     pub fn new<F>(setting:F)->Result<Window,DisplayCreationError>
         where
-            F:FnOnce(Vec<MonitorHandle>,&mut WindowBuilder,&mut ContextBuilder<NotCurrent>,&mut GraphicsSettings){
+            F:FnOnce(Vec<MonitorHandle>,&mut WindowSettings){
         let event_loop=EventLoop::new();
         let monitors=event_loop.available_monitors().collect();
 
-        let mut graphics_settings=GraphicsSettings::new();
-        let mut window_builder=WindowBuilder::new();
-        let mut context_builder=ContextBuilder::new();
+        let mut window_settings=WindowSettings::new();
+        
 
         // Настройка
-        setting(monitors,&mut window_builder,&mut context_builder,&mut graphics_settings);
+        setting(monitors,&mut window_settings);
+
+        let initial_colour=window_settings.initial_colour;
+
+        let (window_builder,context_builder,graphics_settings)
+                =window_settings.devide();
 
         // Создание окна и привязывание графической библиотеки
         let display=Display::new(window_builder,context_builder,&event_loop)?;
@@ -195,9 +215,11 @@ impl Window{
             }
         };
 
-        let mut frame=display.draw();       //
-        frame.clear_color(1.0,1.0,1.0,1.0); // Заполнение окна
-        frame.finish().unwrap();            //
+        if let Some([r,g,b,a])=initial_colour{
+            let mut frame=display.draw();   //
+            frame.clear_color(r,g,b,a);     // Заполнение окна
+            frame.finish().unwrap();        //
+        }
 
         // Отлючение курсора системы
         // Замена его собственным
@@ -213,13 +235,12 @@ impl Window{
 
             event_loop,
             events:VecDeque::with_capacity(32),
+
+            #[cfg(feature="auto_hide")]
             events_handler:Window::event_listener,
 
             alpha_channel:0f32,
             smooth:0f32,
-
-            #[cfg(debug_assertions)]
-            focusable_option:true,
         })
     }
 
@@ -241,12 +262,16 @@ impl Window{
         self.event_loop.available_monitors()
     }
 
-    /// Следующее событие окна
-    ///
-    /// Next window event
+    /// Возвращает следующее событие окна.
+    /// 
+    /// Returns next window event.
     pub fn next_event(&mut self)->Option<WindowEvent>{
         if self.events.is_empty(){
+            #[cfg(feature="auto_hide")]
             (self.events_handler)(self); // Вызов функции обработки событий
+
+            #[cfg(not(feature="auto_hide"))]
+            self.event_listener();
         }
         self.events.pop_front()
     }
@@ -261,26 +286,32 @@ impl Window{
         }
     }
 
-    pub fn disable_fullscreen(&self){
-        self.display.gl_window().window().set_fullscreen(Option::None)
+
+    pub fn set_fullscreen(&self,fullscreen:Option<Fullscreen>){
+        self.display.gl_window().window().set_fullscreen(fullscreen)
     }
 
-    pub fn set_fullscreen(&self,fullscreen:Fullscreen){
-        self.display.gl_window().window().set_fullscreen(Some(fullscreen))
-    }
-
-    /// Спрятать окно
-    ///
-    /// Hide the window
+    /// Сворачивает окно.
+    /// 
+    /// Minimizes the window.
     #[inline(always)]
-    pub fn set_hide(&self,hide:bool){
-        self.display.gl_window().window().set_minimized(hide);
+    pub fn set_minimized(&self,minimized:bool){
+        self.display.gl_window().window().set_minimized(minimized);
+    }
+
+    /// Делает окно максимального размера.
+    /// 
+    /// Maximizes the window.
+    #[inline(always)]
+    pub fn set_maximized(&self,maximized:bool){
+        self.display.gl_window().window().set_maximized(maximized);
     }
 
     #[inline(always)]
     pub fn set_cursor_visible(&mut self,visible:bool){
         #[cfg(feature="mouse_cursor_icon")]
         self.mouse_icon.set_visible(visible);
+
         #[cfg(not(feature="mouse_cursor_icon"))]
         self.display.gl_window().window().set_cursor_visible(visible);
     }
@@ -293,6 +324,8 @@ impl Window{
 }
 
 /// Связанное с версиями OpenGL.
+/// 
+/// OpenGL versions.
 impl Window{
     #[inline(always)]
     pub fn get_supported_glsl_version(&self)->Version{
@@ -305,6 +338,8 @@ impl Window{
 }
 
 /// Функции для сглаживания.
+/// 
+/// Functions for smoothing.
 impl Window{
     /// Set alpha channel for smooth drawing.
     pub fn set_alpha(&mut self,alpha:f32){
@@ -324,7 +359,8 @@ impl Window{
     }
 }
 
-// Функции для рисования
+/// Функции для рисования.
+/// Drawing functions.
 impl Window{
     /// Даёт прямое управление буфером кадра.
     /// 
@@ -547,12 +583,6 @@ impl Window{
                                     self.switch_cursor_visibility()
                                 }
 
-                                // Отключение/включение возможности сворачивания окна
-                                #[cfg(debug_assertions)]{
-                                    if key==KeyboardButton::F10{
-                                        self.focusable_option=!self.focusable_option;
-                                    }
-                                }
                                 KeyboardReleased(key)
                             }
                         }
@@ -604,6 +634,7 @@ impl Window{
     }
 
     /// Функция ожидания получения фокуса - перехватывает управление до получения окном фокуса
+    #[cfg(feature="auto_hide")]
     fn wait_until_focused(&mut self){
         let el=&mut self.event_loop as *mut EventLoop<()>;
         let event_loop=unsafe{&mut *el};
@@ -639,12 +670,10 @@ impl Window{
 /// 
 /// Inner event handling functions.
 impl Window{
-    /// При потере фокуса - отладка
-    #[cfg(debug_assertions)]
+    /// При потере фокуса - релиз
     fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
-
-        // Если функция сворачивания включена
-        if self.focusable_option{
+        
+        #[cfg(feature="auto_hide")]{
             self.display.gl_window().window().set_minimized(true); // Сворацивание окна
             self.events_handler=Window::wait_until_focused; // Смена фукции обработки событий
         }
@@ -654,18 +683,8 @@ impl Window{
         WindowEvent::Hide(true) // Передача события во внешнее управление
     }
 
-    /// При потере фокуса - релиз
-    #[cfg(not(debug_assertions))]
-    fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
-        self.display.gl_window().window().set_minimized(true); // Сворацивание окна
-        self.events_handler=Window::wait_until_focused; // Смена фукции обработки событий
-
-        *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
-
-        WindowEvent::Hide(true) // Передача события во внешнее управление
-    }
-
     /// При получении фокуса
+    #[cfg(feature="auto_hide")]
     fn gained_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
         self.events_handler=Window::event_listener; // Смена фукции обработки событий
         self.display.gl_window().window().set_minimized(false);

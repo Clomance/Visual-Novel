@@ -68,7 +68,7 @@ impl ImageBase{
     /// Массив координат
     /// для невращающихся изображений.
     /// 
-    /// Vertex array for static images.
+    /// Returns vertex array for static images.
     pub (crate) fn vertex_buffer(&self)->[TexturedVertex;4]{
         let (x1,y1,x2,y2)=unsafe{(
             self.x1/window_center[0],
@@ -89,7 +89,7 @@ impl ImageBase{
     /// Массив координат
     /// для вращающихся изображений.
     /// 
-    /// Vertex array for rotating images.
+    /// Returns vertex array for rotating images.
     pub (crate) fn rotation_vertex_buffer(&self)->[TexturedVertex;4]{
         let (x1,y1,x2,y2)=(
             self.x1,

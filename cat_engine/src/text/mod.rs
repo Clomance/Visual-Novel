@@ -1,6 +1,11 @@
 //! Основы работы с текстом. Text basics. `feature = "text_graphics"`, `default-features`.
 //!
 //! See [rusttype](https://crates.io/crates/rusttype) for more details.
+//! 
+//! 
+
+pub use rusttype;
+
 mod text_base;
 pub use text_base::TextBase;
 

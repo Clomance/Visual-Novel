@@ -8,7 +8,7 @@
  - графика - [glium](https://github.com/glium/glium)
  - изображения - [image](https://github.com/image-rs/image)
  - шрифты - [rusttype](https://gitlab.redox-os.org/redox-os/rusttype)
- - музыка - [cpal](https://github.com/RustAudio/cpal)
+ - музыка - [cpal](https://github.com/RustAudio/cpal) и [minimp3](https://github.com/germangb/minimp3-rs)
 
 Стабильно работает на 64-разрядных Window 10. На остальных системах не проверялась.
 

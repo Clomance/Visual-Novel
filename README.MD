@@ -11,7 +11,7 @@ Latest stable Rust, minimal version of OpenGL - `2.0`.
  - Graphics - [glium](https://github.com/glium/glium)
  - Images - [image](https://github.com/image-rs/image)
  - Fonts - [rusttype](https://gitlab.redox-os.org/redox-os/rusttype)
- - Music - [cpal](https://github.com/RustAudio/cpal)
+ - Music - [cpal](https://github.com/RustAudio/cpal) and [minimp3](https://github.com/germangb/minimp3-rs)
 
 Runs stable on x64 versions of Windows 10. Haven't tested other systems yet.
 

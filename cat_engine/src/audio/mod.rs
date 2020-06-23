@@ -4,7 +4,9 @@
 //! Он контролируется через канал `std::sync::mpsc::channel()`.
 //! Также в нём есть массив аудио треков, которые можно запустить.
 //! 
-//! Пока поддерживает только один канал для проигрывания треков.
+//! Пока поддерживает только один канал для проигрывания треков
+//! и только формат`mp3`.
+//! 
 //! 
 //! Закрывается поток с паникой, так что не паникуте!
 //! 
@@ -16,11 +18,23 @@
 //! It's controled with channel `std::sync::mpsc::channel()`.
 //! Also it has audio track array.
 //! 
-//! The system supports only one channel for playing tracks.
+//! The system supports only one channel for playing tracks
+//! and only `mp3` format.
+//! 
 //! 
 //! The thread closes with panic, so don't panic!
 //! 
 //! Some code was taken from [rodio](https://github.com/RustAudio/rodio).
+//! 
+//! 
+//! ```
+//! let settings=AudioSettings::new();
+//! let audio=Audio::new(settings).unwrap();
+//! 
+//! audio.add_track("audio.mp3"); // track index = 0
+//! 
+//! audio.play_once(0); // plays the track with index 0
+//! ```
 
 mod audio_track;
 mod sample;
@@ -563,13 +577,17 @@ impl AudioOutputType{
 }
 
 pub struct AudioSettings{
-    /// 
+    /// The default is 0.5.
     pub volume:f32,
-    /// 
+
+    /// The default is Stereo.
     pub output_type:AudioOutputType,
-    /// Максимальный размер
+
+    /// Вместимость массива для треков.
     /// 
-    /// Maximal size of the track array.
+    /// Capacity of the track array.
+    /// 
+    /// The default is 1.
     pub track_array_capacity:usize,
 }
 

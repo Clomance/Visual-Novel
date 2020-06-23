@@ -116,7 +116,7 @@ fn main(){
     }
 
     // Настройка и создание окна и загрузка функций OpenGL
-    let mut window:Window=match Window::new(|mut monitors,window_builder,context_builder,graphics_sets|{
+    let mut window:Window=match Window::new(|mut monitors,window_settings|{
         // Установка полноэкранного режима для нужного экрана
         let monitor=unsafe{Settings.monitor};
         let monitor=if monitor<monitors.len(){
@@ -133,23 +133,25 @@ fn main(){
 
         let icon=load_window_icon();
 
-        window_builder.window.inner_size=Some(Size::Physical(size));
-        window_builder.window.title=game_name.to_string();
-        window_builder.window.fullscreen=Some(fullscreen);
-        window_builder.window.resizable=false;
-        window_builder.window.decorations=false;
-        window_builder.window.always_on_top=true;
-        window_builder.window.window_icon=Some(icon);
+        window_settings.initial_colour=Some(Black);
 
-        context_builder.gl_attr.vsync=true;
-        context_builder.gl_attr.debug=false;
+        window_settings.inner_size=Some(Size::Physical(size));
+        window_settings.title=game_name.to_string();
+        window_settings.fullscreen=Some(fullscreen);
+        window_settings.resizable=false;
+        window_settings.decorations=false;
+        window_settings.always_on_top=true;
+        window_settings.window_icon=Some(icon);
 
-        context_builder.pf_reqs.srgb=true;
-        context_builder.pf_reqs.hardware_accelerated=None;
+        window_settings.vsync=true;
+        window_settings.debug=false;
 
-        graphics_sets.texture_vertex_buffer_size=12usize;
-        graphics_sets.simple_vertex_buffer_size=100usize;
-        graphics_sets.text_vertex_buffer_size=2000usize;
+        window_settings.srgb=true;
+        window_settings.hardware_accelerated=None;
+
+        window_settings.texture_vertex_buffer_size=12usize;
+        window_settings.simple_vertex_buffer_size=100usize;
+        window_settings.text_vertex_buffer_size=2000usize;
     }){
         Ok(window)=>window,
         Err(e)=>{
