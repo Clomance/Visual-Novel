@@ -1,6 +1,6 @@
 [package]
 name = "cat_engine"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Clomance"]
 edition = "2018"
 homepage = "https://github.com/Clomance/Visual-Novel/tree/master/cat_engine"

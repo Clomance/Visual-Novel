@@ -13,13 +13,25 @@
 //! Text is drawn pointwise. It's important to set corrent size of the text graphics buffer.
 //! 
 //! ```
-//! // Default settings
-//! let mut window=Window::new(|_,_|{}).unwrap();
+//! use cat_engine::{
+//!     Window,
+//!     WindowEvent
+//! };
 //! 
-//! while let Some(event)=window.next_event(){
-//!     match event{
-//!         WindowEvent::Exit=>break,
-//!         _=>{}
+//! fn main(){
+//!     // Default settings
+//!     let mut window=Window::new(|_,_|{}).unwrap();
+//! 
+//!     while let Some(event)=window.next_event(){
+//!         match event{
+//!             WindowEvent::Exit=>break,
+//!             WindowEvent::Draw=>{
+//!                 window.draw(|_,g|{
+//!                     g.clear_colour([1.0,0.0,0.0,0.0]);
+//!                 })
+//!             }
+//!             _=>{}
+//!         }
 //!     }
 //! }
 //! ```

@@ -1,5 +1,3 @@
-#![allow(unused_imports)]
-
 use crate::Colour;
 
 #[cfg(feature="texture_graphics")]

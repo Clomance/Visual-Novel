@@ -1,3 +1,4 @@
+#![allow(unused_imports,unused_variables,dead_code)]
 //! # Графические основы. Graphic basics.
 //! 
 //! Графический движок разделен на три части:

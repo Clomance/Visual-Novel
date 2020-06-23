@@ -6,8 +6,8 @@ use super::{
 #[cfg(feature="mouse_cursor_icon")]
 use super::mouse_cursor::MouseCursorIcon;
 
-mod window_settings;
-pub use window_settings::WindowSettings;
+mod settings;
+pub use settings::WindowSettings;
 
 use std::{
     collections::VecDeque,
@@ -133,6 +133,9 @@ pub enum WindowEvent{
     /// The window gained or lost focus.
     /// The parameter is true, if the window has gained focus,
     /// and false, if it has lost focus.
+    /// 
+    /// feature != "auto_hide"
+    #[cfg(not(feature="auto_hide"))]
     Focused(bool),
 
     /// Размера окна изменён.
@@ -596,12 +599,17 @@ impl Window{
                         }
 
                         // При потере фокуса
+                        #[cfg(feature="auto_hide")]
                         GWindowEvent::Focused(f)=>if !f{
                             self.lost_focus(control_flow)
                         }
                         else{
                             WindowEvent::Hide(false) // Передача события во внешнее управление
                         }
+
+                        #[cfg(not(feature="auto_hide"))]
+                        GWindowEvent::Focused(f)=>WindowEvent::Focused(f),
+
                         _=>None // Игнорирование остальных событий
                     }
                 }
@@ -670,13 +678,10 @@ impl Window{
 /// 
 /// Inner event handling functions.
 impl Window{
-    /// При потере фокуса - релиз
+    #[cfg(feature="auto_hide")]
     fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
-        
-        #[cfg(feature="auto_hide")]{
-            self.display.gl_window().window().set_minimized(true); // Сворацивание окна
-            self.events_handler=Window::wait_until_focused; // Смена фукции обработки событий
-        }
+        self.display.gl_window().window().set_minimized(true); // Сворацивание окна
+        self.events_handler=Window::wait_until_focused; // Смена фукции обработки событий
 
         *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
 
