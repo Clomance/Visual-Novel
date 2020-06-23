@@ -301,9 +301,19 @@ impl WindowSettings{
         let mut context_builder=ContextBuilder::new();
         context_builder.gl_attr.vsync=self.vsync;
         context_builder.gl_attr.debug=self.debug;
-        context_builder.pf_reqs.hardware_accelerated=self.hardware_accelerated;
-        context_builder.pf_reqs.srgb=self.srgb;
 
+        context_builder.pf_reqs.hardware_accelerated=self.hardware_accelerated;
+        context_builder.pf_reqs.color_bits=self.color_bits;
+        context_builder.pf_reqs.float_color_buffer=self.float_color_buffer;
+        context_builder.pf_reqs.alpha_bits=self.alpha_bits;
+        context_builder.pf_reqs.depth_bits=self.depth_bits;
+        context_builder.pf_reqs.stencil_bits=self.stencil_bits;
+        context_builder.pf_reqs.double_buffer=self.double_buffer;
+        context_builder.pf_reqs.multisampling=self.multisampling;
+        context_builder.pf_reqs.stereoscopy=self.stereoscopy;
+        context_builder.pf_reqs.srgb=self.srgb;
+        context_builder.pf_reqs.release_behavior=self.release_behavior;
+        
         let graphics_settings=GraphicsSettings{
             #[cfg(feature="texture_graphics")]
             texture_vertex_buffer_size:self.texture_vertex_buffer_size,
