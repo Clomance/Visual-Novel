@@ -6,8 +6,10 @@
 //! 2. Текстуры (изображения)
 //! 3. Текст
 //! 
-//! Также есть возможность сохранять и использовать координаты объектов.
-//! (пример ниже)
+//! Обычные функции рисования используют VertexBuffer с начала.
+//! 
+//! Также есть возможность сохранять и использовать координаты объектов
+//! (пример ниже).
 //! 
 //! 
 //! 
@@ -15,6 +17,8 @@
 //! 1. Simple graphics - plain objects composed of `Point2D`.
 //! 2. Textures (images)
 //! 3. Text
+//! 
+//! Common functions use VertexBuffer from the start.
 //! 
 //! Also it's possible to save and use vertexes of objects.
 //! 
@@ -45,8 +49,8 @@
 //! ```
 
 mod graphics;
-pub (crate) use graphics::{Graphics2D,GraphicsSettings};
-pub use graphics::{Graphics,};
+pub (crate) use graphics::{Graphics2D};
+pub use graphics::{Graphics,GraphicsSettings};
 
 
 #[cfg(feature="simple_graphics")]

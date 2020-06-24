@@ -92,7 +92,7 @@ impl TextBase{
     /// Строит и выводит один символ.
     /// 
     /// Builds and draws a character.
-    pub fn draw_char(&self,character:char,draw_parameters:&mut DrawParameters,graphics:&mut Graphics,glyphs:Glyphs){
+    pub fn draw_char(&self,character:char,draw_parameters:&mut DrawParameters,graphics:&mut Graphics,glyphs:&Glyphs){
         let position=self.position;
 
         let character=glyphs.character_positioned(character,self.font_size,position);

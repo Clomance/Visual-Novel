@@ -1,12 +1,12 @@
 #![allow(dead_code,unused_imports)]
 
-use super::window_center;
-
 #[cfg(feature="mouse_cursor_icon")]
-use super::{
+use crate::{
     graphics::Graphics,
     image::{ImageBase,Texture}
 };
+
+use super::window_center;
 
 #[cfg(feature="mouse_cursor_icon")]
 use glium::{
@@ -14,7 +14,7 @@ use glium::{
     DrawParameters,
 };
 
-use std::path::PathBuf;
+use std::path::Path;
 
 /// Положение курсора мыши.
 /// The mouse cursor position.
@@ -105,7 +105,7 @@ pub struct MouseCursorIcon{
 
 #[cfg(feature="mouse_cursor_icon")]
 impl MouseCursorIcon{
-    pub fn new(display:&Display,path:PathBuf)->MouseCursorIcon{
+    pub fn new<P:AsRef<Path>>(display:&Display,path:P)->MouseCursorIcon{
         Self{
             image_base:ImageBase::new([1f32;4],[0f32,0f32,2f32*radius,2f32*radius]),
             texture:Texture::from_path(path,display).unwrap(),

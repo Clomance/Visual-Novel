@@ -34,10 +34,21 @@ use core::ops::Range;
 /// 
 /// Settings for graphic basics.
 pub struct GraphicsSettings{
+    /// The default is 8.
+    ///
+    /// feature = "texture_graphics"
     #[cfg(feature="texture_graphics")]
     pub texture_vertex_buffer_size:usize,
+
+    /// The default is 100.
+    /// 
+    /// feature = "simple_graphics"
     #[cfg(feature="simple_graphics")]
     pub simple_vertex_buffer_size:usize,
+
+    /// The default is 2000.
+    /// 
+    /// feature = "text_graphics"
     #[cfg(feature="text_graphics")]
     pub text_vertex_buffer_size:usize,
 }

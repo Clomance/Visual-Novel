@@ -49,8 +49,6 @@ pub mod image;
 
 pub mod graphics;
 
-mod mouse_cursor;
-
 mod window;
 pub use window::*;
 

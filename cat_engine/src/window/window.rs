@@ -1,12 +1,13 @@
-#[cfg(feature="mouse_cursor_icon")]
-use crate::mouse_cursor::MouseCursorIcon;
-
 use crate::{
-    graphics::{Graphics2D,Graphics},
-    mouse_cursor::MouseCursor,
+    Colour,
+    graphics::{Graphics2D,Graphics,GraphicsSettings},
 };
 
+#[cfg(feature="mouse_cursor_icon")]
+use super::mouse_cursor::MouseCursorIcon;
+
 use super::{
+    mouse_cursor::MouseCursor,
     WindowEvent,
     WindowSettings,
     MouseButton,
@@ -30,6 +31,8 @@ use glium::{
 };
 
 use glium::glutin::{
+    ContextBuilder,
+    NotCurrent,
     monitor::MonitorHandle,
     event_loop::{ControlFlow,EventLoop},
     event::{
@@ -38,7 +41,7 @@ use glium::glutin::{
         MouseButton as GMouseButton,
         ElementState,
     },
-    window::Fullscreen,
+    window::{Fullscreen,WindowBuilder},
     platform::desktop::EventLoopExtDesktop,
     dpi::Size,
 };
@@ -51,7 +54,7 @@ use image::{
 
 use std::{
     collections::VecDeque,
-    path::Path,
+    path::{Path,PathBuf}
 };
 
 /// Положение курсора мыши. The mouse cursor position.
@@ -132,8 +135,7 @@ impl Window{
     ///
     /// Creates the window.
     pub fn new<F>(setting:F)->Result<Window,DisplayCreationError>
-        where
-            F:FnOnce(Vec<MonitorHandle>,&mut WindowSettings){
+            where F:FnOnce(Vec<MonitorHandle>,&mut WindowSettings){
         let event_loop=EventLoop::new();
         let monitors=event_loop.available_monitors().collect();
 
@@ -145,12 +147,44 @@ impl Window{
 
         let initial_colour=window_settings.initial_colour;
         #[cfg(feature="mouse_cursor_icon")]
-        let mouse_icon_path=window_settings.mouse_cursor_icon_path.clone();
+        let mouse_cursor_icon_path=window_settings.mouse_cursor_icon_path.clone();
 
 
         let (window_builder,context_builder,graphics_settings)
                 =window_settings.devide();
 
+        #[cfg(feature="mouse_cursor_icon")]
+        let window=Window::raw(
+            window_builder,
+            context_builder,
+            graphics_settings,
+            event_loop,
+            initial_colour,
+            mouse_cursor_icon_path
+        );
+
+        #[cfg(not(feature="mouse_cursor_icon"))]
+        let window=Window::raw::<PathBuf>(
+            window_builder,
+            context_builder,
+            graphics_settings,
+            event_loop,
+            initial_colour,
+        );
+
+        window
+    }
+
+    /// mouse_cursor_icon_path - feature = "mouse_cursor_icon"
+    pub fn raw<P:AsRef<Path>>(
+        window_builder:WindowBuilder,
+        context_builder:ContextBuilder<NotCurrent>,
+        graphics_settings:GraphicsSettings,
+        event_loop:EventLoop<()>,
+        initial_colour:Option<Colour>,
+        #[cfg(feature="mouse_cursor_icon")]
+        mouse_cursor_icon_path:P,
+    )->Result<Window,DisplayCreationError>{
         // Создание окна и привязывание графической библиотеки
         let display=Display::new(window_builder,context_builder,&event_loop)?;
 
@@ -185,7 +219,7 @@ impl Window{
 
         Ok(Self{
             #[cfg(feature="mouse_cursor_icon")]
-            mouse_icon:MouseCursorIcon::new(&display,mouse_icon_path),
+            mouse_icon:MouseCursorIcon::new(&display,mouse_cursor_icon_path),
 
             graphics:Graphics2D::new(&display,graphics_settings,glsl),
             display:display,

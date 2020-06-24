@@ -34,6 +34,7 @@ use cat_engine::{
 
 use std::{
     fs::{metadata,read_dir},
+    path::PathBuf,
 };
 
 mod game_settings;
@@ -117,6 +118,10 @@ fn main(){
 
     // Настройка и создание окна и загрузка функций OpenGL
     let mut window:Window=match Window::new(|mut monitors,window_settings|{
+        let mut path=PathBuf::new();
+        path.push("./resources/images/mouse_icon.png");
+        window_settings.mouse_cursor_icon_path=path;
+
         // Установка полноэкранного режима для нужного экрана
         let monitor=unsafe{Settings.monitor};
         let monitor=if monitor<monitors.len(){

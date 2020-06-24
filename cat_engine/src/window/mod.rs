@@ -4,6 +4,8 @@ pub use window::*;
 mod settings;
 pub use settings::WindowSettings;
 
+mod mouse_cursor;
+
 use glium::glutin::event::ModifiersState;
 
 /// Внешние события окна.

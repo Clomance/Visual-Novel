@@ -30,7 +30,7 @@ pub struct WindowSettings{
 
     /// Path for the mouse cursor icon.
     /// 
-    /// The default is `./`.
+    /// The default is `./mouse_cursor_icon.png`.
     /// 
     /// feature = "mouse_cursor_icon"
     #[cfg(feature="mouse_cursor_icon")]
