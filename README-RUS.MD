@@ -1,6 +1,6 @@
 # Визуальная новелла, написанная на Rust.
 
-## Версия 1.6.1
+## Версия 1.6.2
 
 Последняя стабильная версия Rust, минимальная версия OpenGL - `2.0`.
 
@@ -179,7 +179,7 @@ O - Да, {}?
 #### Остальное
 
 Путь текстуры для окна с диалогами - `./resources/images/dialog_box.png`;
-для картинки во время загрузки - `./resources/images/logo.png`;
+для картинки во время загрузки - `./resources/images/cat.png` и `./resources/images/gear.png`;
 для иконки окна - `./resources/images/window_icon.png`;
 для курсора мыши - `./resources/images/mouse_icon.png`.
 

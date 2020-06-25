@@ -67,7 +67,7 @@ pub static mut window_height:f32=0f32;
 /// Центр окна. The window center. [x, y]
 pub static mut window_center:[f32;2]=[0f32;2];
 
-/// Окно, включает в себя графические функциями
+/// Окно, включает в себя графические функции
 /// и обработчик событий.
 /// Window with graphic functions
 /// and an event listener included.

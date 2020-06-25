@@ -2,3 +2,4 @@ target/*
 Cargo.lock
 tmp/*
 .vscode/launch.json
+settings/*

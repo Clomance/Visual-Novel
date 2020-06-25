@@ -10,7 +10,7 @@
 //! 
 //! Uses OpenGL 2.0 and above.
 //! 
-//! Text is drawn pointwise. It's important to set corrent size of the text graphics buffer.
+//! Text is drawn pointwise. It's important to set current size of the text graphics buffer.
 //! 
 //! ```
 //! use cat_engine::{

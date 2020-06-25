@@ -55,6 +55,15 @@ impl ImageBase{
         }
     }
 
+    pub fn set_rect(&mut self,rect:[f32;4]){
+        let x=unsafe{rect[0]-window_center[0]};
+        let y=unsafe{window_center[1]-rect[1]};
+        self.x1=x;
+        self.y1=y;
+        self.x2=x+rect[2];
+        self.y2=y-rect[3];
+    }
+
     /// Сдвигает координаты.
     ///
     /// Shifts coordinates.

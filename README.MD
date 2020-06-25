@@ -3,7 +3,7 @@
  - [Russian version of README](https://github.com/Clomance/Visual-Novel/blob/master/README-RUS.MD)
  - [Estonian version of README](https://github.com/Clomance/Visual-Novel/blob/master/README-ET.MD)
 
-### Version 1.6.1
+### Version 1.6.2
 
 Latest stable Rust, minimal version of OpenGL - `2.0`.
 
