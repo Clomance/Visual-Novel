@@ -66,7 +66,17 @@ impl GraphicsSettings{
     }
 }
 
-/// Графические основы.
+
+
+/// Графическая основа. Graphic base.
+/// 
+/// # Области. Ranges.
+/// 
+/// Вы можете выбрать область в буфере вершин и сохранить туда вершины объектов.
+/// Это помогает ускорить процесс отрисовки неменяющихся объектов.
+/// 
+/// You can choose a range of the vertex buffer and save there vertexes of objects.
+/// It speeds up drawing unchanging objects.
 pub struct Graphics2D{
     #[cfg(feature="texture_graphics")]
     texture:TextureGraphics,
@@ -77,7 +87,7 @@ pub struct Graphics2D{
 }
 
 impl Graphics2D{
-    pub fn new(window:&Display,settings:GraphicsSettings,glsl:u16)->Graphics2D{
+    pub (crate) fn new(window:&Display,settings:GraphicsSettings,glsl:u16)->Graphics2D{
         Self{
             #[cfg(feature="texture_graphics")]
             texture:TextureGraphics::new(window,settings.texture_vertex_buffer_size,glsl),
@@ -88,8 +98,7 @@ impl Graphics2D{
         }
     }
 
-    /// Сохраняет координаты картинки в выбранной области в буфере,
-    /// чтобы постоянно не загружать заново при отрисовке.
+    /// Сохраняет координаты картинки в выбранной области в буфере.
     /// Возращает номер области, если она не выходит за границы буфера.
     /// 
     /// Используется только для невращающихся изображений.
@@ -97,7 +106,6 @@ impl Graphics2D{
     /// Для вывода изображения из этой области используется функция 'draw_range_image'.
     /// 
     /// Saves vertexes of the image to the given range of the vertex buffer.
-    /// 
     /// Returns the index of the range.
     /// 
     /// Only for not rotating images.
@@ -109,8 +117,7 @@ impl Graphics2D{
         self.texture.bind_range(range,&data)
     }
 
-    /// Сохраняет координаты картинки в выбранной области в буфере,
-    /// чтобы постоянно не загружать заново при отрисовке.
+    /// Сохраняет координаты картинки в выбранной области в буфере.
     /// Возращает номер области, если она не выходит за границы буфера.
     /// 
     /// Используется только для вращающихся изображений.
@@ -118,7 +125,6 @@ impl Graphics2D{
     /// Для вывода изображения из этой области используется функция 'draw_rotate_range_image'.
     /// 
     /// Saves vertexes of the image to the given range of the vertex buffer.
-    /// 
     /// Returns the index of the range.
     /// 
     /// Only for rotating images.
@@ -183,7 +189,6 @@ impl Graphics2D{
         self.simple.unbind(index)
     }
 
-    /// 
     #[cfg(feature="texture_graphics")]
     fn draw_range_image(
         &self,
