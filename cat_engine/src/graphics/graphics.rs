@@ -95,6 +95,14 @@ impl Graphics2D{
     /// Используется только для невращающихся изображений.
     /// 
     /// Для вывода изображения из этой области используется функция 'draw_range_image'.
+    /// 
+    /// Saves vertexes of the image to the given range of the vertex buffer.
+    /// 
+    /// Returns the index of the range.
+    /// 
+    /// Only for not rotating images.
+    /// 
+    /// Use 'draw_range_image' for drawing.
     #[cfg(feature="texture_graphics")]
     pub fn bind_image(&mut self,range:Range<usize>,image_base:ImageBase)->Option<usize>{
         let data=image_base.vertex_buffer();
@@ -108,38 +116,76 @@ impl Graphics2D{
     /// Используется только для вращающихся изображений.
     /// 
     /// Для вывода изображения из этой области используется функция 'draw_rotate_range_image'.
+    /// 
+    /// Saves vertexes of the image to the given range of the vertex buffer.
+    /// 
+    /// Returns the index of the range.
+    /// 
+    /// Only for rotating images.
+    /// 
+    /// Use 'draw_rotate_range_image' for drawing.
     #[cfg(feature="texture_graphics")]
     pub fn bind_rotating_image(&mut self,range:Range<usize>,image_base:ImageBase)->Option<usize>{
         let data=image_base.rotation_vertex_buffer();
         self.texture.bind_range(range,&data)
     }
 
+    /// Saves vertexes of the simple object to the given range of the vertex buffer.
+    /// 
+    /// Returns the index of the range.
+    /// 
+    /// Use 'draw_range_simple' for drawing.
     #[cfg(feature="simple_graphics")]
     pub fn bind_simple<'a,O:SimpleObject<'a>>(&mut self,range:Range<usize>,object:&O)->Option<usize>{
         let data=object.vertex_buffer();
         self.simple.bind_range(range,&data)
     }
 
+    /// Rewrites the range with new ImageBase.
     #[cfg(feature="texture_graphics")]
     pub fn rewrite_range_image(&mut self,range:usize,image_base:ImageBase)->Option<()>{
         let data=image_base.rotation_vertex_buffer();
         self.texture.rewrite_range(range,&data)
     }
 
+    /// Rewrites the range with new object.
+    #[cfg(feature="simple_graphics")]
+    pub fn rewrite_range_simple<'a,O:SimpleObject<'a>>(&mut self,range:usize,object:&O)->Option<()>{
+        let data=object.vertex_buffer();
+        self.simple.rewrite_range(range,&data)
+    }
+
+    /// Removes the last range from the range buffer of textures.
+    #[inline(always)]
+    #[cfg(feature="texture_graphics")]
+    pub fn pop_texture(&mut self,index:usize)->Option<Range<usize>>{
+        self.texture.pop_range()
+    }
+
+    /// Removes the last range from the range buffer of simple objects.
+    #[inline(always)]
+    #[cfg(feature="simple_graphics")]
+    pub fn pop_simple(&mut self,index:usize)->Option<Range<usize>>{
+        self.texture.pop_range()
+    }
+
+    /// Removes the range from the range buffer of textures.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn unbind_texture(&mut self,index:usize){
         self.texture.unbind(index)
     }
 
+    /// Removes the range from the range buffer of simple objects.
     #[inline(always)]
     #[cfg(feature="simple_graphics")]
     pub fn unbind_simple(&mut self,index:usize){
         self.simple.unbind(index)
     }
 
+    /// 
     #[cfg(feature="texture_graphics")]
-    pub fn draw_range_image(
+    fn draw_range_image(
         &self,
         index:usize,
         texture:&Texture,
@@ -159,7 +205,7 @@ impl Graphics2D{
     }
 
     #[cfg(feature="texture_graphics")]
-    pub fn draw_shift_range_image(
+    fn draw_shift_range_image(
         &self,
         index:usize,
         texture:&Texture,
@@ -181,7 +227,7 @@ impl Graphics2D{
     }
 
     #[cfg(feature="texture_graphics")]
-    pub fn draw_rotate_range_image(
+    fn draw_rotate_range_image(
         &self,
         index:usize,
         texture:&Texture,
@@ -203,7 +249,7 @@ impl Graphics2D{
     }
 
     #[cfg(feature="simple_graphics")]
-    pub fn draw_range_simple<'a,O:SimpleObject<'a>>(
+    fn draw_range_simple<'a,O:SimpleObject<'a>>(
         &self,
         index:usize,
         object:&O,

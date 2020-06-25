@@ -1,4 +1,4 @@
-# ![logo](https://github.com/Clomance/Visual-Novel/blob/master/cat_engine/logo_400x400.png)
+# ![logo](https://github.com/Clomance/Visual-Novel/raw/master/cat_engine/logo_400x400.png)
 
 # Cat Engine
 

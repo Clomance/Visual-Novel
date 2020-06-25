@@ -138,6 +138,17 @@ impl SimpleGraphics{
         Some(i)
     }
 
+    pub fn rewrite_range(&mut self,range:usize,data:&[Point2D])->Option<()>{
+        let range=self.vertex_buffer_ranges.get(range)?;
+        let slice=self.vertex_buffer.slice(range.clone())?;
+        slice.write(&data);
+        Some(())
+    }
+
+    pub fn pop_range(&mut self)->Option<Range<usize>>{
+        self.vertex_buffer_ranges.pop()
+    }
+
     /// Удаляет выбранную область, без проверки.
     /// 
     /// Removes a range without checking it.

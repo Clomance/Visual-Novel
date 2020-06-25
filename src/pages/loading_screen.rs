@@ -20,9 +20,7 @@ use cat_engine::{
 
 pub struct LoadingScreen{
     cat:Texture,
-    cat_range:usize,
     gear:Texture,
-    gear_range:usize,
 }
 
 impl LoadingScreen{
@@ -35,20 +33,18 @@ impl LoadingScreen{
         ]});
 
         // Установка области для быстрой отрисовки иконки загрузки
-        let cat_range=window.graphics().bind_image(4..8usize,image_base.clone()).unwrap();
+        window.graphics().bind_image(4..8usize,image_base.clone()).unwrap();
 
         image_base.x1*=2f32;
         image_base.y1*=2f32;
         image_base.x2*=2f32;
         image_base.y2*=2f32;
 
-        let gear_range=window.graphics().bind_rotating_image(8..12usize,image_base).unwrap();
+        window.graphics().bind_rotating_image(8..12usize,image_base).unwrap();
 
         Self{
             cat:Texture::from_path("./resources/images/cat.png",window.display()).unwrap(),
-            cat_range,
             gear:Texture::from_path("./resources/images/gear.png",window.display()).unwrap(),
-            gear_range,
         }
     }
 
@@ -73,14 +69,14 @@ impl LoadingScreen{
                     window.draw(|parameters,graphics|{
                         graphics.clear_colour(White);
                         graphics.draw_range_image(
-                            self.cat_range,
+                            0,
                             &self.cat,
                             White,
                             parameters
                         );
 
                         graphics.draw_rotate_range_image(
-                            self.gear_range,
+                            1,
                             &self.gear,
                             White,
                             t,
@@ -95,14 +91,14 @@ impl LoadingScreen{
                         make_screenshot(window,|parameters,graphics|{
                             graphics.clear_colour(White);
                             graphics.draw_range_image(
-                                self.cat_range,
+                                0,
                                 &self.cat,
                                 White,
                                 parameters
                             );
-    
+
                             graphics.draw_rotate_range_image(
-                                self.gear_range,
+                                1,
                                 &self.gear,
                                 White,
                                 t,
@@ -143,9 +139,9 @@ impl LoadingScreen{
         }
 
         // Удаление области для иконки загрузки
-        window.graphics().unbind_texture(self.cat_range);
+        window.graphics().unbind_texture(0);
 
-        window.graphics().unbind_texture(self.gear_range-1);
+        window.graphics().unbind_texture(0);
 
         Game::MainMenu
     }

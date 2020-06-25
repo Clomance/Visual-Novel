@@ -164,6 +164,10 @@ impl TextureGraphics{
         Some(i)
     }
 
+    pub fn pop_range(&mut self)->Option<Range<usize>>{
+        self.vertex_buffer_ranges.pop()
+    }
+
     /// 
     pub fn rewrite_range(&mut self,range:usize,data:&[TexturedVertex])->Option<()>{
         let range=self.vertex_buffer_ranges.get(range)?;

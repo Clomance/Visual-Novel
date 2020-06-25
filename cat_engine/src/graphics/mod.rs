@@ -49,8 +49,7 @@
 //! ```
 
 mod graphics;
-pub (crate) use graphics::{Graphics2D};
-pub use graphics::{Graphics,GraphicsSettings};
+pub use graphics::{Graphics,Graphics2D,GraphicsSettings};
 
 
 #[cfg(feature="simple_graphics")]
