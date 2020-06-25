@@ -274,7 +274,8 @@ impl Graphics2D{
     }
 }
 
-/// Простой интерфейс для связи кадра и графических функций
+/// Простой интерфейс для связи кадра и графических функций.
+/// Simple interface to connect graphic fuctions to the frame.
 pub struct Graphics<'graphics,'frame>{
     graphics:&'graphics Graphics2D,
     frame:&'frame mut Frame,
@@ -282,7 +283,7 @@ pub struct Graphics<'graphics,'frame>{
 
 impl<'graphics,'frame> Graphics<'graphics,'frame>{
     #[inline(always)]
-    pub fn new(graphics:&'graphics Graphics2D,frame:&'frame mut Frame)->Graphics<'graphics,'frame>{
+    pub (crate) fn new(graphics:&'graphics Graphics2D,frame:&'frame mut Frame)->Graphics<'graphics,'frame>{
         Self{
             graphics,
             frame
@@ -291,7 +292,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
     /// Возвращает ссылку на кадр.
     /// 
-    /// Return reference to the frame.
+    /// Return the reference to the frame.
     #[inline(always)]
     pub fn frame(&mut self)->&mut Frame{
         self.frame
