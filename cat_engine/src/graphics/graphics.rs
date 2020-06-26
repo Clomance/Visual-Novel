@@ -136,8 +136,13 @@ impl Graphics2D{
         self.texture.bind_range(range,&data)
     }
 
-    /// Saves vertexes of the simple object to the given range of the vertex buffer.
+
+    /// Сохраняет координаты простого объекта в выбранной области в буфере.
+    /// Возращает номер области, если она не выходит за границы буфера.
     /// 
+    /// Для вывода объекта из этой области используется функция 'draw_range_simple'.
+    /// 
+    /// Saves vertexes of the simple object to the given range of the vertex buffer.
     /// Returns the index of the range.
     /// 
     /// Use 'draw_range_simple' for drawing.
@@ -147,6 +152,8 @@ impl Graphics2D{
         self.simple.bind_range(range,&data)
     }
 
+    /// Обновляет значения области массива для текстур.
+    /// 
     /// Rewrites the range with new ImageBase.
     #[cfg(feature="texture_graphics")]
     pub fn rewrite_range_image(&mut self,range:usize,image_base:ImageBase)->Option<()>{
@@ -154,6 +161,8 @@ impl Graphics2D{
         self.texture.rewrite_range(range,&data)
     }
 
+    /// Обновляет значения области массива простых объектов.
+    /// 
     /// Rewrites the range with new object.
     #[cfg(feature="simple_graphics")]
     pub fn rewrite_range_simple<'a,O:SimpleObject<'a>>(&mut self,range:usize,object:&O)->Option<()>{
@@ -161,6 +170,8 @@ impl Graphics2D{
         self.simple.rewrite_range(range,&data)
     }
 
+    /// Удаляет и возращает последюю область из массива областей текстур.
+    /// 
     /// Removes the last range from the range buffer of textures.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
@@ -168,6 +179,8 @@ impl Graphics2D{
         self.texture.pop_range()
     }
 
+    /// Удаляет и возращает последюю область из массиса областей простых объектов.
+    /// 
     /// Removes the last range from the range buffer of simple objects.
     #[inline(always)]
     #[cfg(feature="simple_graphics")]
@@ -175,6 +188,8 @@ impl Graphics2D{
         self.texture.pop_range()
     }
 
+    /// Удаляет область из массива областей тектсур.
+    /// 
     /// Removes the range from the range buffer of textures.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
@@ -182,6 +197,8 @@ impl Graphics2D{
         self.texture.unbind(index)
     }
 
+    /// Удаляет область из массива областей простых объектов.
+    /// 
     /// Removes the range from the range buffer of simple objects.
     #[inline(always)]
     #[cfg(feature="simple_graphics")]
@@ -374,13 +391,11 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
     }
 }
 
-/// Функции для работы с областями.
-/// 
-/// Function to work with ranges.
+/// # Функции для работы с областями. Functions to work with ranges.
 impl<'graphics,'frame> Graphics<'graphics,'frame>{
     /// Рисует изображение на основе данных из области.
     /// 
-    /// Draws image based on data from a range.
+    /// Draws an image based on data from a range.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_range_image(
@@ -401,7 +416,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
     /// Рисует сдвинутое изображение на основе данных из области.
     /// 
-    /// Draws shifted image based on data from a range.
+    /// Draws shifted an image based on data from a range.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_shift_range_image(
@@ -425,7 +440,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
     /// Рисует изображение с поворотом в 'angle' градусов на основе
     /// данных из области.
     /// 
-    /// Draws image based on data from a range rotated `angle` degrees.
+    /// Draws an image based on data from a range rotated `angle` degrees.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_rotate_range_image(
@@ -443,6 +458,25 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
             angle,
             draw_parameters,
             &mut self.frame
+        )
+    }
+
+    /// Рисует простой объект на основе данных из области.
+    /// 
+    /// Draws a simple object based on data from a range.
+    #[inline(always)]
+    #[cfg(feature="simple_graphics")]
+    pub fn draw_range_simple<'a,O:SimpleObject<'a>>(
+        &mut self,
+        index:usize,
+        object:&O,
+        draw_parameters:&mut DrawParameters
+    )->Result<(),DrawError>{
+        self.graphics.draw_range_simple(
+            index,
+            object,
+            draw_parameters,
+            self.frame,
         )
     }
 }

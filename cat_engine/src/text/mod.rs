@@ -43,13 +43,9 @@ impl Glyphs{
         }
     }
 
-    pub fn glyph_height(&self,font_size:f32)->f32{
-        let scale=Scale::uniform(font_size);
-        let v=self.font.v_metrics(scale);
-        v.ascent-v.descent
-    }
-
-    /// Символ, определённого размера, с нулейвой позицией.
+    /// Возвращает символ, определённого размера, с нулейвой позицией.
+    /// 
+    /// Returns a character with given size and zero position.
     pub fn character(&self,character:char,font_size:f32)->Character{
         let scale=Scale::uniform(font_size*pixel_scale); // Приведение к общему размеру пикселей
         let c=self.font.glyph(character).scaled(scale);
@@ -82,6 +78,9 @@ impl Glyphs{
     }
 }
 
+/// Обёртка для символа.
+/// 
+/// Wrapper for a character.
 pub struct Character{
     c:PositionedGlyph<'static>,
 }
@@ -111,7 +110,7 @@ impl Character{
         h.advance_width+h.left_side_bearing
     }
 
-    #[inline(always)] // Прямоугольник которых находится символ
+    #[inline(always)]
     pub fn pixel_bounding_box(&self)->Option<Rect<i32>>{
         self.c.pixel_bounding_box()
     }

@@ -23,15 +23,16 @@ use glium::draw_parameters::DrawParameters;
 /// Цветовой фильтр - [red, green, blue, alpha].
 /// Цвет = цвет * фильтр.
 /// 
-/// Изменённая система координат - начало в центре экрана, ось Y инвертирована.
+/// Изменённая система координат - начало в центре окна, ось Y инвертирована.
 /// 
+/// #
 /// 
 /// Rectagle with points: (x1, y1), (x1, y2), (x2, y1), (x2, y2).
 /// 
 /// Colour filter - [red, green, blue, alpha].
 /// Colour = colour * filter.
 /// 
-/// Coordinate system is changed: origin is at the center of the screen, Y axe is reversed.
+/// Coordinate system is changed: the origin is at the center of the window, the Y axe is reversed.
 #[derive(Clone)]
 pub struct ImageBase{
     pub x1:f32,

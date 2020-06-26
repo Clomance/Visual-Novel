@@ -200,7 +200,7 @@ impl<'a> TextViewStaticLine<'a>{
     pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&'a Glyphs)->TextViewStaticLine<'a>{
         let line=settings.text.into();
 
-        let font=glyphs.glyph_height(settings.font_size);
+        let font_size=settings.font_size;
 
         let mut line_len=0f32;
         for ch in line.chars(){
@@ -209,7 +209,7 @@ impl<'a> TextViewStaticLine<'a>{
         }
 
         // Выравнивание
-        let (x,y)=settings.align.text_position(settings.rect,[line_len,font]);
+        let (x,y)=settings.align.text_position(settings.rect,[line_len,font_size]);
 
         Self{
             base:TextBase::new(settings.text_colour,settings.font_size).position([x,y]),

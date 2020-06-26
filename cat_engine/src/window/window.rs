@@ -67,11 +67,6 @@ pub static mut window_height:f32=0f32;
 /// Центр окна. The window center. [x, y]
 pub static mut window_center:[f32;2]=[0f32;2];
 
-/// Окно, включает в себя графические функции
-/// и обработчик событий.
-/// Window with graphic functions
-/// and an event listener included.
-/// 
 /*
     EventLoop - минимум четыре шага:
     1) NewEvent
@@ -82,8 +77,16 @@ pub static mut window_center:[f32;2]=[0f32;2];
     4) LoopDestroyed
 */
 
+/// Окно, включает в себя графические функции
+/// и обработчик событий.
+/// Window with graphic functions
+/// and an event listener included.
+/// 
+/// #
+/// 
 /// Все события обрабатываются и добавляются в очередь внешней обработки (Window.events)
 /// для работы с ними вне структуры окна.
+/// 
 /// 
 /// All events are handled and added to the outer handling queue (Window.events)
 /// to work with them outside of the window structure.
@@ -94,6 +97,8 @@ pub static mut window_center:[f32;2]=[0f32;2];
 /// 
 /// Путь для картинки по умолчанию - `./mouse_cursor_icon.png`.
 /// 
+/// #
+/// 
 /// Replaces the default mouse cursor with user's image.
 /// 
 /// The cursor points to the center of the image.
@@ -103,11 +108,14 @@ pub static mut window_center:[f32;2]=[0f32;2];
 /// # feature = "auto_hide"
 /// 
 /// При потере фокуса окно сворачивается,
-/// передача событий внешнему управлению прекращается (передаётся только событие о получении фокуса).
+/// передача событий внешнему управлению прекращается
+/// (передаётся только события получения фокуса, приостановки и возобления приложения).
 /// При получении фокуса окно возвращается в исходное состояние.
 /// 
+/// #
+/// 
 /// The window gets minimized when loses focus and
-/// it stops sending outer events, except gained focus event.
+/// it stops sending outer events except gained focus and application suspended or resumed events.
 /// The window gets back when it gains focus.
 pub struct Window{
     display:Display,
@@ -348,9 +356,7 @@ impl Window{
     }
 }
 
-/// Связанное с версиями OpenGL.
-/// 
-/// OpenGL versions.
+/// # Версии OpenGL. OpenGL versions.
 impl Window{
     #[inline(always)]
     pub fn get_supported_glsl_version(&self)->Version{
@@ -362,9 +368,7 @@ impl Window{
     }
 }
 
-/// Функции для сглаживания.
-/// 
-/// Functions for smoothing.
+/// # Функции для сглаживания. Functions for smoothing.
 impl Window{
     /// Set alpha channel for smooth drawing.
     pub fn set_alpha(&mut self,alpha:f32){
@@ -384,10 +388,9 @@ impl Window{
     }
 }
 
-/// Функции для рисования.
-/// Drawing functions.
+/// # Функции для рисования. Drawing functions.
 impl Window{
-    /// Даёт прямое управление буфером кадра.
+    /// Даёт прямое управление над кадром.
     /// 
     /// Gives frame to raw drawing.
     pub fn draw_raw<F:FnOnce(&mut DrawParameters,&mut Frame)>(&self,f:F){
@@ -399,7 +402,7 @@ impl Window{
 
     /// Выполняет замыкание (и рисует курсор, если `feature="mouse_cursor_icon"`).
     /// 
-    /// Executes closure (and draws the mouse cursor, if `feature="mouse_cursor_icon"`).
+    /// Executes closure (and draws the mouse cursor if `feature="mouse_cursor_icon"`).
     pub fn draw<F:FnOnce(&mut DrawParameters,&mut Graphics)>(&self,f:F){
         let mut draw_parameters=default_draw_parameters();
 
@@ -420,7 +423,7 @@ impl Window{
     /// 
     /// Нужна для плавных переходов или размытия с помощью альфа-канала.
     /// 
-    /// Executes closure (and draws the mouse cursor, if `feature="mouse_cursor_icon"`).
+    /// Executes closure (and draws the mouse cursor if `feature="mouse_cursor_icon"`).
     /// Gives alpha channel for drawing, returns next value of the channel.
     /// 
     /// Needed for smooth drawing or smoothing with alpha channel.
@@ -444,7 +447,7 @@ impl Window{
 
     /// Игнорирует все события, кроме рендеринга и закрытия окна, и рисует один кадр.
     /// 
-    /// Ignores all events, except rendering and closing the window, and draws one frame.
+    /// Ignores all events except rendering and closing the window, and draws one frame.
     pub fn draw_event_once<F:FnOnce(&mut DrawParameters,&mut Graphics)>(&mut self,f:F)->WindowEvent{
         while let Some(event)=self.next_event(){
             match event{
@@ -460,9 +463,7 @@ impl Window{
     }
 }
 
-/// Дополнительные функции.
-/// 
-/// Additional functions.
+/// # Дополнительные функции. Additional functions.
 impl Window{
     /// Возвращает скриншот.
     /// 
@@ -508,13 +509,6 @@ impl Window{
 //    ЛОКАЛЬНЫЕ ФУНКЦИИ    \\
 //                         \\
 
-impl Window{
-    #[inline(always)]
-    fn request_redraw(&self){
-        self.display.gl_window().window().request_redraw();
-    }
-}
-
 /// Функции обработки событий.
 /// 
 /// Event handlers.
@@ -535,12 +529,16 @@ impl Window{
                         // Закрытие окна
                         GWindowEvent::CloseRequested=>Exit,
 
+                        // Изменение размера окна
                         GWindowEvent::Resized(size)=>unsafe{
                             window_width=size.width as f32;
                             window_height=size.height as f32;
                             window_center=[window_width/2f32,window_height/2f32];
                             Resize([size.width,size.height])
                         }
+
+                        // Сдвиг окна
+                        GWindowEvent::Moved(pos)=>Moved([pos.x,pos.y]),
 
                         // Сдвиг мыши (сдвиг за пределы окна игнорируется)
                         GWindowEvent::CursorMoved{position,..}=>unsafe{
@@ -558,6 +556,9 @@ impl Window{
 
                             MouseMovementDelta([dx,dy])
                         }
+
+                        // Прокрутка колёсика мыши
+                        GWindowEvent::MouseWheel{delta,..}=>MouseWheelScroll(delta),
 
                         // Обработка действий с кнопками мыши (только стандартные кнопки)
                         GWindowEvent::MouseInput{button,state,..}=>{
@@ -632,13 +633,20 @@ impl Window{
                         #[cfg(not(feature="auto_hide"))]
                         GWindowEvent::Focused(f)=>WindowEvent::Focused(f),
 
+                        GWindowEvent::DroppedFile(path)=>DroppedFile(path),
+                        GWindowEvent::HoveredFile(path)=>HoveredFile(path),
+                        GWindowEvent::HoveredFileCancelled=>HoveredFileCancelled,
+
                         _=>None // Игнорирование остальных событий
                     }
                 }
 
+                Event::Suspended=>Suspended,
+                Event::Resumed=>Resumed,
+
                 // Запрос на рендеринг
                 Event::MainEventsCleared=>{
-                    self.request_redraw();
+                    self.display.gl_window().window().request_redraw();
                     None
                 }
 
@@ -670,13 +678,20 @@ impl Window{
         let event_loop=unsafe{&mut *el};
 
         event_loop.run_return(|event,_,control_flow|{
-            *control_flow=ControlFlow::Wait;
+            *control_flow=ControlFlow::Exit;
 
             let event=match event{
                 Event::WindowEvent{event,..}=>{
                     match event{
+                        GWindowEvent::Resized(size)=>unsafe{
+                            
+                            window_width=size.width as f32;
+                            window_height=size.height as f32;
+                            window_center=[window_width/2f32,window_height/2f32];
+                            None
+                        }
+
                         GWindowEvent::CloseRequested=>{ // Остановка цикла обработки событий,
-                            *control_flow=ControlFlow::Exit;
                             Exit // Передача события во внешнее управление
                         }
 
@@ -689,6 +704,10 @@ impl Window{
                         _=>None
                     }
                 }
+
+                Event::Suspended=>Suspended,
+                Event::Resumed=>Resumed,
+
                 _=>None
             };
             self.events.push_back(event);

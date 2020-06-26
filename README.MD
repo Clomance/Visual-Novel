@@ -28,14 +28,6 @@ Controls:
  - F5 - screenshot
  - Space - "next" for the dialogues
 
-#### Debugging
-
-Run `cargo run` to build and run the game in debug mode.
-
-New debug features will be added soon.
-
-`F10` key toggles the ability to minimize the game. Enabled by default.
-
 ### Current problems
  - Game window stays unfocused after switching to it using `win + tab`.
  - Buttons move abruptly if cursor is moved slowly in the main menu. 

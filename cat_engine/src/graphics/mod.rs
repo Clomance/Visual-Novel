@@ -11,7 +11,7 @@
 //! Также есть возможность сохранять и использовать координаты объектов
 //! (пример ниже).
 //! 
-//! 
+//! #
 //! 
 //! Graphics engine divided into three parts:
 //! 1. Simple graphics - plain objects composed of `Point2D`.
@@ -22,6 +22,7 @@
 //! 
 //! Also it's possible to save and use vertexes of objects.
 //! 
+//! #
 //! 
 //! ```
 //! let image_base=ImageBase::new(White,unsafe{[

@@ -8,7 +8,7 @@ Viimane stabiilne Rust, minimaalne OpenGL-i versioon - `2.0`.
  - Graafika - [glium](https://github.com/glium/glium)
  - Pildid - [image](https://github.com/image-rs/image)
  - Fondid - [rusttype](https://gitlab.redox-os.org/redox-os/rusttype)
- - Hääl - [cpal](https://github.com/RustAudio/cpal)
+ - Hääl - [cpal](https://github.com/RustAudio/cpal), [minimp3](https://github.com/germangb/minimp3-rs)
 
 Töötab stabiilselt 64-bitisel Windows 10 versioonil. Pole veel testinud teistel süsteemidel.
 
@@ -24,14 +24,6 @@ Mängi kompileerimiseks ja käivitamiseks kasuta käsku `cargo run --release`.
 Juhtnupud:
  - F5 - kuvatõmmis
  - Space - järgmine dialoog
-
-#### Silumine
-
-Käivita mäng `cargo run` käsuga, et käivitada mäng silumise režiimis.
-
-Uued silumisfunkstioonid lisatakse varsti.
-
-`F10` klahv lülitab sisse/välja mängu minimeerimise võimaluse. 
 
 ### Probleemid
  - Mängu aken jääb mittefokuseerituks peale `win + tab`.

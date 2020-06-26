@@ -13,22 +13,20 @@ use image::{RgbaImage,DynamicImage};
 use image::error::ImageError;
 
 /// Error that can happen when creating a texture.
-#[derive(Debug)]
+#[derive(Debug,)]
 pub enum TextureCreationError{
     TextureError(CrateTextureCreationError),
     ImageError(ImageError)
 }
 
-/// Обёртка для 2D текстуры.
-/// 
-/// Wrapper for 2D texture.
+/// Обёртка для 2D текстуры. Wrapper for 2D texture.
 pub struct Texture(pub SrgbTexture2d);
 
 impl Texture{
     /// Создаёт текстуру из массива байт.
     /// 
     /// Creates a texture from byte array.
-    pub fn create<S:Into<[u32;2]>>(factory:&Display,memory:&[u8],size:S)->Result<Self,TextureCreationError>{
+    pub fn create<S:Into<[u32;2]>>(memory:&[u8],size:S,factory:&Display)->Result<Self,TextureCreationError>{
         let [w,h]=size.into();
 
         let image=RawImage2d::from_raw_rgba_reversed(memory,(w,h));
@@ -44,7 +42,7 @@ impl Texture{
 
     /// Загружает текстуру из файла.
     /// 
-    /// Loading texture from file.
+    /// Loading a texture from file.
     pub fn from_path<P:AsRef<Path>>(path:P,factory:&Display)->Result<Self,TextureCreationError>{
         match image::open(path){
             Ok(image)=>{
@@ -63,13 +61,13 @@ impl Texture{
     /// Creates a texture from given image.
     pub fn from_image(img:&RgbaImage,factory:&Display)->Result<Self,TextureCreationError>{
         let (width,height)=img.dimensions();
-        Texture::create(factory,img,[width,height])
+        Texture::create(img,[width,height],factory)
     }
 
     /// Обновляет изображение текстуры, сохраняя размеры.
     /// При не совпадающих размераx возникают ошибки.
     /// 
-    /// Updates image with a new one.
+    /// Updates a texture with a new image.
     /// If the sizes aren't equal something bad can happen :)
     pub fn update(&mut self,img:&RgbaImage){
         let (width,height)=img.dimensions();
@@ -82,6 +80,14 @@ impl Texture{
             },
             RawImage2d::from_raw_rgba_reversed(img,(width,height)),
         );
+    }
+
+    pub fn get_width(&self)->u32{
+        self.0.get_width()
+    }
+
+    pub fn get_height(&self)->u32{
+        self.0.get_height().unwrap()
     }
 
     pub fn get_size(&self)->(u32,u32){

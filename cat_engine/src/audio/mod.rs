@@ -5,14 +5,14 @@
 //! Также в нём есть массив аудио треков, которые можно запустить.
 //! 
 //! Пока поддерживает только один канал для проигрывания треков
-//! и только формат`mp3`.
+//! и только формат `mp3`.
 //! 
 //! 
 //! Закрывается поток с паникой, так что не паникуте!
 //! 
 //! Некоторый код был взят из [rodio](https://github.com/RustAudio/rodio).
 //! 
-//! 
+//! #
 //! 
 //! The audio system has it's own thread for handling the sound.
 //! It's controled with channel `std::sync::mpsc::channel()`.
@@ -26,6 +26,7 @@
 //! 
 //! Some code was taken from [rodio](https://github.com/RustAudio/rodio).
 //! 
+//! #
 //! 
 //! ```
 //! let settings=AudioSettings::new();
@@ -82,7 +83,7 @@ use std::{
 };
 
 /// Результат выполнения команды. The result of an executed command.
-#[derive(Debug,PartialEq)]
+#[derive(Clone,Debug,PartialEq)]
 pub enum AudioCommandResult{
     Ok,
     NoSuchTrack,
@@ -498,8 +499,8 @@ impl Audio{
 
                                 StreamData::Output{buffer:UnknownTypeOutputBuffer::F32(mut buffer)}
                                 =>for b in buffer.iter_mut(){
-                                    let sample=track.next().unwrap_or(0i16) as f32 * volume;
-                                    *b=sample.to_f32();
+                                    let sample=track.next().unwrap_or(0i16);
+                                    *b=sample.to_f32()*volume;
                                 }
 
                                 _=>{}
@@ -529,8 +530,8 @@ impl Audio{
 
                                 StreamData::Output{buffer:UnknownTypeOutputBuffer::F32(mut buffer)}
                                 =>for b in buffer.iter_mut(){
-                                    let sample=track.next().unwrap_or(0i16) as f32 * volume;
-                                    *b=sample/(i16::max_value() as f32);
+                                    let sample=track.next().unwrap_or(0i16);
+                                    *b=sample.to_f32()*volume;
                                 }
 
                                 _=>{}
@@ -576,6 +577,7 @@ impl AudioOutputType{
     }
 }
 
+#[derive(Clone)]
 pub struct AudioSettings{
     /// The default is 0.5.
     pub volume:f32,

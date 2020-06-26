@@ -1,10 +1,10 @@
 [package]
 name = "cat_engine"
-version = "0.0.8"
+version = "0.0.9"
 authors = ["Clomance <Hisoskar@gmail.com>"]
 edition = "2018"
 homepage = "https://github.com/Clomance/Visual-Novel/tree/master/cat_engine"
-repository = "https://github.com/Clomance/Visual-Novel/tree/master/cat_engine.git"
+repository = "https://github.com/Clomance/Visual-Novel/tree/master/cat_engine"
 description = "A 2D graphics engine with audio output support"
 documentation = "https://docs.rs/cat_engine/"
 license = "MIT"
