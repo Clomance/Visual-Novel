@@ -186,35 +186,35 @@ impl SimpleGraphics{
         )
     }
 
-    pub fn draw_shift_range<'a,I:Into<IndicesSource<'a>>>(&self,
-        index:usize,
-        colour:Colour,
-        [dx,dy]:[f32;2],
-        indices:I,
-        draw_parameters:&mut DrawParameters,
-        frame:&mut Frame
-    )->Result<(),DrawError>{
-        let shift=unsafe{[
-            dx/window_center[0],
-            -dy/window_center[1]
-        ]};
+    // pub fn draw_shift_range<'a,I:Into<IndicesSource<'a>>>(&self,
+    //     index:usize,
+    //     colour:Colour,
+    //     [dx,dy]:[f32;2],
+    //     indices:I,
+    //     draw_parameters:&mut DrawParameters,
+    //     frame:&mut Frame
+    // )->Result<(),DrawError>{
+    //     let shift=unsafe{[
+    //         dx/window_center[0],
+    //         -dy/window_center[1]
+    //     ]};
 
-        let range=self.vertex_buffer_ranges[index].clone();
-        let slice=self.vertex_buffer.slice(range).unwrap();
-        let uni=uniform!{
-            colour:colour,
-            shift:shift,
-        };
+    //     let range=self.vertex_buffer_ranges[index].clone();
+    //     let slice=self.vertex_buffer.slice(range).unwrap();
+    //     let uni=uniform!{
+    //         colour:colour,
+    //         shift:shift,
+    //     };
 
 
-        frame.draw(
-            slice,
-            indices,
-            &self.draw_shift,
-            &uni,
-            draw_parameters
-        )
-    }
+    //     frame.draw(
+    //         slice,
+    //         indices,
+    //         &self.draw_shift,
+    //         &uni,
+    //         draw_parameters
+    //     )
+    // }
 }
 
 /// Типаж для создания собственных простых одноцветных объектов.

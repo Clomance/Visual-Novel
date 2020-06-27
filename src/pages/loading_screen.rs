@@ -16,11 +16,16 @@ use cat_engine::{
     // enums
     WindowEvent,
     KeyboardButton,
+    graphics::Graphics,
 };
+
+use cat_engine::glium::DrawParameters;
 
 pub struct LoadingScreen{
     cat:Texture,
+    cat_eyes_closed:Texture,
     gear:Texture,
+    frames:u8,
 }
 
 impl LoadingScreen{
@@ -44,13 +49,15 @@ impl LoadingScreen{
 
         Self{
             cat:Texture::from_path("./resources/images/cat.png",window.display()).unwrap(),
+            cat_eyes_closed:Texture::from_path("./resources/images/cat_eyes_closed.png",window.display()).unwrap(),
             gear:Texture::from_path("./resources/images/gear.png",window.display()).unwrap(),
+            frames:0u8,
         }
     }
 
-    pub fn start<F,T>(self,window:&mut Window,background:F)->Game
+    pub fn start<F,T>(mut self,window:&mut Window,background:F)->Game
             where F:FnOnce()->T,F:Send+'static,T:Send+'static{
-        let mut t=0f32;
+        let mut angle=0f32;
         let thread=std::thread::spawn(background);
 
         'loading:while let Some(event)=window.next_event(){
@@ -66,44 +73,34 @@ impl LoadingScreen{
                 }
 
                 WindowEvent::Draw=>{
-                    window.draw(|parameters,graphics|{
-                        graphics.clear_colour(White);
-                        graphics.draw_range_image(
-                            0,
-                            &self.cat,
-                            White,
-                            parameters
-                        );
+                    self.frames+=1;
+                    let image=if self.frames>=40{
+                        if self.frames>=50{
+                            self.frames=0;
+                        }
+                        &self.cat_eyes_closed
+                    }
+                    else{
+                        &self.cat
+                    };
 
-                        graphics.draw_rotate_range_image(
-                            1,
-                            &self.gear,
-                            White,
-                            t,
-                            parameters
-                        );
+                    window.draw(|parameters,graphics|{
+                        self.draw(image,angle,parameters,graphics)
                     });
-                    t+=0.05f32;
+                    angle+=0.05f32;
                 }
 
                 WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
-                        if Game::Exit==make_screenshot(window,|parameters,graphics|{
-                            graphics.clear_colour(White);
-                            graphics.draw_range_image(
-                                0,
-                                &self.cat,
-                                White,
-                                parameters
-                            );
+                        let image=if self.frames>=40{
+                            &self.cat_eyes_closed
+                        }
+                        else{
+                            &self.cat
+                        };
 
-                            graphics.draw_rotate_range_image(
-                                1,
-                                &self.gear,
-                                White,
-                                t,
-                                parameters
-                            );
+                        if Game::Exit==make_screenshot(window,|parameters,graphics|{
+                            self.draw(image,angle,parameters,graphics)
                         }){
                             return Game::Exit
                         }
@@ -114,7 +111,7 @@ impl LoadingScreen{
         }
 
         // Для планого перехода
-        let mut frames=5;
+        self.frames=5;
         while let Some(event)=window.next_event(){
             match event{
                 WindowEvent::Exit=>return Game::Exit, // Закрытие игры
@@ -123,8 +120,8 @@ impl LoadingScreen{
                     window.draw(|_context,g|{
                         g.clear_colour(White);
                     });
-                    frames-=1;
-                    if frames==0{
+                    self.frames-=1;
+                    if self.frames==0{
                         break
                     }
                 }
@@ -143,10 +140,28 @@ impl LoadingScreen{
         }
 
         // Удаление области для иконки загрузки
-        window.graphics().unbind_texture(0);
+        window.graphics().pop_texture();
 
-        window.graphics().unbind_texture(0);
+        window.graphics().pop_texture();
 
         Game::MainMenu
+    }
+
+    fn draw(&self,image:&Texture,angle:f32,parameters:&mut DrawParameters,graphics:&mut Graphics){
+        graphics.clear_colour(White);
+        graphics.draw_range_image(
+            0,
+            image,
+            White,
+            parameters
+        );
+
+        graphics.draw_rotate_range_image(
+            1,
+            &self.gear,
+            White,
+            angle,
+            parameters
+        );
     }
 }

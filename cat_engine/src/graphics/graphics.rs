@@ -175,7 +175,7 @@ impl Graphics2D{
     /// Removes the last range from the range buffer of textures.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
-    pub fn pop_texture(&mut self,index:usize)->Option<Range<usize>>{
+    pub fn pop_texture(&mut self)->Option<Range<usize>>{
         self.texture.pop_range()
     }
 
@@ -184,8 +184,8 @@ impl Graphics2D{
     /// Removes the last range from the range buffer of simple objects.
     #[inline(always)]
     #[cfg(feature="simple_graphics")]
-    pub fn pop_simple(&mut self,index:usize)->Option<Range<usize>>{
-        self.texture.pop_range()
+    pub fn pop_simple(&mut self)->Option<Range<usize>>{
+        self.simple.pop_range()
     }
 
     /// Удаляет область из массива областей текстур.
