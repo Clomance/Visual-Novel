@@ -79,8 +79,7 @@ pub static mut window_center:[f32;2]=[0f32;2];
 
 /// Окно, включает в себя графические функции
 /// и обработчик событий.
-/// Window with graphic functions
-/// and an event listener included.
+/// Window with graphic functions and an event listener included.
 /// 
 /// #
 /// 
@@ -141,7 +140,7 @@ impl Window{
 
     /// Создаёт окно. Принимает функцию для настройки.
     ///
-    /// Creates the window.
+    /// Creates the window. 
     pub fn new<F>(setting:F)->Result<Window,DisplayCreationError>
             where F:FnOnce(Vec<MonitorHandle>,&mut WindowSettings){
         let event_loop=EventLoop::new();
@@ -402,7 +401,7 @@ impl Window{
 
     /// Выполняет замыкание (и рисует курсор, если `feature="mouse_cursor_icon"`).
     /// 
-    /// Executes closure (and draws the mouse cursor if `feature="mouse_cursor_icon"`).
+    /// Executes the closure (and draws the mouse cursor if `feature="mouse_cursor_icon"`).
     pub fn draw<F:FnOnce(&mut DrawParameters,&mut Graphics)>(&self,f:F){
         let mut draw_parameters=default_draw_parameters();
 
@@ -424,7 +423,7 @@ impl Window{
     /// Нужна для плавных переходов или размытия с помощью альфа-канала.
     /// 
     /// Executes closure (and draws the mouse cursor if `feature="mouse_cursor_icon"`).
-    /// Gives alpha channel for drawing, returns next value of the channel.
+    /// Gives alpha channel for drawing, returns the next value of the channel.
     /// 
     /// Needed for smooth drawing or smoothing with alpha channel.
     pub fn draw_smooth<F:FnOnce(f32,&mut DrawParameters,&mut Graphics)>(&mut self,f:F)->f32{
@@ -443,23 +442,6 @@ impl Window{
 
         self.alpha_channel+=self.smooth;
         self.alpha_channel
-    }
-
-    /// Игнорирует все события, кроме рендеринга и закрытия окна, и рисует один кадр.
-    /// 
-    /// Ignores all events except rendering and closing the window, and draws one frame.
-    pub fn draw_event_once<F:FnOnce(&mut DrawParameters,&mut Graphics)>(&mut self,f:F)->WindowEvent{
-        while let Some(event)=self.next_event(){
-            match event{
-                WindowEvent::Exit=>return WindowEvent::Exit, // Закрытие игры
-                WindowEvent::Draw=>{ //Рендеринг
-                    self.draw(f);
-                    break
-                }
-                _=>{}
-            }
-        }
-        WindowEvent::None
     }
 }
 
@@ -521,7 +503,7 @@ impl Window{
         event_loop.run_return(|event,_,control_flow|{
             *control_flow=ControlFlow::Wait;
             let next_event=match event{
-                Event::NewEvents(_)=>None, // Игнорирование
+                Event::NewEvents(_)=>return, // Игнорирование
 
                 // События окна
                 Event::WindowEvent{event,..}=>{
@@ -572,7 +554,7 @@ impl Window{
                                     }
                                     GMouseButton::Middle=>MousePressed(MouseButton::Middle),
                                     GMouseButton::Right=>MousePressed(MouseButton::Right),
-                                    GMouseButton::Other(_)=>None
+                                    GMouseButton::Other(_)=>return
                                 }
                             }
                             else{
@@ -585,7 +567,7 @@ impl Window{
                                     }
                                     GMouseButton::Middle=>MouseReleased(MouseButton::Middle),
                                     GMouseButton::Right=>MouseReleased(MouseButton::Right),
-                                    GMouseButton::Other(_)=>None
+                                    GMouseButton::Other(_)=>return
                                 }
                             }
                         }
@@ -615,7 +597,7 @@ impl Window{
 
                         // Получение вводимых букв
                         GWindowEvent::ReceivedCharacter(character)=>if character.is_ascii_control(){
-                            None
+                            return
                         }
                         else{
                             CharacterInput(character)
@@ -637,7 +619,7 @@ impl Window{
                         GWindowEvent::HoveredFile(path)=>HoveredFile(path),
                         GWindowEvent::HoveredFileCancelled=>HoveredFileCancelled,
 
-                        _=>None // Игнорирование остальных событий
+                        _=>return // Игнорирование остальных событий
                     }
                 }
 
@@ -647,7 +629,7 @@ impl Window{
                 // Запрос на рендеринг
                 Event::MainEventsCleared=>{
                     self.display.gl_window().window().request_redraw();
-                    None
+                    return
                 }
 
                 // Рендеринг
@@ -658,13 +640,13 @@ impl Window{
                 // После вывода кадра
                 Event::RedrawEventsCleared=>{
                     *control_flow=ControlFlow::Exit;
-                    None
+                    return
                 } // Игнорирование
 
                 // Закрытия цикла обработки событий
-                Event::LoopDestroyed=>None, // Игнорирование
+                Event::LoopDestroyed=>return, // Игнорирование
 
-                _=>None  // Игнорирование остальных событий
+                _=>return  // Игнорирование остальных событий
             };
 
             self.events.push_back(next_event)
@@ -678,37 +660,39 @@ impl Window{
         let event_loop=unsafe{&mut *el};
 
         event_loop.run_return(|event,_,control_flow|{
-            *control_flow=ControlFlow::Exit;
+            *control_flow=ControlFlow::Wait;
 
             let event=match event{
                 Event::WindowEvent{event,..}=>{
                     match event{
                         GWindowEvent::Resized(size)=>unsafe{
-                            
+                            *control_flow=ControlFlow::Exit;
+
                             window_width=size.width as f32;
                             window_height=size.height as f32;
                             window_center=[window_width/2f32,window_height/2f32];
-                            None
+                            return
                         }
 
                         GWindowEvent::CloseRequested=>{ // Остановка цикла обработки событий,
+                            *control_flow=ControlFlow::Exit;
                             Exit // Передача события во внешнее управление
                         }
 
                         // При получении фокуса
-                        GWindowEvent::Focused(_)=>self.gained_focus(control_flow),
+                        GWindowEvent::Focused(_)=>{
+                            *control_flow=ControlFlow::Exit;
+                            self.gained_focus(control_flow)
+                        }
 
-                        // Изменение флагов модификаторов (alt, shift, ctrl, logo)
-                        GWindowEvent::ModifiersChanged(state)=>ModifiersChanged(state),
-
-                        _=>None
+                        _=>return
                     }
                 }
 
                 Event::Suspended=>Suspended,
                 Event::Resumed=>Resumed,
 
-                _=>None
+                _=>return
             };
             self.events.push_back(event);
         })

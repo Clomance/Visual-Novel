@@ -15,11 +15,6 @@ use std::path::PathBuf;
 /// Outer window events.
 #[derive(Clone,Debug)]
 pub enum WindowEvent{
-    /// Другие события, которые игнорируются.
-    /// 
-    /// Other events that are ignored.
-    None,
-
     /// Кадр окна можно обновить.
     /// 
     /// Emitted when when the window should be redrawn.

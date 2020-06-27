@@ -179,7 +179,7 @@ impl Graphics2D{
         self.texture.pop_range()
     }
 
-    /// Удаляет и возращает последюю область из массиса областей простых объектов.
+    /// Удаляет и возращает последюю область из массива областей простых объектов.
     /// 
     /// Removes the last range from the range buffer of simple objects.
     #[inline(always)]
@@ -188,7 +188,7 @@ impl Graphics2D{
         self.texture.pop_range()
     }
 
-    /// Удаляет область из массива областей тектсур.
+    /// Удаляет область из массива областей текстур.
     /// 
     /// Removes the range from the range buffer of textures.
     #[inline(always)]
@@ -309,7 +309,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
     /// Возвращает ссылку на кадр.
     /// 
-    /// Return the reference to the frame.
+    /// Returns the reference to the frame.
     #[inline(always)]
     pub fn frame(&mut self)->&mut Frame{
         self.frame
@@ -322,7 +322,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
     /// Рисует простой объект.
     /// 
-    /// Draws a simple object.
+    /// Draws the simple object.
     #[inline(always)]
     #[cfg(feature="simple_graphics")]
     pub fn draw_simple<'a,O:SimpleObject<'a>>(
@@ -335,7 +335,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
     /// Рисует сдвинутый простой объект.
     /// 
-    /// Draws a shifted simple object.
+    /// Draws shifted simple object.
     #[inline(always)] 
     #[cfg(feature="simple_graphics")]
     pub fn draw_shift_simple<'a,O:SimpleObject<'a>>(
@@ -363,7 +363,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
     /// Рисует изображение на основе `ImageBase`.
     /// 
-    /// Draws image based on `ImageBase`.
+    /// Draws the image based on `ImageBase`.
     #[inline(always)] 
     #[cfg(feature="texture_graphics")]
     pub fn draw_image(
@@ -377,7 +377,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
     /// Рисует изображение на основе `ImageBase` c поворотом в 'angle' градусов.
     /// 
-    /// Draws image based on `ImageBase` rotated `angle` degrees.
+    /// Draws the image based on `ImageBase` rotated `angle` degrees.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_rotate_image(
@@ -395,7 +395,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 impl<'graphics,'frame> Graphics<'graphics,'frame>{
     /// Рисует изображение на основе данных из области.
     /// 
-    /// Draws an image based on data from a range.
+    /// Draws the image based on data from the range.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_range_image(
@@ -416,7 +416,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
     /// Рисует сдвинутое изображение на основе данных из области.
     /// 
-    /// Draws shifted an image based on data from a range.
+    /// Draws shifted the image based on data from the range.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_shift_range_image(
@@ -440,7 +440,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
     /// Рисует изображение с поворотом в 'angle' градусов на основе
     /// данных из области.
     /// 
-    /// Draws an image based on data from a range rotated `angle` degrees.
+    /// Draws the image based on data from the range rotated `angle` degrees.
     #[inline(always)]
     #[cfg(feature="texture_graphics")]
     pub fn draw_rotate_range_image(
@@ -463,7 +463,7 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
 
     /// Рисует простой объект на основе данных из области.
     /// 
-    /// Draws a simple object based on data from a range.
+    /// Draws the simple object based on data from the range.
     #[inline(always)]
     #[cfg(feature="simple_graphics")]
     pub fn draw_range_simple<'a,O:SimpleObject<'a>>(

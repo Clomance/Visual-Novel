@@ -19,7 +19,7 @@ use cat_engine::{
     // structs
     image::{ImageBase,Texture,image::RgbaImage},
     text::{TextBase,Glyphs},
-    graphics::{Graphics,Point2D,Quadrilateral,Line},
+    graphics::{Graphics,Vertex2D,Quadrilateral,Line},
     glium::{Display,DrawParameters},
 };
 
@@ -60,10 +60,10 @@ impl<'b,'c> DialogueBox<'b,'c>{
             ];
 
             let polygon=[
-                Point2D::new(0f32,y1-60f32-dibw),
-                Point2D::new(400f32,y1-60f32-dibw),
-                Point2D::new(0f32,y1-dibw),
-                Point2D::new(460f32,y1-dibw),
+                Vertex2D::new(0f32,y1-60f32-dibw),
+                Vertex2D::new(400f32,y1-60f32-dibw),
+                Vertex2D::new(0f32,y1-dibw),
+                Vertex2D::new(460f32,y1-dibw),
             ];
 
             let texture=Texture::from_image(texture,display).unwrap();

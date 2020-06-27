@@ -7,8 +7,6 @@ use lib::{
 };
 
 use cat_engine::{
-    // fns
-    window_rect,
     // traits
     image::image::GenericImageView,
     // statics
@@ -21,7 +19,7 @@ use cat_engine::{
     KeyboardButton,
     // structs
     Window,
-    graphics::{Rectangle,Graphics},
+    graphics::Graphics,
     text::Glyphs,
     glium::{
         DrawParameters,
@@ -305,12 +303,14 @@ fn main(){
 
                             WindowEvent::KeyboardReleased(button)=>{
                                 if button==KeyboardButton::F5{
-                                    make_screenshot(&mut window,|p,g|{
+                                    if Game::Exit==make_screenshot(&mut window,|p,g|{
                                         g.clear_colour(White);
                                         wallpaper.draw(p,g);
                                         characters_view.draw(p,g);
                                         dialogue_box.draw(p,g);
-                                    })
+                                    }){
+                                        break 'game
+                                    }
                                 }
                             }
                             _=>{}
@@ -384,11 +384,13 @@ fn main(){
                                 }
 
                                 KeyboardButton::F5=>{
-                                    make_screenshot(&mut window,|p,g|{
+                                    if Game::Exit==make_screenshot(&mut window,|p,g|{
                                         wallpaper.draw_shift(p,g);
                                         characters_view.draw(p,g);
                                         dialogue_box.draw(p,g);
-                                    })
+                                    }){
+                                        break 'game
+                                    }
                                 }
                                 _=>{}
                             }
@@ -420,12 +422,14 @@ fn main(){
 
                             WindowEvent::KeyboardReleased(button)=>{
                                 if button==KeyboardButton::F5{
-                                    make_screenshot(&mut window,|p,g|{
+                                    if Game::Exit==make_screenshot(&mut window,|p,g|{
                                         g.clear_colour(White);
                                         wallpaper.draw_shift(p,g);
                                         characters_view.draw(p,g);
                                         dialogue_box.draw_without_text(p,g);
-                                    })
+                                    }){
+                                        break 'game
+                                    }
                                 }
                             }
                             _=>{}
@@ -454,7 +458,9 @@ fn main(){
 
                     WindowEvent::KeyboardReleased(button)=>{
                         if button==KeyboardButton::F5{
-                            make_screenshot(&mut window,|p,g|{wallpaper.draw(p,g)})
+                            if Game::Exit==make_screenshot(&mut window,|p,g|{wallpaper.draw(p,g)}){
+                                break 'game
+                            }
                         }
                     }
 
@@ -474,7 +480,9 @@ fn main(){
                     WindowEvent::MouseReleased(_button)=>break 'gameplay_ending,
                     WindowEvent::KeyboardReleased(button)=>{
                         if button==KeyboardButton::F5{
-                            make_screenshot(&mut window,|p,g|{wallpaper.draw(p,g)})
+                            if Game::Exit==make_screenshot(&mut window,|p,g|{wallpaper.draw(p,g)}){
+                                break 'game
+                            }
                         }
                         else{
                             break 'gameplay_ending
@@ -489,12 +497,19 @@ fn main(){
     }
 }
 
-pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut Window,f:F){
-    let rect=Rectangle::new(window_rect(),[1f32,1f32,1f32,0.8f32]);
-
+pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut Window,f:F)->Game{
     window.set_cursor_visible(false); // Отключение курсора
 
-    window.draw_event_once(f); // Отрисовка кадра для скриншота
+    while let Some(event)=window.next_event(){
+        match event{
+            WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+            WindowEvent::Draw=>{ //Рендеринг
+                window.draw(f);
+                break
+            }
+            _=>{}
+        }
+    }
 
     unsafe{
         let path=format!("screenshots/screenshot{}.png",Settings.screenshot);
@@ -504,9 +519,20 @@ pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut 
 
     window.set_cursor_visible(true);
 
-    window.draw_event_once(|d,g|{
-        rect.draw(d,g);
-    });
+    while let Some(event)=window.next_event(){
+        match event{
+            WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+            WindowEvent::Draw=>{ //Рендеринг
+                window.draw(|_,g|{
+                    g.clear_colour([1f32;4]);
+                });
+                break
+            }
+            _=>{}
+        }
+    }
+
+    Game::Current
 }
 
 /// Загрузка иконки окна

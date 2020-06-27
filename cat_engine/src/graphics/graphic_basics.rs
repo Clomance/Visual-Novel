@@ -1,6 +1,6 @@
 use crate::Colour;
 
-use super::{Graphics,SimpleObject,Point2D};
+use super::{Graphics,SimpleObject,Vertex2D};
 
 use glium::{
     DrawError,
@@ -14,12 +14,12 @@ use glium::{
 /// Четырёхугольник. Quadrilateral.
 #[derive(Clone)]
 pub struct Quadrilateral{
-    pub points:[Point2D;4],
+    pub points:[Vertex2D;4],
     pub colour:Colour,
 }
 
 impl Quadrilateral{
-    pub fn new(points:[Point2D;4],colour:Colour)->Quadrilateral{
+    pub fn new(points:[Vertex2D;4],colour:Colour)->Quadrilateral{
         Self{
             points,
             colour
@@ -38,7 +38,7 @@ impl<'a> SimpleObject<'a> for Quadrilateral{
         self.colour
     }
 
-    fn point_buffer(&self)->Vec<Point2D>{
+    fn point_buffer(&self)->Vec<Vertex2D>{
         let mut vec=Vec::with_capacity(4);
 
         for point in &self.points{
@@ -105,13 +105,13 @@ impl<'a> SimpleObject<'a> for Rectangle{
         self.colour
     }
 
-    fn point_buffer(&self)->Vec<Point2D>{
+    fn point_buffer(&self)->Vec<Vertex2D>{
         let mut vec=Vec::with_capacity(4);
 
-        vec.push(Point2D::new(self.x1,self.y1));
-        vec.push(Point2D::new(self.x1,self.y2));
-        vec.push(Point2D::new(self.x2,self.y1));
-        vec.push(Point2D::new(self.x2,self.y2));
+        vec.push(Vertex2D::new(self.x1,self.y1));
+        vec.push(Vertex2D::new(self.x1,self.y2));
+        vec.push(Vertex2D::new(self.x2,self.y1));
+        vec.push(Vertex2D::new(self.x2,self.y2));
 
         vec
     }
@@ -186,13 +186,13 @@ impl<'a> SimpleObject<'a> for RectangleBorder{
         self.colour
     }
 
-    fn point_buffer(&self)->Vec<Point2D>{
+    fn point_buffer(&self)->Vec<Vertex2D>{
         let mut vec=Vec::with_capacity(4);
 
-        vec.push(Point2D::new(self.x1,self.y1));
-        vec.push(Point2D::new(self.x1,self.y2));
-        vec.push(Point2D::new(self.x2,self.y2));
-        vec.push(Point2D::new(self.x2,self.y1));
+        vec.push(Vertex2D::new(self.x1,self.y1));
+        vec.push(Vertex2D::new(self.x1,self.y2));
+        vec.push(Vertex2D::new(self.x2,self.y2));
+        vec.push(Vertex2D::new(self.x2,self.y1));
 
         vec
     }
@@ -297,11 +297,11 @@ impl<'a> SimpleObject<'a> for Line{
         self.colour
     }
 
-    fn point_buffer(&self)->Vec<Point2D>{
+    fn point_buffer(&self)->Vec<Vertex2D>{
         let mut vec=Vec::with_capacity(2);
 
-        vec.push(Point2D::new(self.x1,self.y1));
-        vec.push(Point2D::new(self.x2,self.y2));
+        vec.push(Vertex2D::new(self.x1,self.y1));
+        vec.push(Vertex2D::new(self.x2,self.y2));
 
         vec
     }
@@ -347,14 +347,14 @@ impl<'a> SimpleObject<'a> for Circle{
         self.colour
     }
 
-    fn point_buffer(&self)->Vec<Point2D>{
+    fn point_buffer(&self)->Vec<Vertex2D>{
         let r_x=self.radius;
         let r_y=self.radius;
 
         let c_x=self.x;
         let c_y=self.y;
 
-        let mut shape=vec![Point2D{position:[c_x,c_y]};4*ellipse_points+2];
+        let mut shape=vec![Vertex2D{position:[c_x,c_y]};4*ellipse_points+2];
 
         let dx=r_x/ellipse_points as f32;
         let mut x=dx;
@@ -431,14 +431,14 @@ impl<'a> SimpleObject<'a> for Circle{
 //         self.colour
 //     }
 
-//     fn point_buffer(&self)->Vec<Point2D>{
+//     fn point_buffer(&self)->Vec<Vertex2D>{
 //         let r_x=self.radius;
 //         let r_y=self.radius;
 
 //         let c_x=self.x;
 //         let c_y=self.y;
 
-//         let mut shape=vec![Point2D{position:[c_x,c_y]};4*ellipse_points+2];
+//         let mut shape=vec![Vertex2D{position:[c_x,c_y]};4*ellipse_points+2];
 
 //         let dx=r_x/ellipse_points as f32;
 //         let mut x=dx;
@@ -481,7 +481,7 @@ impl<'a> SimpleObject<'a> for Circle{
 //             let c_x=self.x/window_center[0]-1f32;
 //             let c_y=1f32-self.y/window_center[1];
 
-//             let mut shape=[Point2D{position:[c_x,c_y]};4*ellipse_points+2];
+//             let mut shape=[Vertex2D{position:[c_x,c_y]};4*ellipse_points+2];
 
 //             let dx=r_x/ellipse_points as f32;
 //             let mut x=dx;

@@ -15,19 +15,23 @@ use glium::{
 
 use core::ops::Range;
 
-implement_vertex!(Point2D,position);
+implement_vertex!(Vertex2D,position);
+/// A vertex for simple objects.
 #[derive(Copy,Clone)]
-pub struct Point2D{
+pub struct Vertex2D{
     pub position:[f32;2],
 }
 
-impl Point2D{
-    pub fn new(x:f32,y:f32)->Point2D{
+impl Vertex2D{
+    pub fn new(x:f32,y:f32)->Vertex2D{
         Self{
             position:[x,y]
         }
     }
 
+    /// Переводит в формат OpenGL.
+    /// 
+    /// Converts to OpenGL format.
     pub fn convert(&mut self){
         unsafe{
             self.position[0]=self.position[0]/window_center[0]-1f32;
@@ -44,7 +48,7 @@ impl Point2D{
 /// Лучше использовать конец для сохранения областей,
 /// так как начало используется для постоянно обновляющихся значений.
 pub struct SimpleGraphics{
-    vertex_buffer:VertexBuffer<Point2D>,
+    vertex_buffer:VertexBuffer<Vertex2D>,
     vertex_buffer_ranges:Vec<Range<usize>>,
     draw:Program,
     draw_shift:Program,
@@ -72,9 +76,9 @@ impl SimpleGraphics{
     }
 
     /// Вписывает в буфер данные, начиная с начала.
-    pub fn write_vertex(&self,data:&[Point2D])->Option<VertexBufferSlice<Point2D>>{
+    pub fn write_vertex(&self,data:&[Vertex2D])->Option<VertexBufferSlice<Vertex2D>>{
         let slice=self.vertex_buffer.slice(0..data.len())?;
-        slice.write(&data);
+        slice.write(data);
         Some(slice)
     }
 
@@ -127,21 +131,21 @@ impl SimpleGraphics{
     /// Возвращает номер (индекс) области.
     /// 
     /// Области могут пересекаться.
-    pub fn bind_range(&mut self,range:Range<usize>,data:&[Point2D])->Option<usize>{
+    pub fn bind_range(&mut self,range:Range<usize>,data:&[Vertex2D])->Option<usize>{
         let i=self.vertex_buffer_ranges.len();
 
         let slice=self.vertex_buffer.slice(range.clone())?;
-        slice.write(&data);
+        slice.write(data);
 
         self.vertex_buffer_ranges.push(range);
 
         Some(i)
     }
 
-    pub fn rewrite_range(&mut self,range:usize,data:&[Point2D])->Option<()>{
+    pub fn rewrite_range(&mut self,range:usize,data:&[Vertex2D])->Option<()>{
         let range=self.vertex_buffer_ranges.get(range)?;
         let slice=self.vertex_buffer.slice(range.clone())?;
-        slice.write(&data);
+        slice.write(data);
         Some(())
     }
 
@@ -181,6 +185,36 @@ impl SimpleGraphics{
             draw_parameters
         )
     }
+
+    pub fn draw_shift_range<'a,I:Into<IndicesSource<'a>>>(&self,
+        index:usize,
+        colour:Colour,
+        [dx,dy]:[f32;2],
+        indices:I,
+        draw_parameters:&mut DrawParameters,
+        frame:&mut Frame
+    )->Result<(),DrawError>{
+        let shift=unsafe{[
+            dx/window_center[0],
+            -dy/window_center[1]
+        ]};
+
+        let range=self.vertex_buffer_ranges[index].clone();
+        let slice=self.vertex_buffer.slice(range).unwrap();
+        let uni=uniform!{
+            colour:colour,
+            shift:shift,
+        };
+
+
+        frame.draw(
+            slice,
+            indices,
+            &self.draw_shift,
+            &uni,
+            draw_parameters
+        )
+    }
 }
 
 /// Типаж для создания собственных простых одноцветных объектов.
@@ -197,14 +231,14 @@ pub trait SimpleObject<'a>{
     /// Точки объекта в оконных координатах (без приведения к формату OpenGL).
     /// 
     /// Object's points in window axes (without converting to OpenGL format).
-    fn point_buffer(&self)->Vec<Point2D>;
+    fn point_buffer(&self)->Vec<Vertex2D>;
 
     /// Индексы для построения объекта.
     /// 
     /// Indices to build an object.
     fn indices(&self)->Self::Indices;
 
-    fn vertex_buffer(&self)->Vec<Point2D>{
+    fn vertex_buffer(&self)->Vec<Vertex2D>{
         let mut points=self.point_buffer();
         for point in points.iter_mut(){
             point.convert();

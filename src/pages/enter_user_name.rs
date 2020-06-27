@@ -2,6 +2,7 @@ use crate::{
     Main_font,
     Game,
     Settings,
+    make_screenshot,
 };
 
 use super::MainMenu;
@@ -106,6 +107,15 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                 }
 
                 WindowEvent::KeyboardReleased(button)=>match button{
+                    KeyboardButton::F5=>if Game::Exit==make_screenshot(window,|p,g|{
+                        self.main_menu.draw(p,g);
+
+                        self.input.draw(p,g);
+                        self.head.draw(p,g);
+                    }){
+                        return Game::Exit
+                    }
+
                     KeyboardButton::Escape=>return Game::Back,
 
                     KeyboardButton::Enter=>unsafe{
@@ -145,6 +155,14 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                 }
 
                 WindowEvent::KeyboardReleased(button)=>match button{
+                    KeyboardButton::F5=>if Game::Exit==make_screenshot(window,|p,g|{
+                        self.main_menu.draw(p,g);
+
+                        self.input.draw(p,g);
+                        self.head.draw(p,g);
+                    }){
+                        return Game::Exit
+                    }
                     KeyboardButton::Escape=>return Game::Back,
                     _=>{}
                 }

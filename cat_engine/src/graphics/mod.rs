@@ -2,7 +2,7 @@
 //! # Графические основы. Graphic basics.
 //! 
 //! Графический движок разделен на три части:
-//! 1. Простая графика - одноцветные объекты состоящие из `Point2D`.
+//! 1. Простая графика - одноцветные объекты состоящие из `Vertex2D`.
 //! 2. Текстуры (изображения)
 //! 3. Текст
 //! 
@@ -13,8 +13,8 @@
 //! 
 //! #
 //! 
-//! Graphics engine divided into three parts:
-//! 1. Simple graphics - plain objects composed of `Point2D`.
+//! The graphics engine is divided into three parts:
+//! 1. Simple graphics - plain objects composed of `Vertex2D`.
 //! 2. Textures (images)
 //! 3. Text
 //! 
@@ -60,7 +60,7 @@ pub (crate) use simple_graphics::SimpleGraphics;
 #[cfg(feature="simple_graphics")]
 pub use simple_graphics::{
     SimpleObject,
-    Point2D,
+    Vertex2D,
 };
 
 #[cfg(feature="simple_graphics")]

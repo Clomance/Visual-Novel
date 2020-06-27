@@ -88,7 +88,7 @@ impl LoadingScreen{
 
                 WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
-                        make_screenshot(window,|parameters,graphics|{
+                        if Game::Exit==make_screenshot(window,|parameters,graphics|{
                             graphics.clear_colour(White);
                             graphics.draw_range_image(
                                 0,
@@ -104,7 +104,9 @@ impl LoadingScreen{
                                 t,
                                 parameters
                             );
-                        })
+                        }){
+                            return Game::Exit
+                        }
                     }
                 }
                 _=>{}
@@ -129,9 +131,11 @@ impl LoadingScreen{
 
                 WindowEvent::KeyboardReleased(button)=>{
                     if button==KeyboardButton::F5{
-                        make_screenshot(window,|_,g|{
+                        if Game::Exit==make_screenshot(window,|_,g|{
                             g.clear_colour(White);
-                        })
+                        }){
+                            return Game::Exit
+                        }
                     }
                 }
                 _=>{}

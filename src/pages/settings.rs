@@ -210,7 +210,7 @@ impl<'a> SettingsPage<'a>{
                 }
 
                 WindowEvent::KeyboardReleased(button)=>match button{
-                    KeyboardButton::F5=>make_screenshot(window,|p,g|{
+                    KeyboardButton::F5=>if Game::Exit==make_screenshot(window,|p,g|{
                         g.clear_colour(background_color);
 
                         self.head.draw(p,g);
@@ -223,7 +223,9 @@ impl<'a> SettingsPage<'a>{
                         self.volume.draw(p,g);
 
                         self.back_button.draw(p,g);
-                    }),
+                    }){
+                        return Game::Exit
+                    },
 
                     KeyboardButton::Escape=>return Game::Back,
 
@@ -267,14 +269,17 @@ impl<'a> SettingsPage<'a>{
                 }
 
                 WindowEvent::KeyboardReleased(button)=>match button{
-                    KeyboardButton::F5=>make_screenshot(window,|d,g|{
+                    KeyboardButton::F5=>if Game::Exit==make_screenshot(window,|d,g|{
                         self.head.draw(d,g);
 
                         self.signs_per_sec.draw(d,g);
                         self.volume.draw(d,g);
 
                         self.back_button.draw(d,g);
-                    }),
+                    }){
+                        return Game::Exit
+                    },
+
                     KeyboardButton::Escape=>return Game::Back,
                     _=>{}
                 }

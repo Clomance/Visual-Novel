@@ -82,7 +82,7 @@ use std::{
     },
 };
 
-/// Результат выполнения команды. The result of an executed command.
+/// Результат выполнения команды. The result of command accomplishing.
 #[derive(Clone,Debug,PartialEq)]
 pub enum AudioCommandResult{
     Ok,
@@ -95,7 +95,7 @@ pub enum AudioCommandResult{
 impl AudioCommandResult{
     /// Паникует, если результат не `Ok`.
     /// 
-    /// Panics, if the result isn`t `Ok`.
+    /// Panics if the result isn't `Ok`.
     pub fn unwrap(self){
         if self!=AudioCommandResult::Ok{
             panic!("{:?}",self)
@@ -104,7 +104,7 @@ impl AudioCommandResult{
 
     /// Паникует и выводит сообщение, если результат не `Ok`.
     /// 
-    /// Panics и prints the message, if the result isn`t `Ok`.
+    /// Panics и prints the message if the result isn't `Ok`.
     pub fn expect(self,msg:&str){
         if self!=AudioCommandResult::Ok{
             panic!("{} {:?}",msg,self)
@@ -208,7 +208,7 @@ impl Audio{
 
     /// For given host and device.
     /// 
-    /// Returns the result of starting an audio thread.
+    /// Returns the result of starting the audio thread.
     pub fn with_host_and_device(settings:AudioSettings,host:Host,device:Device)->io::Result<Audio>{
         // Массив треков
         let tracks=Arc::new(Mutex::new(Vec::with_capacity(settings.track_array_capacity)));
@@ -272,7 +272,7 @@ impl Audio{
 
     /// Может вызвать панику, если окно запущено в том же потоке.
     /// 
-    /// This function may panic, if window running in the same thread.
+    /// This function may panic if the window is running in the same thread.
     pub fn default_output_device()->Option<Device>{
         cpal::default_host().default_output_device()
     }
@@ -283,14 +283,14 @@ impl Audio{
     /// 
     /// Returns all available devices of the default host.
     /// 
-    /// This function may panic, if window running in the same thread.
+    /// This function may panic if the window is running in the same thread.
     pub fn output_devices()->Result<OutputDevices<Devices>,DevicesError>{
         cpal::default_host().output_devices()
     }
 
     /// Добавляет трек в массив треков.
     /// 
-    /// Adds the track from given path to the track array.
+    /// Adds the track to the track array.
     pub fn add_track<P:AsRef<Path>>(&self,path:P)->AudioCommandResult{
         let track=match Track::new(path){
             TrackResult::Ok(track)=>track,
@@ -308,7 +308,7 @@ impl Audio{
 
     /// Удаляет трек из массива треков.
     /// 
-    /// Removes a track from track array.
+    /// Removes the track from the track array.
     pub fn remove_track(&self,index:usize)->AudioCommandResult{
         let mut lock=match self.tracks.lock(){
             Ok(lock)=>lock,
@@ -325,7 +325,7 @@ impl Audio{
 
     /// Удаляет все треки из массива треков.
     /// 
-    /// Removes all tracks from track array.
+    /// Removes all tracks from the track array.
     pub fn remove_all_tracks(&self)->AudioCommandResult{
         self.tracks.lock().unwrap().clear();
         AudioCommandResult::Ok
@@ -333,7 +333,7 @@ impl Audio{
 
     /// Запускает трек без повторов.
     ///
-    /// Sets a track to play once.
+    /// Sets the track to play once.
     pub fn play_once(&self,index:usize)->AudioCommandResult{
         let stream_lock=self.stream.lock();
         if let Err(_)=stream_lock{
@@ -357,7 +357,7 @@ impl Audio{
 
     /// Запускает трек, который постоянно повторяется.
     /// 
-    /// Sets a track to play forever.
+    /// Sets the track to play forever.
     pub fn play_forever(&self,index:usize)->AudioCommandResult{
         let stream_lock=self.stream.lock();
         if let Err(_)=stream_lock{
@@ -418,7 +418,7 @@ impl Audio{
 
     /// Останавливает проигрывание путём удаления трека из буфера для вывода.
     /// 
-    /// Stops playing by removing track from playing buffer.
+    /// Stops playing by removing current track from playing buffer.
     pub fn stop(&self)->AudioCommandResult{
         match self.command.send(AudioSystemCommand::Stop){
             Ok(())=>AudioCommandResult::Ok,
