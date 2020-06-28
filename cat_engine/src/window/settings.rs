@@ -16,7 +16,10 @@ use glium::glutin::{
     },
 };
 
-use std::path::PathBuf;
+use std::{
+    ops::Range,
+    path::PathBuf
+};
 
 #[derive(Clone,Debug)]
 #[allow(dead_code)]
@@ -28,13 +31,22 @@ pub struct WindowSettings{
     /// The default is None.
     pub initial_colour:Option<Colour>,
 
-    /// Path for the mouse cursor icon.
+    /// The path for the mouse cursor icon.
     /// 
     /// The default is `./mouse_cursor_icon.png`.
     /// 
     /// feature = "mouse_cursor_icon"
     #[cfg(feature="mouse_cursor_icon")]
     pub mouse_cursor_icon_path:PathBuf,
+
+    /// The range of the texture vertex buffer to save
+    /// the mouse cursor vertexes.
+    /// 
+    /// The default is 8..12.
+    /// 
+    /// feature = "mouse_cursor_icon"
+    #[cfg(feature="mouse_cursor_icon")]
+    pub mouse_cursor_icon_range:Range<usize>,
 
     //--Window attributes--\\
 
@@ -232,6 +244,9 @@ impl WindowSettings{
 
             #[cfg(feature="mouse_cursor_icon")]
             mouse_cursor_icon_path:path,
+
+            #[cfg(feature="mouse_cursor_icon")]
+            mouse_cursor_icon_range:4..8,
 
             //--Window attributes--\\
             inner_size:None,

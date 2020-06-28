@@ -23,6 +23,7 @@ use cat_engine::glium::DrawParameters;
 
 pub struct LoadingScreen{
     cat:Texture,
+    range:usize,
     cat_eyes_closed:Texture,
     gear:Texture,
     frames:u8,
@@ -38,7 +39,7 @@ impl LoadingScreen{
         ]});
 
         // Установка области для быстрой отрисовки иконки загрузки
-        window.graphics().bind_image(4..8usize,image_base.clone()).unwrap();
+        let range=window.graphics().bind_image(4..8usize,image_base.clone()).unwrap();
 
         image_base.x1*=2f32;
         image_base.y1*=2f32;
@@ -49,6 +50,7 @@ impl LoadingScreen{
 
         Self{
             cat:Texture::from_path("./resources/images/cat.png",window.display()).unwrap(),
+            range,
             cat_eyes_closed:Texture::from_path("./resources/images/cat_eyes_closed.png",window.display()).unwrap(),
             gear:Texture::from_path("./resources/images/gear.png",window.display()).unwrap(),
             frames:0u8,
@@ -150,14 +152,14 @@ impl LoadingScreen{
     fn draw(&self,image:&Texture,angle:f32,parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.clear_colour(White);
         graphics.draw_range_image(
-            0,
+            self.range,
             image,
             White,
             parameters
         );
 
         graphics.draw_rotate_range_image(
-            1,
+            self.range+1,
             &self.gear,
             White,
             angle,

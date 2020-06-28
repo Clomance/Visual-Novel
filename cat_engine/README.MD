@@ -32,6 +32,9 @@ The cursor points to the center of the image.
 
 The default path to the image is `./mouse_cursor_icon.png`.
 
+The ImageBase for the image binds to the texture vertex buffer.
+The default range is 4..8.
+
 ### auto_hide
 
 The window gets minimized when loses focus and

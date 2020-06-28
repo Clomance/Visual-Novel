@@ -111,6 +111,39 @@ impl TextureGraphics{
         )
     }
 
+    /// Строит объект с нуля и выводит, игнорируя все области.
+    /// Переписывает координаты с начала буфера (0..4).
+    pub fn draw_shift_image(
+        &self,
+        image_base:&ImageBase,
+        texture:&Texture,
+        [dx,dy]:[f32;2],
+        draw_parameters:&DrawParameters,
+        frame:&mut Frame,
+    )->Result<(),DrawError>{
+        let indices=NoIndices(PrimitiveType::TriangleStrip);
+
+        let shift=unsafe{[
+            dx/window_center[0],
+            -dy/window_center[1]
+        ]};
+
+        let slice=self.vertex_buffer.slice(0..4).unwrap();
+        slice.write(&image_base.vertex_buffer());
+
+        frame.draw(
+            slice,
+            indices,
+            &self.draw_shift,
+            &uniform!{
+                tex:&texture.0,
+                colour_filter:image_base.colour_filter,
+                shift:shift
+            },
+            draw_parameters
+        )
+    }
+
     /// Строит объект с нуля и выводит под данным углом, игнорируя все области.
     /// Переписывает координаты с начала буфера (0..4).
     pub fn draw_rotate_image(

@@ -1,12 +1,15 @@
-#![allow(dead_code,unused_imports)]
+#![allow(unused_imports)]
 
 #[cfg(feature="mouse_cursor_icon")]
 use crate::{
-    graphics::Graphics,
+    graphics::{Graphics,Graphics2D},
     image::{ImageBase,Texture}
 };
 
-use super::window_center;
+use super::{
+    mouse_cursor,
+    window_center
+};
 
 #[cfg(feature="mouse_cursor_icon")]
 use glium::{
@@ -15,6 +18,7 @@ use glium::{
 };
 
 use std::path::Path;
+use core::ops::Range;
 
 /// Положение курсора мыши.
 /// The mouse cursor position.
@@ -88,8 +92,9 @@ impl MouseCursor{
     }
 }
 
-
+#[cfg(feature="mouse_cursor_icon")]
 const radius:f32=30f32;
+#[cfg(feature="mouse_cursor_icon")]
 const d_radius:f32=5f32;
 
 /// Иконка курсора мышки.
@@ -99,29 +104,28 @@ const d_radius:f32=5f32;
 pub struct MouseCursorIcon{
     image_base:ImageBase,
     texture:Texture,
-    radius:f32,
     visible:bool,
 }
 
 #[cfg(feature="mouse_cursor_icon")]
 impl MouseCursorIcon{
-    pub fn new<P:AsRef<Path>>(display:&Display,path:P)->MouseCursorIcon{
+    pub fn new<P:AsRef<Path>>(path:P,range:Range<usize>,display:&Display,graphics:&mut Graphics2D)->MouseCursorIcon{
+        let image_base=ImageBase::new([1f32;4],
+            unsafe{[
+                window_center[0]-radius/2f32,
+                window_center[1]-radius/2f32,
+                radius,
+                radius
+            ]}
+        );
+
+        graphics.bind_image(range,image_base.clone()).unwrap();
+
         Self{
-            image_base:ImageBase::new([1f32;4],[0f32,0f32,2f32*radius,2f32*radius]),
+            image_base,
             texture:Texture::from_path(path,display).unwrap(),
-            radius:radius/2f32,
             visible:true,
         }
-    }
-
-    pub fn set_position(&mut self,position:[f32;2]){
-        let x=unsafe{position[0]-window_center[0]};
-        let y=unsafe{window_center[1]-position[1]};
-
-        self.image_base.x1=x-self.radius;
-        self.image_base.y1=y+self.radius;
-        self.image_base.x2=x+self.radius;
-        self.image_base.y2=y-self.radius;
     }
 
     #[inline(always)]
@@ -137,29 +141,30 @@ impl MouseCursorIcon{
     /// При нажатии кнопки мыши.
     /// 
     /// On a mouse button pressed.
-    pub fn pressed(&mut self){
+    pub fn pressed(&mut self,graphics:&mut Graphics2D){
         self.image_base.x1+=d_radius;
         self.image_base.y1-=d_radius;
         self.image_base.x2-=d_radius;
         self.image_base.y2+=d_radius;
-        self.radius-=d_radius;
+        graphics.rewrite_range_image(0,self.image_base.clone()).unwrap();
     }
 
     /// При освобождении кнопки мыши.
     /// 
     /// On a mouse button released.
-    pub fn released(&mut self){
+    pub fn released(&mut self,graphics:&mut Graphics2D){
         self.image_base.x1-=d_radius;
         self.image_base.y1+=d_radius;
         self.image_base.x2+=d_radius;
         self.image_base.y2-=d_radius;
-        self.radius+=d_radius;
+        graphics.rewrite_range_image(0,self.image_base.clone()).unwrap();
     }
 
     #[inline(always)]
     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         if self.visible{
-            self.image_base.draw(&self.texture,draw_parameters,graphics);
+            let shift=unsafe{mouse_cursor.center_radius()};
+            graphics.draw_shift_range_image(0,&self.texture,[1f32;4],shift,draw_parameters).unwrap();
         }
     }
 }

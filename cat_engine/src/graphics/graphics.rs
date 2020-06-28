@@ -101,14 +101,14 @@ impl Graphics2D{
     /// Сохраняет координаты картинки в выбранной области в буфере.
     /// Возращает номер области, если она не выходит за границы буфера.
     /// 
-    /// Используется только для невращающихся изображений.
+    /// Только для невращающихся изображений.
     /// 
     /// Для вывода изображения из этой области используется функция 'draw_range_image'.
     /// 
     /// Saves vertexes of the image to the given range of the vertex buffer.
     /// Returns the index of the range.
     /// 
-    /// Only for not rotating images.
+    /// Only for non-rotating images.
     /// 
     /// Use 'draw_range_image' for drawing.
     #[cfg(feature="texture_graphics")]
@@ -120,7 +120,7 @@ impl Graphics2D{
     /// Сохраняет координаты картинки в выбранной области в буфере.
     /// Возращает номер области, если она не выходит за границы буфера.
     /// 
-    /// Используется только для вращающихся изображений.
+    /// Только для вращающихся изображений.
     /// 
     /// Для вывода изображения из этой области используется функция 'draw_rotate_range_image'.
     /// 
@@ -154,9 +154,26 @@ impl Graphics2D{
 
     /// Обновляет значения области массива для текстур.
     /// 
+    /// Только для невращающихся изображений.
+    /// 
     /// Rewrites the range with new ImageBase.
+    /// 
+    /// Only for non-rotating images.
     #[cfg(feature="texture_graphics")]
     pub fn rewrite_range_image(&mut self,range:usize,image_base:ImageBase)->Option<()>{
+        let data=image_base.vertex_buffer();
+        self.texture.rewrite_range(range,&data)
+    }
+
+    /// Обновляет значения области массива для текстур.
+    /// 
+    /// Только для вращающихся изображений.
+    /// 
+    /// Rewrites the range with new ImageBase.
+    /// 
+    /// Only for rotating images.
+    #[cfg(feature="texture_graphics")]
+    pub fn rewrite_range_rotating_image(&mut self,range:usize,image_base:ImageBase)->Option<()>{
         let data=image_base.rotation_vertex_buffer();
         self.texture.rewrite_range(range,&data)
     }
@@ -373,6 +390,21 @@ impl<'graphics,'frame> Graphics<'graphics,'frame>{
         draw_parameters:&mut DrawParameters
     )->Result<(),DrawError>{
         self.graphics.texture.draw_image(image_base,texture,draw_parameters,self.frame)
+    }
+
+    /// Рисует изображение на основе `ImageBase`.
+    /// 
+    /// Draws the image based on `ImageBase`.
+    #[inline(always)] 
+    #[cfg(feature="texture_graphics")]
+    pub fn draw_shift_image(
+        &mut self,
+        image_base:&ImageBase,
+        texture:&Texture,
+        shift:[f32;2],
+        draw_parameters:&mut DrawParameters
+    )->Result<(),DrawError>{
+        self.graphics.texture.draw_shift_image(image_base,texture,shift,draw_parameters,self.frame)
     }
 
     /// Рисует изображение на основе `ImageBase` c поворотом в 'angle' градусов.

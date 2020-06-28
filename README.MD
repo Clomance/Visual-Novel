@@ -1,9 +1,9 @@
-# Visual novel written in Rust.
+# A visual novel written in Rust.
 
  - [Russian version of README](https://github.com/Clomance/Visual-Novel/blob/master/README-RUS.MD)
  - [Estonian version of README](https://github.com/Clomance/Visual-Novel/blob/master/README-ET.MD)
 
-### Version 1.6.4
+### Version 1.6.5
 
 Latest stable Rust, minimal version of OpenGL - `2.0`.
 

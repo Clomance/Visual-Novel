@@ -18,7 +18,7 @@ use glium::draw_parameters::DrawParameters;
 
 /// Основа для изображений (текстур). Image (texture) base.
 /// 
-/// Прямоугольник с точками: (x1, y1), (x1, y2), (x2, y1), (x2, y2).
+/// Прямоугольник с вершинами: (x1, y1), (x1, y2), (x2, y1), (x2, y2).
 /// 
 /// Цветовой фильтр - [red, green, blue, alpha].
 /// Цвет = цвет * фильтр.
@@ -27,7 +27,7 @@ use glium::draw_parameters::DrawParameters;
 /// 
 /// #
 /// 
-/// Rectagle with points: (x1, y1), (x1, y2), (x2, y1), (x2, y2).
+/// Rectagle with vertexes: (x1, y1), (x1, y2), (x2, y1), (x2, y2).
 /// 
 /// Colour filter - [red, green, blue, alpha].
 /// Colour = colour * filter.
@@ -43,7 +43,7 @@ pub struct ImageBase{
 }
 
 impl ImageBase{
-    // rect - [x,y,width,height]
+    /// rect with commom coordinate system- [x,y,width,height]
     pub fn new(colour_filter:Colour,rect:[f32;4])->ImageBase{
         let x=unsafe{rect[0]-window_center[0]};
         let y=unsafe{window_center[1]-rect[1]};
@@ -56,6 +56,7 @@ impl ImageBase{
         }
     }
 
+    /// rect with commom coordinate system - [x,y,width,height]
     pub fn set_rect(&mut self,rect:[f32;4]){
         let x=unsafe{rect[0]-window_center[0]};
         let y=unsafe{window_center[1]-rect[1]};
@@ -116,12 +117,26 @@ impl ImageBase{
         ]
     }
 
-    #[inline(always)] /// Рисует изображение.
+    /// Рисует изображение.
+    /// 
+    /// Draws the image.
+    #[inline(always)]
     pub fn draw(&self,texture:&Texture,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.draw_image(self,texture,draw_parameters);
     }
 
-    #[inline(always)] /// Рисует изображение под углом.
+    /// Рисует сдвинутое изображение.
+    /// 
+    /// Draws shifted image.
+    #[inline(always)] 
+    pub fn draw_shift(&self,texture:&Texture,shift:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
+        graphics.draw_shift_image(self,texture,shift,draw_parameters);
+    }
+
+    /// Рисует изображение под углом.
+    /// 
+    /// Draws rotated image.
+    #[inline(always)]
     pub fn draw_rotate(&self,texture:&Texture,angle:f32,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         graphics.draw_rotate_image(self,texture,angle,draw_parameters);
     }

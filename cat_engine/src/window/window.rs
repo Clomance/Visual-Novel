@@ -1,3 +1,5 @@
+#![allow(unused_mut)]
+
 use crate::{
     Colour,
     graphics::{Graphics2D,Graphics,GraphicsSettings},
@@ -54,7 +56,8 @@ use image::{
 
 use std::{
     collections::VecDeque,
-    path::{Path,PathBuf}
+    path::{Path,PathBuf},
+    ops::Range,
 };
 
 /// Положение курсора мыши. The mouse cursor position.
@@ -96,6 +99,9 @@ pub static mut window_center:[f32;2]=[0f32;2];
 /// 
 /// Путь для картинки по умолчанию - `./mouse_cursor_icon.png`.
 /// 
+/// ImageBase для этой картинки добавляется в texture vertex buffer.
+/// Область по умочанию 4..8.
+/// 
 /// #
 /// 
 /// Replaces the default mouse cursor with user's image.
@@ -103,6 +109,9 @@ pub static mut window_center:[f32;2]=[0f32;2];
 /// The cursor points to the center of the image.
 /// 
 /// The default path to the image is `./mouse_cursor_icon.png`.
+/// 
+/// The ImageBase for the image binds to the texture vertex buffer.
+/// The default range is 4..8.
 /// 
 /// # feature = "auto_hide"
 /// 
@@ -155,7 +164,8 @@ impl Window{
         let initial_colour=window_settings.initial_colour;
         #[cfg(feature="mouse_cursor_icon")]
         let mouse_cursor_icon_path=window_settings.mouse_cursor_icon_path.clone();
-
+        #[cfg(feature="mouse_cursor_icon")]
+        let mouse_cursor_icon_range=window_settings.mouse_cursor_icon_range.clone();
 
         let (window_builder,context_builder,graphics_settings)
                 =window_settings.devide();
@@ -167,7 +177,8 @@ impl Window{
             graphics_settings,
             event_loop,
             initial_colour,
-            mouse_cursor_icon_path
+            mouse_cursor_icon_path,
+            mouse_cursor_icon_range,
         );
 
         #[cfg(not(feature="mouse_cursor_icon"))]
@@ -183,6 +194,7 @@ impl Window{
     }
 
     /// mouse_cursor_icon_path - feature = "mouse_cursor_icon"
+    /// mouse_cursor_icon_range - feature = "mouse_cursor_icon"
     pub fn raw<P:AsRef<Path>>(
         window_builder:WindowBuilder,
         context_builder:ContextBuilder<NotCurrent>,
@@ -191,6 +203,8 @@ impl Window{
         initial_colour:Option<Colour>,
         #[cfg(feature="mouse_cursor_icon")]
         mouse_cursor_icon_path:P,
+        #[cfg(feature="mouse_cursor_icon")]
+        mouse_cursor_icon_range:Range<usize>,
     )->Result<Window,DisplayCreationError>{
         // Создание окна и привязывание графической библиотеки
         let display=Display::new(window_builder,context_builder,&event_loop)?;
@@ -224,12 +238,14 @@ impl Window{
         #[cfg(feature="mouse_cursor_icon")]
         display.gl_window().window().set_cursor_visible(false);
 
+        let mut graphics=Graphics2D::new(&display,graphics_settings,glsl);
+
         Ok(Self{
             #[cfg(feature="mouse_cursor_icon")]
-            mouse_icon:MouseCursorIcon::new(&display,mouse_cursor_icon_path),
+            mouse_icon:MouseCursorIcon::new(mouse_cursor_icon_path,mouse_cursor_icon_range,&display,&mut graphics),
 
-            graphics:Graphics2D::new(&display,graphics_settings,glsl),
-            display:display,
+            graphics,
+            display,
 
             event_loop,
             events:VecDeque::with_capacity(32),
@@ -533,9 +549,6 @@ impl Window{
 
                             mouse_cursor.set_position(position);
 
-                            #[cfg(feature="mouse_cursor_icon")]
-                            self.mouse_icon.set_position(position);
-
                             MouseMovementDelta([dx,dy])
                         }
 
@@ -548,7 +561,7 @@ impl Window{
                                 match button{
                                     GMouseButton::Left=>{
                                         #[cfg(feature="mouse_cursor_icon")]
-                                        self.mouse_icon.pressed();
+                                        self.mouse_icon.pressed(&mut self.graphics);
 
                                         MousePressed(MouseButton::Left)
                                     }
@@ -561,7 +574,7 @@ impl Window{
                                 match button{
                                     GMouseButton::Left=>{
                                         #[cfg(feature="mouse_cursor_icon")]
-                                        self.mouse_icon.released();
+                                        self.mouse_icon.released(&mut self.graphics);
 
                                         MouseReleased(MouseButton::Left)
                                     }
@@ -634,12 +647,13 @@ impl Window{
 
                 // Рендеринг
                 Event::RedrawRequested(_)=>{
+                    *control_flow=ControlFlow::Exit;
                     Draw
                 }
 
                 // После вывода кадра
                 Event::RedrawEventsCleared=>{
-                    *control_flow=ControlFlow::Exit;
+                    
                     return
                 } // Игнорирование
 

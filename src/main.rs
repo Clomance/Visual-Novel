@@ -89,7 +89,7 @@ pub enum Game{
     Exit
 }
 
-pub const game_name:&'static str="Visual Novel by Clomance";
+pub const game_name:&'static str="Любимый в УГАТУ";
 
 const page_smooth:f32=1f32/32f32;
 
@@ -119,6 +119,8 @@ fn main(){
         let mut path=PathBuf::new();
         path.push("./resources/images/mouse_icon.png");
         window_settings.mouse_cursor_icon_path=path;
+
+        window_settings.mouse_cursor_icon_range=12..16;
 
         // Установка полноэкранного режима для нужного экрана
         let monitor=unsafe{Settings.monitor};
@@ -152,7 +154,7 @@ fn main(){
         window_settings.srgb=true;
         window_settings.hardware_accelerated=None;
 
-        window_settings.texture_vertex_buffer_size=12usize;
+        window_settings.texture_vertex_buffer_size=16usize;
         window_settings.simple_vertex_buffer_size=100usize;
         window_settings.text_vertex_buffer_size=2000usize;
     }){
