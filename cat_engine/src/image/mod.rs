@@ -27,12 +27,12 @@ use glium::draw_parameters::DrawParameters;
 /// 
 /// #
 /// 
-/// Rectagle with vertexes: (x1, y1), (x1, y2), (x2, y1), (x2, y2).
+/// Rectangle with vertexes: (x1, y1), (x1, y2), (x2, y1), (x2, y2).
 /// 
 /// Colour filter - [red, green, blue, alpha].
 /// Colour = colour * filter.
 /// 
-/// Coordinate system is changed: the origin is at the center of the window, the Y axe is reversed.
+/// The coordinate system is changed: the origin is at the center of the window, the Y axe is reversed.
 #[derive(Clone)]
 pub struct ImageBase{
     pub x1:f32,
@@ -43,7 +43,7 @@ pub struct ImageBase{
 }
 
 impl ImageBase{
-    /// rect with commom coordinate system- [x,y,width,height]
+    /// rect with the common coordinate system- [x,y,width,height]
     pub fn new(colour_filter:Colour,rect:[f32;4])->ImageBase{
         let x=unsafe{rect[0]-window_center[0]};
         let y=unsafe{window_center[1]-rect[1]};
@@ -56,7 +56,7 @@ impl ImageBase{
         }
     }
 
-    /// rect with commom coordinate system - [x,y,width,height]
+    /// rect with the common coordinate system - [x,y,width,height]
     pub fn set_rect(&mut self,rect:[f32;4]){
         let x=unsafe{rect[0]-window_center[0]};
         let y=unsafe{window_center[1]-rect[1]};
