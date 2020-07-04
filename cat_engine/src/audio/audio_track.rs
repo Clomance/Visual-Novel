@@ -26,7 +26,7 @@ pub enum TrackResult<T>{
 impl<T:std::fmt::Debug> TrackResult<T>{
     /// Паникует, если результат не `Ok`.
     /// 
-    /// Panics, if the result isn`t `Ok`.
+    /// Panics, if the result isn't `Ok`.
     pub fn unwrap(self)->Track<T>{
         if let TrackResult::Ok(track)=self{
             track
@@ -38,7 +38,7 @@ impl<T:std::fmt::Debug> TrackResult<T>{
 
     /// Паникует и выдаёт сообщение, если результат не `Ok`.
     /// 
-    /// Panics and prints the message, if the result isn`t `Ok`.
+    /// Panics and prints the message, if the result isn't `Ok`.
     pub fn expect(self,msg:&str)->Track<T>{
         if let TrackResult::Ok(track)=self{
             track

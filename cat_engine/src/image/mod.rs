@@ -10,7 +10,7 @@ use super::{
 };
 
 mod texture;
-pub use texture::{Texture,TextureCreationError};
+pub use texture::{Texture,TextureCreationResult};
 
 pub use image;
 

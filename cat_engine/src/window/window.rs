@@ -58,6 +58,7 @@ use std::{
     collections::VecDeque,
     path::{Path,PathBuf},
     ops::Range,
+    time::{Instant,Duration},
 };
 
 /// Положение курсора мыши. The mouse cursor position.
@@ -69,6 +70,12 @@ pub static mut window_width:f32=0f32;
 pub static mut window_height:f32=0f32;
 /// Центр окна. The window center. [x, y]
 pub static mut window_center:[f32;2]=[0f32;2];
+
+/// Счётчик кадров в секунду. A frame per seconds counter.
+/// 
+/// Обновляется раз в секунду. Updates once a second.
+#[cfg(feature="fps_counter")]
+pub static mut fps:u32=0;
 
 /*
     EventLoop - минимум четыре шага:
@@ -125,6 +132,14 @@ pub static mut window_center:[f32;2]=[0f32;2];
 /// The window gets minimized when loses focus and
 /// it stops sending outer events except gained focus and application suspended or resumed events.
 /// The window gets back when it gains focus.
+/// 
+/// # feature = "fps_counter"
+/// 
+/// Простой счётчик fps. Обновляется каждую секунду.
+/// 
+/// #
+/// 
+/// A simple fps counter. The value updates every second.
 pub struct Window{
     display:Display,
     graphics:Graphics2D,
@@ -134,6 +149,11 @@ pub struct Window{
 
     #[cfg(feature="auto_hide")]
     events_handler:fn(&mut Self),
+
+    #[cfg(feature="fps_counter")]
+    frames_passed:u32,
+    #[cfg(feature="fps_counter")]
+    time:Instant,
 
     alpha_channel:f32,  // Для плавных
     smooth:f32,         // переходов
@@ -249,6 +269,11 @@ impl Window{
 
             event_loop,
             events:VecDeque::with_capacity(32),
+
+            #[cfg(feature="fps_counter")]
+            frames_passed:0u32,
+            #[cfg(feature="fps_counter")]
+            time:Instant::now(),
 
             #[cfg(feature="auto_hide")]
             events_handler:Window::event_listener,
@@ -525,7 +550,10 @@ impl Window{
                 Event::WindowEvent{event,..}=>{
                     match event{
                         // Закрытие окна
-                        GWindowEvent::CloseRequested=>Exit,
+                        GWindowEvent::CloseRequested=>{
+                            *control_flow=ControlFlow::Exit;
+                            Exit
+                        }
 
                         // Изменение размера окна
                         GWindowEvent::Resized(size)=>unsafe{
@@ -647,6 +675,8 @@ impl Window{
 
                 // Рендеринг
                 Event::RedrawRequested(_)=>{
+                    #[cfg(feature="fps_counter")]
+                    self.count_fps();
                     *control_flow=ControlFlow::Exit;
                     Draw
                 }
@@ -743,6 +773,22 @@ impl Window{
         *control_flow=ControlFlow::Exit; // Остановка цикла обработки событий
 
         Hide(false) // Передача события во внешнее управление
+    }
+
+    #[cfg(feature="fps_counter")]
+    fn count_fps(&mut self){
+        self.frames_passed+=1;
+        let current_time=Instant::now();
+        let time_passed=current_time.duration_since(self.time);
+
+        if Duration::from_secs(1)<time_passed{
+            unsafe{
+                fps=self.frames_passed;
+                println!("fps = {}",fps);
+            }
+            self.frames_passed=0;
+            self.time=current_time;
+        }
     }
 }
 

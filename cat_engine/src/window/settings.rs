@@ -42,7 +42,7 @@ pub struct WindowSettings{
     /// The range of the texture vertex buffer to save
     /// the mouse cursor vertexes.
     /// 
-    /// The default is 8..12.
+    /// The default is 4..8.
     /// 
     /// feature = "mouse_cursor_icon"
     #[cfg(feature="mouse_cursor_icon")]

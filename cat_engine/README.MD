@@ -40,3 +40,7 @@ The default range is 4..8.
 The window gets minimized when loses focus and
 it stops sending outer events, except gained focus event.
 The window gets back when it gains focus.
+
+### fps_counter
+
+A simple fps counter. The value updates every second.

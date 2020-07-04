@@ -587,7 +587,7 @@ pub struct AudioSettings{
 
     /// Вместимость массива для треков.
     /// 
-    /// Capacity of the track array.
+    /// The capacity of the track array.
     /// 
     /// The default is 1.
     pub track_array_capacity:usize,
