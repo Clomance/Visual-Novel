@@ -8,9 +8,18 @@ use crate::{
 #[cfg(feature="mouse_cursor_icon")]
 use super::mouse_cursor::MouseCursorIcon;
 
+#[cfg(feature="fps_counter")]
+use super::fps;
+
 use super::{
+    // statics
+    window_width,
+    window_height,
+    window_center,
+    mouse_cursor,
+    // structs
     mouse_cursor::MouseCursor,
-    WindowEvent,
+    // enums
     WindowSettings,
     MouseButton,
     KeyboardButton,
@@ -55,27 +64,10 @@ use image::{
 };
 
 use std::{
-    collections::VecDeque,
     path::{Path,PathBuf},
     ops::Range,
     time::{Instant,Duration},
 };
-
-/// Положение курсора мыши. The mouse cursor position.
-pub static mut mouse_cursor:MouseCursor=MouseCursor::new();
-
-/// Ширина окна. The window width.
-pub static mut window_width:f32=0f32;
-/// Высота окна. The window height.
-pub static mut window_height:f32=0f32;
-/// Центр окна. The window center. [x, y]
-pub static mut window_center:[f32;2]=[0f32;2];
-
-/// Счётчик кадров в секунду. A frame per seconds counter. feature = "fps_counter"
-/// 
-/// Обновляется раз в секунду. Updates once a second.
-#[cfg(feature="fps_counter")]
-pub static mut fps:u32=0;
 
 /*
     EventLoop - минимум четыре шага:
@@ -140,15 +132,14 @@ pub static mut fps:u32=0;
 /// #
 /// 
 /// A simple fps counter. The value updates every second.
-pub struct Window{
+pub struct AppWindow{
     display:Display,
     graphics:Graphics2D,
 
     event_loop:EventLoop<()>,
-    events:VecDeque<WindowEvent>,
 
-    #[cfg(feature="auto_hide")]
-    events_handler:fn(&mut Self),
+    // #[cfg(feature="auto_hide")]
+    // events_handler:fn(&mut Self,),
 
     #[cfg(feature="fps_counter")]
     frames_passed:u32,
@@ -162,15 +153,14 @@ pub struct Window{
     mouse_icon:MouseCursorIcon,
 }
 
-use WindowEvent::*;
 
-impl Window{
+impl AppWindow{
     //pub fn new_settings(settigs:WindowSettings)->Result<Window,DisplayCreationError>{}
 
     /// Создаёт окно. Принимает функцию для настройки.
     ///
     /// Creates the window. 
-    pub fn new<F>(setting:F)->Result<Window,DisplayCreationError>
+    pub fn new<F>(setting:F)->Result<AppWindow,DisplayCreationError>
             where F:FnOnce(Vec<MonitorHandle>,&mut WindowSettings){
         let event_loop=EventLoop::new();
         let monitors=event_loop.available_monitors().collect();
@@ -191,7 +181,7 @@ impl Window{
                 =window_settings.devide();
 
         #[cfg(feature="mouse_cursor_icon")]
-        let window=Window::raw(
+        let window=AppWindow::raw(
             window_builder,
             context_builder,
             graphics_settings,
@@ -225,7 +215,7 @@ impl Window{
         mouse_cursor_icon_path:P,
         #[cfg(feature="mouse_cursor_icon")]
         mouse_cursor_icon_range:Range<usize>,
-    )->Result<Window,DisplayCreationError>{
+    )->Result<AppWindow,DisplayCreationError>{
         // Создание окна и привязывание графической библиотеки
         let display=Display::new(window_builder,context_builder,&event_loop)?;
 
@@ -268,15 +258,14 @@ impl Window{
             display,
 
             event_loop,
-            events:VecDeque::with_capacity(32),
 
             #[cfg(feature="fps_counter")]
             frames_passed:0u32,
             #[cfg(feature="fps_counter")]
             time:Instant::now(),
 
-            #[cfg(feature="auto_hide")]
-            events_handler:Window::event_listener,
+            // #[cfg(feature="auto_hide")]
+            // events_handler:AppWindow::event_listener,
 
             alpha_channel:0f32,
             smooth:0f32,
@@ -300,23 +289,9 @@ impl Window{
     pub fn available_monitors(&self)->impl std::iter::Iterator<Item=MonitorHandle>{
         self.event_loop.available_monitors()
     }
-
-    /// Возвращает следующее событие окна.
-    /// 
-    /// Returns next window event.
-    pub fn next_event(&mut self)->Option<WindowEvent>{
-        if self.events.is_empty(){
-            #[cfg(feature="auto_hide")]
-            (self.events_handler)(self); // Вызов функции обработки событий
-
-            #[cfg(not(feature="auto_hide"))]
-            self.event_listener();
-        }
-        self.events.pop_front()
-    }
 }
 
-impl Window{
+impl AppWindow{
     pub fn set_inner_size<S:Into<Size>>(&self,size:S){
         self.display.gl_window().window().set_inner_size(size)
     }
@@ -397,7 +372,7 @@ impl Window{
 }
 
 /// # Версии OpenGL. OpenGL versions.
-impl Window{
+impl AppWindow{
     #[inline(always)]
     pub fn get_supported_glsl_version(&self)->Version{
         self.display.get_supported_glsl_version()
@@ -409,7 +384,7 @@ impl Window{
 }
 
 /// # Функции для сглаживания. Functions for smoothing.
-impl Window{
+impl AppWindow{
     /// Set alpha channel for smooth drawing.
     pub fn set_alpha(&mut self,alpha:f32){
         self.alpha_channel=alpha;
@@ -429,7 +404,7 @@ impl Window{
 }
 
 /// # Функции для рисования. Drawing functions.
-impl Window{
+impl AppWindow{
     /// Даёт прямое управление над кадром.
     /// 
     /// Gives frame to raw drawing.
@@ -487,7 +462,7 @@ impl Window{
 }
 
 /// # Дополнительные функции. Additional functions.
-impl Window{
+impl AppWindow{
     /// Возвращает скриншот.
     /// 
     /// Returns a screenshot.
@@ -535,15 +510,19 @@ impl Window{
 /// Функции обработки событий.
 /// 
 /// Event handlers.
-impl Window{
+impl AppWindow{
+    pub fn run<P:AppPage>(&mut self,page:&mut P){
+        self.event_listener(page)
+    }
+
     /// Обычная функция обработки событий
-    fn event_listener(&mut self){
+    fn event_listener<P:AppPage>(&mut self,page:&mut P){
         let el=&mut self.event_loop as *mut EventLoop<()>;
         let event_loop=unsafe{&mut *el};
 
         event_loop.run_return(|event,_,control_flow|{
             *control_flow=ControlFlow::Wait;
-            let next_event=match event{
+            match event{
                 Event::NewEvents(_)=>return, // Игнорирование
 
                 // События окна
@@ -552,7 +531,7 @@ impl Window{
                         // Закрытие окна
                         GWindowEvent::CloseRequested=>{
                             *control_flow=ControlFlow::Exit;
-                            Exit
+                            page.on_close();
                         }
 
                         // Изменение размера окна
@@ -564,11 +543,11 @@ impl Window{
                             #[cfg(feature="mouse_cursor_icon")]
                             self.mouse_icon.update(&mut self.graphics);
 
-                            Resize([size.width,size.height])
+                            page.on_resized([size.width,size.height])
                         }
 
                         // Сдвиг окна
-                        GWindowEvent::Moved(pos)=>Moved([pos.x,pos.y]),
+                        //GWindowEvent::Moved(pos)=>Moved([pos.x,pos.y]),
 
                         // Сдвиг мыши (сдвиг за пределы окна игнорируется)
                         GWindowEvent::CursorMoved{position,..}=>unsafe{
@@ -581,11 +560,11 @@ impl Window{
 
                             mouse_cursor.set_position(position);
 
-                            MouseMovementDelta([dx,dy])
+                            //MouseMovementDelta([dx,dy])
                         }
 
                         // Прокрутка колёсика мыши
-                        GWindowEvent::MouseWheel{delta,..}=>MouseWheelScroll(delta),
+                        //GWindowEvent::MouseWheel{delta,..}=>MouseWheelScroll(delta),
 
                         // Обработка действий с кнопками мыши (только стандартные кнопки)
                         GWindowEvent::MouseInput{button,state,..}=>{
@@ -595,11 +574,11 @@ impl Window{
                                         #[cfg(feature="mouse_cursor_icon")]
                                         self.mouse_icon.pressed(&mut self.graphics);
 
-                                        MousePressed(MouseButton::Left)
+                                        page.on_mouse_pressed(MouseButton::Left)
                                     }
-                                    GMouseButton::Middle=>MousePressed(MouseButton::Middle),
-                                    GMouseButton::Right=>MousePressed(MouseButton::Right),
-                                    GMouseButton::Other(_)=>return
+                                    GMouseButton::Middle=>page.on_mouse_pressed(MouseButton::Middle),
+                                    GMouseButton::Right=>page.on_mouse_pressed(MouseButton::Right),
+                                    GMouseButton::Other(_)=>{}
                                 }
                             }
                             else{
@@ -608,11 +587,11 @@ impl Window{
                                         #[cfg(feature="mouse_cursor_icon")]
                                         self.mouse_icon.released(&mut self.graphics);
 
-                                        MouseReleased(MouseButton::Left)
+                                        page.on_mouse_released(MouseButton::Left)
                                     }
-                                    GMouseButton::Middle=>MouseReleased(MouseButton::Middle),
-                                    GMouseButton::Right=>MouseReleased(MouseButton::Right),
-                                    GMouseButton::Other(_)=>return
+                                    GMouseButton::Middle=>page.on_mouse_released(MouseButton::Middle),
+                                    GMouseButton::Right=>page.on_mouse_released(MouseButton::Right),
+                                    GMouseButton::Other(_)=>{}
                                 }
                             }
                         }
@@ -628,7 +607,7 @@ impl Window{
 
                             if input.state==ElementState::Pressed{
                                 
-                                KeyboardPressed(key)
+                                page.on_keyboard_pressed(key)
                             }
                             else{
                                 #[cfg(feature="mouse_cursor_icon")]
@@ -636,16 +615,13 @@ impl Window{
                                     self.switch_cursor_visibility()
                                 }
 
-                                KeyboardReleased(key)
+                                page.on_keyboard_released(key)
                             }
                         }
 
                         // Получение вводимых букв
-                        GWindowEvent::ReceivedCharacter(character)=>if character.is_ascii_control(){
-                            return
-                        }
-                        else{
-                            CharacterInput(character)
+                        GWindowEvent::ReceivedCharacter(character)=>if !character.is_ascii_control(){
+                            page.on_character_recieve(character)
                         }
 
                         // При потере фокуса
@@ -654,23 +630,20 @@ impl Window{
                             *control_flow=ControlFlow::Exit;
                             self.lost_focus()
                         }
-                        else{
-                            WindowEvent::Hide(false) // Передача события во внешнее управление
-                        }
 
                         #[cfg(not(feature="auto_hide"))]
-                        GWindowEvent::Focused(f)=>WindowEvent::Focused(f),
+                        // GWindowEvent::Focused(f)=>WindowEvent::Focused(f),
 
-                        GWindowEvent::DroppedFile(path)=>DroppedFile(path),
-                        GWindowEvent::HoveredFile(path)=>HoveredFile(path),
-                        GWindowEvent::HoveredFileCancelled=>HoveredFileCancelled,
+                        // GWindowEvent::DroppedFile(path)=>DroppedFile(path),
+                        // GWindowEvent::HoveredFile(path)=>HoveredFile(path),
+                        // GWindowEvent::HoveredFileCancelled=>HoveredFileCancelled,
 
-                        _=>return // Игнорирование остальных событий
+                        _=>{} // Игнорирование остальных событий
                     }
                 }
 
-                Event::Suspended=>Suspended,
-                Event::Resumed=>Resumed,
+                Event::Suspended=>{},
+                Event::Resumed=>{},
 
                 // Запрос на рендеринг
                 Event::MainEventsCleared=>{
@@ -682,36 +655,25 @@ impl Window{
                 Event::RedrawRequested(_)=>{
                     #[cfg(feature="fps_counter")]
                     self.count_fps();
-                    *control_flow=ControlFlow::Exit;
-                    Draw
+
+                    page.on_redraw_requested(self);
                 }
 
-                // После вывода кадра
-                Event::RedrawEventsCleared=>{
-                    
-                    return
-                } // Игнорирование
-
-                // Закрытия цикла обработки событий
-                Event::LoopDestroyed=>return, // Игнорирование
-
-                _=>return  // Игнорирование остальных событий
-            };
-
-            self.events.push_back(next_event)
+                _=>{}
+            }
         });
     }
 
     /// Функция ожидания получения фокуса - перехватывает управление до получения окном фокуса
     #[cfg(feature="auto_hide")]
-    fn wait_until_focused(&mut self){
+    fn wait_until_focused<P:AppPage>(&mut self,page:&mut P){
         let el=&mut self.event_loop as *mut EventLoop<()>;
         let event_loop=unsafe{&mut *el};
 
         event_loop.run_return(|event,_,control_flow|{
             *control_flow=ControlFlow::Wait;
 
-            let event=match event{
+            match event{
                 Event::WindowEvent{event,..}=>{
                     match event{
                         GWindowEvent::Resized(size)=>unsafe{
@@ -720,12 +682,13 @@ impl Window{
                             window_width=size.width as f32;
                             window_height=size.height as f32;
                             window_center=[window_width/2f32,window_height/2f32];
-                            return
+
+                            page.on_resized([size.width,size.height])
                         }
 
                         GWindowEvent::CloseRequested=>{ // Остановка цикла обработки событий,
                             *control_flow=ControlFlow::Exit;
-                            Exit // Передача события во внешнее управление
+                            page.on_close()
                         }
 
                         // При получении фокуса
@@ -738,12 +701,11 @@ impl Window{
                     }
                 }
 
-                Event::Suspended=>Suspended,
-                Event::Resumed=>Resumed,
+                Event::Suspended=>page.on_suspended(),
+                Event::Resumed=>page.on_resumed(),
 
                 _=>return
-            };
-            self.events.push_back(event);
+            }
         })
     }
 }
@@ -751,19 +713,15 @@ impl Window{
 /// Функции внутренней обработки событий.
 /// 
 /// Inner event handling functions.
-impl Window{
+impl AppWindow{
     #[cfg(feature="auto_hide")]
-    fn lost_focus(&mut self)->WindowEvent{
+    fn lost_focus(&mut self){
         self.display.gl_window().window().set_minimized(true); // Сворацивание окна
-        self.events_handler=Window::wait_until_focused; // Смена фукции обработки событий
-
-        WindowEvent::Hide(true) // Передача события во внешнее управление
     }
 
     /// При получении фокуса
     #[cfg(feature="auto_hide")]
-    fn gained_focus(&mut self)->WindowEvent{
-        self.events_handler=Window::event_listener; // Смена фукции обработки событий
+    fn gained_focus(&mut self){
         self.display.gl_window().window().set_minimized(false);
 
         let size=self.display.gl_window().window().inner_size();
@@ -772,8 +730,6 @@ impl Window{
             window_height=size.height as f32;
             window_center=[window_width/2f32,window_height/2f32];
         }
-
-        Hide(false) // Передача события во внешнее управление
     }
 
     #[cfg(feature="fps_counter")]
@@ -811,4 +767,22 @@ fn default_draw_parameters<'a>()->DrawParameters<'a>{
     draw_parameters.backface_culling=BackfaceCullingMode::CullingDisabled;
 
     draw_parameters
+}
+
+pub trait AppPage{
+    fn on_close(&mut self);
+    fn on_redraw_requested(&mut self,window:&mut AppWindow);
+
+    fn on_mouse_pressed(&mut self,button:MouseButton);
+    fn on_mouse_released(&mut self,button:MouseButton);
+
+    fn on_keyboard_pressed(&mut self,button:KeyboardButton);
+    fn on_keyboard_released(&mut self,button:KeyboardButton);
+
+    fn on_character_recieve(&mut self,character:char);
+
+    fn on_resized(&mut self,new_size:[u32;2]);
+
+    fn on_suspended(&mut self);
+    fn on_resumed(&mut self);
 }
