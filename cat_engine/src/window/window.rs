@@ -647,7 +647,8 @@ impl Window{
                         // При потере фокуса
                         #[cfg(feature="auto_hide")]
                         GWindowEvent::Focused(f)=>if !f{
-                            self.lost_focus(control_flow)
+                            *control_flow=ControlFlow::Exit;
+                            self.lost_focus()
                         }
                         else{
                             WindowEvent::Hide(false) // Передача события во внешнее управление
@@ -726,7 +727,7 @@ impl Window{
                         // При получении фокуса
                         GWindowEvent::Focused(_)=>{
                             *control_flow=ControlFlow::Exit;
-                            self.gained_focus(control_flow)
+                            self.gained_focus()
                         }
 
                         _=>return
@@ -748,18 +749,16 @@ impl Window{
 /// Inner event handling functions.
 impl Window{
     #[cfg(feature="auto_hide")]
-    fn lost_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
+    fn lost_focus(&mut self)->WindowEvent{
         self.display.gl_window().window().set_minimized(true); // Сворацивание окна
         self.events_handler=Window::wait_until_focused; // Смена фукции обработки событий
-
-        *control_flow=ControlFlow::Exit; // Флаг завершения цикла обработки событий
 
         WindowEvent::Hide(true) // Передача события во внешнее управление
     }
 
     /// При получении фокуса
     #[cfg(feature="auto_hide")]
-    fn gained_focus(&mut self,control_flow:&mut ControlFlow)->WindowEvent{
+    fn gained_focus(&mut self)->WindowEvent{
         self.events_handler=Window::event_listener; // Смена фукции обработки событий
         self.display.gl_window().window().set_minimized(false);
 
@@ -769,8 +768,6 @@ impl Window{
             window_height=size.height as f32;
             window_center=[window_width/2f32,window_height/2f32];
         }
-
-        *control_flow=ControlFlow::Exit; // Остановка цикла обработки событий
 
         Hide(false) // Передача события во внешнее управление
     }
@@ -784,7 +781,6 @@ impl Window{
         if Duration::from_secs(1)<time_passed{
             unsafe{
                 fps=self.frames_passed;
-                println!("fps = {}",fps);
             }
             self.frames_passed=0;
             self.time=current_time;
