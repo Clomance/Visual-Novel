@@ -128,6 +128,10 @@ impl MouseCursorIcon{
         }
     }
 
+    pub fn update(&self,graphics:&mut Graphics2D){
+        graphics.rewrite_range_image(0,self.image_base.clone()).unwrap();
+    }
+
     #[inline(always)]
     pub fn set_visible(&mut self,visible:bool){
         self.visible=visible

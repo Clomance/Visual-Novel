@@ -71,7 +71,7 @@ pub static mut window_height:f32=0f32;
 /// Центр окна. The window center. [x, y]
 pub static mut window_center:[f32;2]=[0f32;2];
 
-/// Счётчик кадров в секунду. A frame per seconds counter.
+/// Счётчик кадров в секунду. A frame per seconds counter. feature = "fps_counter"
 /// 
 /// Обновляется раз в секунду. Updates once a second.
 #[cfg(feature="fps_counter")]
@@ -560,6 +560,10 @@ impl Window{
                             window_width=size.width as f32;
                             window_height=size.height as f32;
                             window_center=[window_width/2f32,window_height/2f32];
+
+                            #[cfg(feature="mouse_cursor_icon")]
+                            self.mouse_icon.update(&mut self.graphics);
+
                             Resize([size.width,size.height])
                         }
 
