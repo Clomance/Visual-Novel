@@ -41,10 +41,12 @@ impl LoadingScreen{
         // Установка области для быстрой отрисовки иконки загрузки
         let range=window.graphics().bind_image(4..8usize,image_base.clone()).unwrap();
 
-        image_base.x1*=2f32;
-        image_base.y1*=2f32;
-        image_base.x2*=2f32;
-        image_base.y2*=2f32;
+        image_base.set_rect(unsafe{[
+            (window_width-400f32)/2f32,
+            (window_height-400f32)/2f32,
+            400f32,
+            400f32
+        ]});
 
         window.graphics().bind_rotating_image(8..12usize,image_base).unwrap();
 
