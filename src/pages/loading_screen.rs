@@ -8,8 +8,7 @@ use lib::colours::White;
 
 use cat_engine::{
     // statics
-    window_width,
-    window_height,
+    window_center,
     // structs
     Window,
     image::{ImageBase,Texture},
@@ -32,8 +31,8 @@ pub struct LoadingScreen{
 impl LoadingScreen{
     pub fn new(window:&mut Window)->LoadingScreen{
         let mut image_base=ImageBase::new(White,unsafe{[
-            (window_width-200f32)/2f32,
-            (window_height-200f32)/2f32,
+            window_center[0]-100f32,
+            window_center[1]-100f32,
             200f32,
             200f32
         ]});
@@ -42,8 +41,8 @@ impl LoadingScreen{
         let range=window.graphics().bind_image(4..8usize,image_base.clone()).unwrap();
 
         image_base.set_rect(unsafe{[
-            (window_width-400f32)/2f32,
-            (window_height-400f32)/2f32,
+            window_center[0]-200f32,
+            window_center[1]-200f32,
             400f32,
             400f32
         ]});
@@ -164,6 +163,7 @@ impl LoadingScreen{
             self.range+1,
             &self.gear,
             White,
+            unsafe{window_center},
             angle,
             parameters
         );
