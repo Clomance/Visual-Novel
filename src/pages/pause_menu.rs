@@ -26,8 +26,10 @@ use cat_engine::{
     MouseButton,
     KeyboardButton,
     audio::Audio,
-    // structs
+    // traits
     Window,
+    // structs
+    DefaultWindow,
     graphics::Rectangle,
 };
 
@@ -51,7 +53,7 @@ impl<'a> PauseMenu<'a>{
         }
     }
 
-    pub unsafe fn start(mut self,window:&mut Window,music:&Audio)->Game{
+    pub unsafe fn start(mut self,window:&mut DefaultWindow,music:&Audio)->Game{
         'page:loop{
             match self.smooth(window){
                 Game::Exit=>return Game::Exit,
@@ -66,7 +68,7 @@ impl<'a> PauseMenu<'a>{
                     WindowEvent::Draw=>window.draw(|c,g|{
                         g.clear_colour(background_color);
                         self.menu.draw(c,g);
-                    }),
+                    }).unwrap(),
 
 
                     WindowEvent::MousePressed(button)=>match button{
@@ -115,7 +117,7 @@ impl<'a> PauseMenu<'a>{
         }
     }
 
-    pub unsafe fn smooth(&mut self,window:&mut Window)->Game{
+    pub unsafe fn smooth(&mut self,window:&mut DefaultWindow)->Game{
         window.set_new_smooth(page_smooth);
 
         let mut background=Rectangle::new(window_rect(),background_color);
@@ -129,7 +131,7 @@ impl<'a> PauseMenu<'a>{
                         background.colour[3]=alpha;
                         background.draw(c,g);
                         self.menu.draw_smooth(alpha,c,g);
-                    }){
+                    }).unwrap(){
                         break
                     }
                 }

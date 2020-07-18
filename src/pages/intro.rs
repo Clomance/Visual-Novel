@@ -25,8 +25,10 @@ use cat_engine::{
     // enums
     WindowEvent,
     KeyboardButton,
-    // structs
+    // traits
     Window,
+    // structs
+    DefaultWindow,
     graphics::Rectangle,
 };
 
@@ -57,7 +59,7 @@ impl<'b> Intro<'b>{
         }
     }
 
-    pub unsafe fn start(mut self,window:&mut Window)->Game{
+    pub unsafe fn start(mut self,window:&mut DefaultWindow)->Game{
         if self.smooth(window)==Game::Exit{
             return Game::Exit
         }
@@ -73,7 +75,7 @@ impl<'b> Intro<'b>{
                         g.clear_colour(background_color);
                         self.text_view.set_alpha_channel(alpha);
                         self.text_view.draw(c,g);
-                    }){
+                    }).unwrap(){
                         break
                     }
                 }
@@ -102,7 +104,7 @@ impl<'b> Intro<'b>{
                         g.clear_colour(background_color);
                         self.text_view.set_alpha_channel(alpha);
                         self.text_view.draw(c,g);
-                    }){
+                    }).unwrap(){
                         break
                     }
                 }
@@ -124,7 +126,7 @@ impl<'b> Intro<'b>{
         Game::ContinueGamePlay
     }
 
-    pub unsafe fn smooth(&mut self,window:&mut Window)->Game{
+    pub unsafe fn smooth(&mut self,window:&mut DefaultWindow)->Game{
         window.set_new_smooth(page_smooth);
 
         let mut background=Rectangle::new(window_rect(),background_color);
@@ -138,7 +140,7 @@ impl<'b> Intro<'b>{
                     if 1f32<(*window).draw_smooth(|alpha,p,g|{
                         background.colour[3]=alpha;
                         background.draw(p,g);
-                    }){
+                    }).unwrap(){
                         break
                     }
                 }

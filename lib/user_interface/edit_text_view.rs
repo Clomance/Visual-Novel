@@ -113,7 +113,7 @@ impl<'a> Drawable for EditTextView<'a>{
 
     fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.background.draw(draw_parameters,graphics);
-        self.base.draw(&self.line,draw_parameters,graphics,&self.glyphs)
+        self.base.draw(&self.line,draw_parameters,graphics,&self.glyphs).unwrap();
     }
 }
 

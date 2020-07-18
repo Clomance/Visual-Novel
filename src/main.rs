@@ -17,8 +17,11 @@ use cat_engine::{
     WindowEvent,
     MouseButton,
     KeyboardButton,
-    // structs
+    // traits
     Window,
+    // structs
+    DefaultWindow,
+    PagedWindow,
     graphics::Graphics,
     text::Glyphs,
     glium::{
@@ -77,7 +80,7 @@ macro_rules! Dialogue_font {
 }
 
 
-#[derive(Eq,PartialEq)]
+#[derive(Eq,PartialEq,Clone)]
 pub enum Game{
     Current,
     Back,
@@ -115,12 +118,12 @@ fn main(){
     }
 
     // Настройка и создание окна и загрузка функций OpenGL
-    let mut window:Window=match Window::new(|mut monitors,window_settings|{
+    let mut window:PagedWindow=match PagedWindow::new(|mut monitors,window_settings|{
         let mut path=PathBuf::new();
         path.push("./resources/images/mouse_icon.png");
-        window_settings.mouse_cursor_icon_path=path;
+        window_settings.mouse_cursor_icon_settings.path=path;
 
-        window_settings.mouse_cursor_icon_range=12..16;
+        window_settings.mouse_cursor_icon_settings.range=12..16;
 
         // Установка полноэкранного режима для нужного экрана
         let monitor=unsafe{Settings.monitor};
@@ -138,7 +141,9 @@ fn main(){
 
         let icon=load_window_icon();
 
-        window_settings.initial_colour=Some(Black);
+        window_settings.general.initial_colour=Some(White);
+
+        window_settings.general.updates_per_second=50;
 
         window_settings.inner_size=Some(Size::Physical(size));
         window_settings.title=game_name.to_string();
@@ -226,12 +231,14 @@ fn main(){
         };
 
         // Экран загрузки
-        match LoadingScreen::new(&mut window).start(&mut window,loading_resources_thread){
-            Game::Exit=>{
+        {
+            let mut loading_screen=LoadingScreen::new(&mut window,loading_resources_thread);
+            if Game::Exit==window.run_page(&mut loading_screen){
                 return
-            },
-            _=>{}
+            }
         }
+
+        let mut window=window.into_default_window();
 
         let texture_base=&_textures; // "Безопасная" ссылка на Хранилище текстур
         let dialogues=&_dialogues; // "Безопасная" ссылка на диалоги
@@ -298,7 +305,7 @@ fn main(){
                                     characters_view.draw_smooth(alpha,c,g);
                                     dialogue_box.set_alpha_channel(alpha);
                                     dialogue_box.draw(c,g);
-                                }){
+                                }).unwrap(){
                                     break 'opening_page
                                 }
                             }
@@ -417,7 +424,7 @@ fn main(){
                                     characters_view.draw_smooth(alpha,p,g);
                                     dialogue_box.set_alpha_channel(alpha);
                                     dialogue_box.draw_without_text(p,g);
-                                }){
+                                }).unwrap(){
                                     break 'page
                                 }
                             }
@@ -453,7 +460,7 @@ fn main(){
                     WindowEvent::Draw=>{ // Рендеринг
                         if 1f32<window.draw_smooth(|alpha,p,g|{
                             wallpaper.draw_smooth(alpha,p,g);
-                        }){
+                        }).unwrap(){
                             break 'smooth_ending
                         }
                     }
@@ -477,7 +484,7 @@ fn main(){
                     // Рендеринг
                     WindowEvent::Draw=>window.draw(|p,g|{
                         wallpaper.draw(p,g)
-                    }),
+                    }).unwrap(),
 
                     WindowEvent::MouseReleased(_button)=>break 'gameplay_ending,
                     WindowEvent::KeyboardReleased(button)=>{
@@ -499,8 +506,8 @@ fn main(){
     }
 }
 
-pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut Window,f:F)->Game{
-    window.set_cursor_visible(false); // Отключение курсора
+pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut DefaultWindow,f:F)->Game{
+    window.set_user_cursor_visible(false); // Отключение курсора
 
     while let Some(event)=window.next_event(){
         match event{
@@ -519,7 +526,7 @@ pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut 
         window.save_screenshot(path)
     }
 
-    window.set_cursor_visible(true);
+    window.set_user_cursor_visible(true);
 
     while let Some(event)=window.next_event(){
         match event{

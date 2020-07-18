@@ -22,15 +22,18 @@ use lib::{
 use cat_engine::{
     // statics
     mouse_cursor,
-    // structs
-    Window,
-    graphics::Graphics,
     // enums
     WindowEvent,
     KeyboardButton,
     MouseButton,
     glium::DrawParameters,
     audio::Audio,
+    // traits
+    Window,
+    // structs
+    DefaultWindow,
+    graphics::Graphics,
+    
 };
 
 const page_smooth:f32=default_page_smooth; // Сглаживание переходов - 1 к количеству кадров перехода
@@ -92,7 +95,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
         }
     }
 
-    pub fn start(mut self,window:&mut Window,music:&Audio)->Game{
+    pub fn start(mut self,window:&mut DefaultWindow,music:&Audio)->Game{
         self.mouse_shift(unsafe{
             mouse_cursor.center_radius()
         });
@@ -109,7 +112,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                     //Рендеринг
                     WindowEvent::Draw=>window.draw(|c,g|{
                         self.draw(c,g);
-                    }),
+                    }).unwrap(),
                     
                     // Движение мышки
                     WindowEvent::MouseMovementDelta(shift)=>self.mouse_shift(shift),
@@ -179,7 +182,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
         Game::Exit
     }
 
-    pub fn smooth(&mut self,window:&mut Window)->Game{
+    pub fn smooth(&mut self,window:&mut DefaultWindow)->Game{
         window.set_new_smooth(page_smooth);
 
         while let Some(event)=window.next_event(){
@@ -191,7 +194,7 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
                 WindowEvent::Draw=>{
                     if 1f32<window.draw_smooth(|alpha,c,g|{
                         self.draw_smooth(alpha,c,g);
-                    }){
+                    }).unwrap(){
                         break
                     }
                 }

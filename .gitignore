@@ -1,5 +1,6 @@
-target/*
+target
 Cargo.lock
-tmp/*
-.vscode/launch.json
-settings/*
+tmp
+.vscode
+settings
+screenshots

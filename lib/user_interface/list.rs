@@ -152,7 +152,7 @@ impl<'b> List<'b>{
         self.base.draw(draw_parameters,graphics);
         if let Some(item)=self.chosen_item{
             let text=&self.items[item];
-            self.text.draw(text,draw_parameters,graphics,self.glyphs)
+            self.text.draw(text,draw_parameters,graphics,self.glyphs).unwrap();
         }
     }
 

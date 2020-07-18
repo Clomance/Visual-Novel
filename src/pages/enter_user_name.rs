@@ -28,8 +28,10 @@ use cat_engine::{
     WindowEvent,
     MouseButton,
     KeyboardButton,
-    // structs
+    // traits
     Window,
+    // structs
+    DefaultWindow,
 };
 
 // Шаг альфа-канала, для плавного перехода
@@ -67,7 +69,7 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
         }
     }
 
-    pub fn start(mut self,window:&mut Window)->Game{
+    pub fn start(mut self,window:&mut DefaultWindow)->Game{
         match self.smooth(window){
             Game::Exit=>return Game::Exit,
             Game::Back=>return Game::Back,
@@ -96,7 +98,7 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                     self.main_menu.draw(c,g);
                     self.input.draw(c,g);
                     self.head.draw(c,g);
-                }),
+                }).unwrap(),
 
                 // Ввод символов
                 WindowEvent::CharacterInput(character)=>self.input.push_char(character),
@@ -134,7 +136,7 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
     }
 
     // Сглаживание перехода к странице (открытие)
-    pub fn smooth(&mut self,window:&mut Window)->Game{
+    pub fn smooth(&mut self,window:&mut DefaultWindow)->Game{
         window.set_new_smooth(page_smooth);
 
         while let Some(event)=window.next_event(){
@@ -149,7 +151,7 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
 
                         self.input.draw_smooth(alpha,c,g);
                         self.head.draw_smooth(alpha,c,g);
-                    }){
+                    }).unwrap(){
                         break
                     }
                 }

@@ -8,6 +8,7 @@ use cat_engine::{
     Colour,
     // structs
     graphics::Graphics,
+    DefaultWindow,
     Window,
     image::{
         ImageBase,
@@ -35,7 +36,7 @@ pub struct Wallpaper{
 }
 
 impl Wallpaper{
-    pub fn new(image:&RgbaImage,window:&mut Window)->Wallpaper{
+    pub fn new(image:&RgbaImage,window:&mut DefaultWindow)->Wallpaper{
         unsafe{
             let dx=window_width/(wallpaper_movement_scale*2f32);
             let dy=window_height/(wallpaper_movement_scale*2f32);

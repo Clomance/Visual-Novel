@@ -35,8 +35,10 @@ use cat_engine::{
     MouseButton,
     KeyboardButton,
     audio::Audio,
-    // structs
+    // traits
     Window,
+    // structs
+    DefaultWindow,
     graphics::Rectangle,
 };
 
@@ -56,7 +58,7 @@ pub struct SettingsPage<'a>{
 }
 
 impl<'a> SettingsPage<'a>{
-    pub unsafe fn new(window:&Window)->SettingsPage<'a>{
+    pub unsafe fn new(window:&DefaultWindow)->SettingsPage<'a>{
         let head_settings=TextViewSettings::new("Настройки",[
                     0f32,
                     0f32,
@@ -67,7 +69,7 @@ impl<'a> SettingsPage<'a>{
                 .text_colour(White);
 
         let mut monitors:Vec<String>=Vec::new();
-        let available_monitors=window.available_monitors();
+        let available_monitors=window.display().gl_window().window().available_monitors();
 
         for (c,_) in available_monitors.enumerate(){
             monitors.push(format!("Монитор {}",c+1))
@@ -143,7 +145,7 @@ impl<'a> SettingsPage<'a>{
         }
     }
 
-    pub unsafe fn start(mut self,window:&mut Window,music:&Audio)->Game{
+    pub unsafe fn start(mut self,window:&mut DefaultWindow,music:&Audio)->Game{
 
         match self.smooth(window){
             Game::Back=>return Game::Back,
@@ -174,7 +176,7 @@ impl<'a> SettingsPage<'a>{
                     self.volume.draw(c,g);
 
                     self.back_button.draw(c,g);
-                }),
+                }).unwrap(),
 
                 WindowEvent::MousePressed(button)=>match button{
                     MouseButton::Left=>{
@@ -240,7 +242,7 @@ impl<'a> SettingsPage<'a>{
     }
 
     // Плавное открытие
-    pub unsafe fn smooth(&mut self,window:&mut Window)->Game{
+    pub unsafe fn smooth(&mut self,window:&mut DefaultWindow)->Game{
         window.set_new_smooth(page_smooth);
 
         let mut background=Rectangle::new(window_rect(),Settings_page_colour);
@@ -263,7 +265,7 @@ impl<'a> SettingsPage<'a>{
                         self.volume.draw_smooth(alpha,c,g);
 
                         self.back_button.draw_smooth(alpha,c,g);
-                    }){
+                    }).unwrap(){
                         break
                     }
                 }
