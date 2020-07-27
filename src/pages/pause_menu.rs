@@ -30,7 +30,8 @@ use cat_engine::{
     Window,
     // structs
     DefaultWindow,
-    graphics::Rectangle,
+    shapes::Rectangle,
+    graphics::SimpleObject,
 };
 
 const page_smooth:f32=default_page_smooth;
@@ -62,10 +63,10 @@ impl<'a> PauseMenu<'a>{
             }
             while let Some(event)=window.next_event(){
                 match event{
-                    WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                    WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
 
                     // Рендеринг
-                    WindowEvent::Draw=>window.draw(|c,g|{
+                    WindowEvent::RedrawRequested=>window.draw(|c,g|{
                         g.clear_colour(background_color);
                         self.menu.draw(c,g);
                     }).unwrap(),
@@ -124,9 +125,9 @@ impl<'a> PauseMenu<'a>{
 
         while let Some(event)=window.next_event(){
             match event{
-                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::Draw=>{ // Рендеринг
+                WindowEvent::RedrawRequested=>{ // Рендеринг
                     if 1f32<window.draw_smooth(|alpha,c,g|{
                         background.colour[3]=alpha;
                         background.draw(c,g);

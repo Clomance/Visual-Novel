@@ -39,7 +39,8 @@ use cat_engine::{
     Window,
     // structs
     DefaultWindow,
-    graphics::Rectangle,
+    shapes::Rectangle,
+    graphics::SimpleObject,
 };
 
 
@@ -155,7 +156,7 @@ impl<'a> SettingsPage<'a>{
 
         while let Some(event)=window.next_event(){
             match event{
-                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
 
                 WindowEvent::MouseMovementDelta(_)=>{
                     self.signs_per_sec.grab();
@@ -163,7 +164,7 @@ impl<'a> SettingsPage<'a>{
                 }
 
                 //Рендеринг
-                WindowEvent::Draw=>window.draw(|c,g|{
+                WindowEvent::RedrawRequested=>window.draw(|c,g|{
                     g.clear_colour(background_color);
 
                     self.head.draw(c,g);
@@ -249,9 +250,9 @@ impl<'a> SettingsPage<'a>{
 
         while let Some(event)=window.next_event(){
             match event{
-                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::Draw=>{ //Рендеринг
+                WindowEvent::RedrawRequested=>{ //Рендеринг
                     if 1f32<window.draw_smooth(|alpha,c,g|{
                         background.colour[3]=alpha;
                         background.draw(c,g);

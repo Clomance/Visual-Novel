@@ -4,10 +4,8 @@ use cat_engine::{
     // statics
     window_width,
     window_height,
-    // types,
-    Colour,
     // structs
-    graphics::Graphics,
+    graphics::{Graphics,Graphics2D},
     DefaultWindow,
     Window,
     image::{
@@ -29,9 +27,7 @@ pub const wallpaper_movement_scale:f32=16f32;
 
 // Подвижные обои
 pub struct Wallpaper{
-    texture:Texture,
-    range:usize,
-    filter:Colour,
+    index:usize,
     shift:[f32;2],
 }
 
@@ -49,12 +45,12 @@ impl Wallpaper{
 
             let image_base=ImageBase::new(White,rect);
 
-            let range=window.graphics().bind_image(4..8usize,image_base).unwrap();
+            let texture=Texture::from_image(image,window.display()).unwrap();
+
+            let index=window.graphics2d().add_textured_object(&image_base,texture).unwrap();
 
             Self{
-                texture:Texture::from_image(image,window.display()).unwrap(),
-                range,
-                filter:White,
+                index,
                 shift:[0f32;2]
             }
         }
@@ -70,22 +66,17 @@ impl Wallpaper{
 
     // Обновляет картинка (она должна быть такого же размера, как и предыдущая)
     #[inline(always)]
-    pub fn update_image(&mut self,image:&RgbaImage){
-        self.texture.update(image);
+    pub fn update_image(&mut self,image:&RgbaImage,graphics:&mut Graphics2D){
+        graphics.get_textured_object_texture(self.index).update(image);
     }
 
     #[inline(always)]
-    pub fn update_image_path<P:AsRef<Path>>(&mut self,path:P,size:[f32;2]){
-        self.texture.update(&load_wallpaper_image(path,size[0],size[1]));
+    pub fn update_image_path<P:AsRef<Path>>(&mut self,path:P,size:[f32;2],graphics:&mut Graphics2D){
+        self.update_image(&load_wallpaper_image(path,size[0],size[1]),graphics);
     }
 
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        graphics.draw_range_image(
-            self.range,
-            &self.texture,
-            self.filter,
-            draw_parameters
-        );
+    pub fn draw(&self,draw_parameters:&DrawParameters,graphics:&mut Graphics){
+        graphics.draw_textured_object(self.index,draw_parameters);
     }
 
     pub fn draw_shift(
@@ -93,31 +84,27 @@ impl Wallpaper{
         draw_parameters:&mut DrawParameters,
         graphics:&mut Graphics
     ){
-        graphics.draw_shift_range_image(
-            self.range,
-            &self.texture,
-            self.filter,
+        graphics.draw_shift_textured_object(
+            self.index,
             self.shift,
             draw_parameters
         );
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.filter[3]=alpha;
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&DrawParameters,graphics:&mut Graphics){
+        graphics.graphics2d.get_textured_object_colour(self.index)[3]=alpha;
         self.draw(draw_parameters,graphics);
     }
 
     pub fn draw_shift_smooth(
         &mut self,
         alpha:f32,
-        draw_parameters:&mut DrawParameters,
+        draw_parameters:&DrawParameters,
         graphics:&mut Graphics
     ){
-        self.filter[3]=alpha;
-        graphics.draw_shift_range_image(
-            self.range,
-            &self.texture,
-            self.filter,
+        graphics.graphics2d.get_textured_object_colour(self.index)[3]=alpha;
+        graphics.draw_shift_textured_object(
+            self.index,
             self.shift,
             draw_parameters
         );
@@ -139,7 +126,6 @@ pub fn load_wallpaper_image<P:AsRef<Path>>(path:P,width0:f32,height0:f32)->RgbaI
 
     let image_width=image.width() as f32;
     let image_height=image.height() as f32;
-
 
     let k=image_width/image_height; // Отношение сторон монитора (ширина к высоте)
 

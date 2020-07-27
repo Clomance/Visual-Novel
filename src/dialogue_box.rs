@@ -17,10 +17,17 @@ use cat_engine::{
     window_height,
     window_width,
     // structs
+    DefaultWindow,
     image::{ImageBase,Texture,image::RgbaImage},
     text::{TextBase,Glyphs},
-    graphics::{Graphics,Vertex2D,Quadrilateral,Line},
-    glium::{Display,DrawParameters},
+    graphics::{Graphics,Vertex2D,Graphics2D},
+    shapes::{
+        Quadrilateral,
+        Line
+    },
+    glium::DrawParameters,
+    // traits
+    Window
 };
 
 const k:f32=4f32; // Отношение размера окна игры к диалоговому окну
@@ -31,11 +38,11 @@ const image_border_width:f32=4f32;
 const dibw:f32=image_border_width/2f32;
 
 pub struct DialogueBox<'b,'c>{
-    name_box:Quadrilateral,
+    name_box:usize,
     name_base:TextBase,
 
     lines:TextViewLined<'c>, // Текстовый блок для диалогов
-    image_border:Line,
+    image_border:usize,
     image:ImageBase,
     texture:Texture,
 
@@ -47,7 +54,7 @@ pub struct DialogueBox<'b,'c>{
 }
 
 impl<'b,'c> DialogueBox<'b,'c>{
-    pub fn new(texture:&RgbaImage,display:&Display,glyphs:&'c Glyphs)->DialogueBox<'b,'c>{
+    pub fn new(texture:&RgbaImage,window:&mut DefaultWindow,glyphs:&'c Glyphs)->DialogueBox<'b,'c>{
         unsafe{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
@@ -66,7 +73,15 @@ impl<'b,'c> DialogueBox<'b,'c>{
                 Vertex2D::new(460f32,y1-dibw),
             ];
 
-            let texture=Texture::from_image(texture,display).unwrap();
+            // Четырёхугольник для фона для имени
+            let name_box=Quadrilateral::new(polygon,Black);
+            let name_box=window.graphics2d().add_simple_object(&name_box).unwrap();
+
+            // Линия для разделения картинки от истольной части экрана
+            let image_border=Line::new([0f32,y1,window_width,y1],image_border_width,Black);
+            let image_border=window.graphics2d().add_simple_object(&image_border).unwrap();
+
+            let texture=Texture::from_image(texture,window.display()).unwrap();
 
             // Позиция имени
             let name_position=[
@@ -92,12 +107,12 @@ impl<'b,'c> DialogueBox<'b,'c>{
 
             Self{
                 // Имя
-                name_box:Quadrilateral::new(polygon,Black),
+                name_box,
                 name_base:TextBase::new(White,font_size)
                         .position([name_position[0],name_position[1]]),
 
                 lines:TextViewLined::new(line_settings,&glyphs),
-                image_border:Line::new([0f32,y1,window_width,y1],image_border_width,Black),
+                image_border,
                 image:ImageBase::new(White,rect),
                 texture:texture,
 
@@ -156,14 +171,16 @@ impl<'b,'c> DialogueBox<'b,'c>{
     #[inline(always)]
     pub fn draw_without_text(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics){
         self.image.draw(&self.texture,draw_parameters,g);
-        self.image_border.draw(draw_parameters,g);
-        self.name_box.draw(draw_parameters,g);
+        draw_parameters.line_width=Some(image_border_width);
+        g.draw_simple_object(self.image_border,draw_parameters);
+        g.draw_simple_object(self.name_box,draw_parameters);
     }
 
-    pub fn set_alpha_channel(&mut self,alpha:f32){
+    pub fn set_alpha_channel(&mut self,alpha:f32,graphics:&mut Graphics2D){
+        graphics.get_simple_object_colour(self.name_box)[3]=alpha;
+        graphics.get_simple_object_colour(self.image_border)[3]=alpha;
+
         self.image.colour_filter[3]=alpha;
-        self.image_border.colour[3]=alpha;
-        self.name_box.colour[3]=alpha;
         self.lines.set_alpha_channel(alpha);
     }
 
@@ -172,9 +189,10 @@ impl<'b,'c> DialogueBox<'b,'c>{
 
         self.image.draw(&self.texture,draw_parameters,g); // Основа
 
-        self.image_border.draw(draw_parameters,g);
+        draw_parameters.line_width=Some(image_border_width);
+        g.draw_simple_object(self.image_border,draw_parameters);
+        g.draw_simple_object(self.name_box,draw_parameters);
 
-        self.name_box.draw(draw_parameters,g);
         self.name_base.draw(name,draw_parameters,g,&self.glyphs); // Имя
 
         // Реплика

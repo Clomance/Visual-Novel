@@ -10,7 +10,7 @@ qrelease = []
 
 [dependencies.cat_engine]
 # path = "../cat_engine"
-version = "0.2.1"
+version = "0.3.2"
 features = ["mouse_cursor_icon","audio","auto_hide","alpha_smoothing"]
 
 [lib]

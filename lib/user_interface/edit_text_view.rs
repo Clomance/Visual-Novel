@@ -12,10 +12,8 @@ use cat_engine::{
     // types
     Colour,
     // structs
-    graphics::{
-        RectangleWithBorder,
-        Graphics
-    },
+    graphics::Graphics,
+    shapes::RectangleWithBorder,
     text::{TextBase,Glyphs},
     glium::DrawParameters,
 };

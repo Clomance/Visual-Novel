@@ -13,10 +13,8 @@ use cat_engine::{
     Colour,
     // structs
     text::Glyphs,
-    graphics::{
-        Graphics,
-        Rectangle,
-    },
+    graphics::{Graphics,SimpleObject},
+    shapes::Rectangle,
     glium::DrawParameters,
 };
 

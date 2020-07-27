@@ -145,23 +145,29 @@ fn main(){
 
         window_settings.general.updates_per_second=50;
 
-        window_settings.inner_size=Some(Size::Physical(size));
-        window_settings.title=game_name.to_string();
-        window_settings.fullscreen=Some(fullscreen);
-        window_settings.resizable=false;
-        window_settings.decorations=false;
-        window_settings.always_on_top=true;
-        window_settings.window_icon=Some(icon);
+        window_settings.window_attributes.inner_size=Some(Size::Physical(size));
+        window_settings.window_attributes.title=game_name.to_string();
+        window_settings.window_attributes.fullscreen=Some(fullscreen);
+        window_settings.window_attributes.resizable=false;
+        window_settings.window_attributes.decorations=false;
+        window_settings.window_attributes.always_on_top=true;
+        window_settings.window_attributes.window_icon=Some(icon);
 
         window_settings.vsync=true;
         window_settings.debug=false;
 
-        window_settings.srgb=true;
-        window_settings.hardware_accelerated=None;
+        window_settings.pixel_fmt_req.srgb=true;
+        window_settings.pixel_fmt_req.hardware_accelerated=None;
 
-        window_settings.texture_vertex_buffer_size=16usize;
-        window_settings.simple_vertex_buffer_size=100usize;
-        window_settings.text_vertex_buffer_size=2000usize;
+        window_settings.graphics_base_settings.texture.vertex_buffer_size=16usize;
+        window_settings.graphics_base_settings.texture.object_buffer_size=4usize;
+
+
+        window_settings.graphics_base_settings.simple.vertex_buffer_size=100usize;
+        window_settings.graphics_base_settings.simple.vertex_buffer_offset=80usize;
+        window_settings.graphics_base_settings.simple.object_buffer_size=4usize;
+
+        window_settings.graphics_base_settings.text_vertex_buffer_size=2000usize;
     }){
         Ok(window)=>window,
         Err(e)=>{
@@ -246,13 +252,17 @@ fn main(){
         let mut wallpaper=Wallpaper::new(texture_base.main_menu_wallpaper(),&mut window);
         let mut characters_view=CharactersView::new(); // "Сцена" для персонажей
 
-        let mut dialogue_box=DialogueBox::new(texture_base.dialogue_box(),window.display(),Dialogue_font!()); // Диалоговое окно
+        let mut dialogue_box=DialogueBox::new(
+            texture_base.dialogue_box(),
+            &mut window,
+            Dialogue_font!()
+        ); // Диалоговое окно
 
         music.add_track("./resources/music/audio.mp3");
         music.play_forever(0);
         // Полный цикл игры
         'game:loop{
-            wallpaper.update_image(texture_base.main_menu_wallpaper()); // Устрановка обоев главного меню
+            wallpaper.update_image(texture_base.main_menu_wallpaper(),window.graphics2d()); // Устрановка обоев главного меню
             // Цикл главного меню
             match MainMenu::new(&mut wallpaper).start(&mut window,&music){
                 Game::ContinueGamePlay=>{
@@ -283,7 +293,7 @@ fn main(){
 
                 let wallpaper_path=page_table.current_wallpaper();
 
-                wallpaper.update_image_path(wallpaper_path,wallpaper_size); // Установка текущего фона игры
+                wallpaper.update_image_path(wallpaper_path,wallpaper_size,window.graphics2d()); // Установка текущего фона игры
 
                 dialogue_box.set_dialogue(page_table.current_dialogue()); // Установка текущего диалога
 
@@ -292,18 +302,18 @@ fn main(){
                     // Сглаживание перехода
                     'opening_page:while let Some(event)=window.next_event(){
                         match event{
-                            WindowEvent::Exit=>break 'game, // Закрытие игры
+                            WindowEvent::CloseRequested=>break 'game, // Закрытие игры
 
                             WindowEvent::MouseMovementDelta(_)=>{
                                 wallpaper.mouse_shift(mouse_cursor.center_radius());
                             }
 
-                            WindowEvent::Draw=>{ //Рендеринг
+                            WindowEvent::RedrawRequested=>{ //Рендеринг
                                 if 1f32<window.draw_smooth(|alpha,c,g|{
                                     g.clear_colour(White);
                                     wallpaper.draw_shift_smooth(alpha,c,g);
                                     characters_view.draw_smooth(alpha,c,g);
-                                    dialogue_box.set_alpha_channel(alpha);
+                                    dialogue_box.set_alpha_channel(alpha,g.graphics2d);
                                     dialogue_box.draw(c,g);
                                 }).unwrap(){
                                     break 'opening_page
@@ -329,7 +339,7 @@ fn main(){
                     // Цикл страницы 'page
                     'page_inner:while let Some(event)=window.next_event(){
                         match event{
-                            WindowEvent::Exit=>{ // Закрытие игры
+                            WindowEvent::CloseRequested=>{ // Закрытие игры
                                 Settings.set_saved_position(page_table.current_page(),dialogue_box.current_step()); // Сохранение последней позиции
                                 break 'game
                             }
@@ -338,7 +348,7 @@ fn main(){
                                 wallpaper.mouse_shift(mouse_cursor.center_radius());
                             }
 
-                            WindowEvent::Draw=>{ //Рендеринг
+                            WindowEvent::RedrawRequested=>{ //Рендеринг
                                 window.draw(|c,g|{
                                     wallpaper.draw_shift(c,g);
                                     characters_view.draw(c,g);
@@ -413,16 +423,16 @@ fn main(){
                     window.set_alpha(1f32);
                     while let Some(event)=window.next_event(){
                         match event{
-                            WindowEvent::Exit=>break 'game, // Закрытие игры
+                            WindowEvent::CloseRequested=>break 'game, // Закрытие игры
 
                             WindowEvent::MouseMovementDelta(_)=>wallpaper.mouse_shift(mouse_cursor.center_radius()),
 
-                            WindowEvent::Draw=>{ //Рендеринг
+                            WindowEvent::RedrawRequested=>{ //Рендеринг
                                 if 0f32>window.draw_smooth(|alpha,p,g|{
                                     g.clear_colour(White);
                                     wallpaper.draw_smooth(alpha,p,g);
                                     characters_view.draw_smooth(alpha,p,g);
-                                    dialogue_box.set_alpha_channel(alpha);
+                                    dialogue_box.set_alpha_channel(alpha,g.graphics2d);
                                     dialogue_box.draw_without_text(p,g);
                                 }).unwrap(){
                                     break 'page
@@ -449,15 +459,15 @@ fn main(){
             }
             Settings.continue_game=false; // Отключение "продолжить игру"
 
-            wallpaper.update_image(texture_base.ending_wallpaper()); // Конечная заставка игры
+            wallpaper.update_image(texture_base.ending_wallpaper(),window.graphics2d()); // Конечная заставка игры
 
             window.set_new_smooth(default_page_smooth);
 
             'smooth_ending:while let Some(event)=window.next_event(){
                 match event{
-                    WindowEvent::Exit=>break 'game, // Закрытие игры
+                    WindowEvent::CloseRequested=>break 'game, // Закрытие игры
 
-                    WindowEvent::Draw=>{ // Рендеринг
+                    WindowEvent::RedrawRequested=>{ // Рендеринг
                         if 1f32<window.draw_smooth(|alpha,p,g|{
                             wallpaper.draw_smooth(alpha,p,g);
                         }).unwrap(){
@@ -479,10 +489,10 @@ fn main(){
 
             'gameplay_ending:while let Some(event)=window.next_event(){
                 match event{
-                    WindowEvent::Exit=>break 'game, // Закрытие игры
+                    WindowEvent::CloseRequested=>break 'game, // Закрытие игры
 
                     // Рендеринг
-                    WindowEvent::Draw=>window.draw(|p,g|{
+                    WindowEvent::RedrawRequested=>window.draw(|p,g|{
                         wallpaper.draw(p,g)
                     }).unwrap(),
 
@@ -511,8 +521,8 @@ pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut 
 
     while let Some(event)=window.next_event(){
         match event{
-            WindowEvent::Exit=>return Game::Exit, // Закрытие игры
-            WindowEvent::Draw=>{ //Рендеринг
+            WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
+            WindowEvent::RedrawRequested=>{ //Рендеринг
                 window.draw(f);
                 break
             }
@@ -530,8 +540,8 @@ pub fn make_screenshot<F:FnOnce(&mut DrawParameters,&mut Graphics)>(window:&mut 
 
     while let Some(event)=window.next_event(){
         match event{
-            WindowEvent::Exit=>return Game::Exit, // Закрытие игры
-            WindowEvent::Draw=>{ //Рендеринг
+            WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
+            WindowEvent::RedrawRequested=>{ //Рендеринг
                 window.draw(|_,g|{
                     g.clear_colour([1f32;4]);
                 });

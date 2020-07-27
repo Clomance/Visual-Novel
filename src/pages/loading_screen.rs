@@ -18,20 +18,19 @@ use cat_engine::{
     // structs
     PagedWindow,
     image::{ImageBase,Texture},
-    glium::glutin::event::MouseScrollDelta,
+    MouseScrollDelta,
+    ModifiersState,
 };
 
 use cat_engine::glium::DrawParameters;
 
-use std::path::PathBuf;
 use std::thread::JoinHandle;
 
 pub struct LoadingScreen{
-    cat:Texture,
-    range:usize,
-    cat_eyes_closed:Texture,
+    cat:usize,
+    cat_eyes_closed:usize,
+    gear:usize,
 
-    gear:Texture,
     angle:f32,
 
     frames:u8,
@@ -50,8 +49,13 @@ impl LoadingScreen{
             200f32
         ]});
 
-        // Установка области для быстрой отрисовки иконки загрузки
-        let range=window.graphics().bind_image(4..8usize,image_base.clone()).unwrap();
+        let cat=Texture::from_path("./resources/images/cat.png",window.display()).unwrap();
+
+        let cat=window.graphics2d().add_textured_object(&image_base,cat).unwrap();
+
+        let cat_eyes_closed=Texture::from_path("./resources/images/cat_eyes_closed.png",window.display()).unwrap();
+
+        let cat_eyes_closed=window.graphics2d().add_textured_object(&image_base,cat_eyes_closed).unwrap();
 
         image_base.set_rect(unsafe{[
             window_center[0]-200f32,
@@ -60,37 +64,27 @@ impl LoadingScreen{
             400f32
         ]});
 
-        window.graphics().bind_rotating_image(8..12usize,image_base).unwrap();
+        let gear=Texture::from_path("./resources/images/gear.png",window.display()).unwrap();
+
+        let gear=window.graphics2d().add_textured_object(&image_base,gear).unwrap();
 
         Self{
-            cat:Texture::from_path("./resources/images/cat.png",window.display()).unwrap(),
-            range,
-            cat_eyes_closed:Texture::from_path("./resources/images/cat_eyes_closed.png",window.display()).unwrap(),
-            
-            gear:Texture::from_path("./resources/images/gear.png",window.display()).unwrap(),
+            cat,
+            cat_eyes_closed,
+            gear,
             angle:0f32,
-
             frames:0u8,
-
             background:Some(std::thread::spawn(background)),
-
             output:Game::MainMenu,
         }
     }
 
-    fn draw(&self,image:&Texture,angle:f32,parameters:&mut DrawParameters,graphics:&mut Graphics){
+    fn draw(&self,index:usize,angle:f32,parameters:&DrawParameters,graphics:&mut Graphics){
         graphics.clear_colour(White);
-        graphics.draw_range_image(
-            self.range,
-            image,
-            White,
-            parameters
-        );
+        graphics.draw_textured_object(index,parameters);
 
-        graphics.draw_rotate_range_image(
-            self.range+1,
-            &self.gear,
-            White,
+        graphics.draw_rotate_textured_object(
+            self.gear,
             unsafe{window_center},
             angle,
             parameters
@@ -104,7 +98,7 @@ impl WindowPage<'static> for LoadingScreen{
 
     type Output=Game;
 
-    fn on_close_requested(&mut self,window:&mut PagedWindow){
+    fn on_window_close_requested(&mut self,window:&mut PagedWindow){
         let _=window.stop_events();
         self.output=Game::Exit;
     }
@@ -123,14 +117,14 @@ impl WindowPage<'static> for LoadingScreen{
     }
 
     fn on_redraw_requested(&mut self,window:&mut PagedWindow){
-        let image=if self.frames>=40{
-            if self.frames>=50{
+        let image=if self.frames>=20{
+            if self.frames>=30{
                 self.frames=0;
             }
-            &self.cat_eyes_closed
+            self.cat_eyes_closed
         }
         else{
-            &self.cat
+            self.cat
         };
 
         window.draw(|parameters,graphics|{
@@ -145,10 +139,10 @@ impl WindowPage<'static> for LoadingScreen{
     fn on_mouse_scrolled(&mut self,_window:&mut PagedWindow,_:MouseScrollDelta){}
 
     fn on_keyboard_pressed(&mut self,_window:&mut PagedWindow,_button:KeyboardButton){}
-
     fn on_keyboard_released(&mut self,_window:&mut PagedWindow,_button:KeyboardButton){}
-
     fn on_character_recieved(&mut self,_window:&mut PagedWindow,_character:char){}
+
+    fn on_modifiers_changed(&mut self,_window:&mut PagedWindow,_modifiers:ModifiersState){}
 
     fn on_window_resized(&mut self,_window:&mut PagedWindow,_new_size:[u32;2]){}
 
@@ -159,16 +153,8 @@ impl WindowPage<'static> for LoadingScreen{
 
     fn on_window_focused(&mut self,_window:&mut PagedWindow,_:bool){}
 
-    fn on_file_dropped(&mut self,_:&mut PagedWindow,_:PathBuf){}
-    fn on_file_hovered(&mut self,_:&mut PagedWindow,_:PathBuf){}
-    fn on_file_hovered_canceled(&mut self,_:&mut PagedWindow){}
-
     fn on_event_loop_closed(&mut self,window:&mut Self::Window)->Game{
-        // Удаление области для иконки загрузки
-        window.graphics().pop_texture();
-
-        window.graphics().pop_texture();
-
+        window.graphics2d().clear_textured_object_array();
         self.output.clone()
     }
 }

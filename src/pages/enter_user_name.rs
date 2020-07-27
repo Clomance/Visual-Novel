@@ -79,7 +79,7 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
         // Главный цикл
         while let Some(event)=window.next_event(){
             match event{
-                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
 
                 // Движение мыши
                 WindowEvent::MouseMovementDelta(shift)=>self.main_menu.mouse_shift(shift),
@@ -94,7 +94,7 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
                 }
 
                 // Рендеринг
-                WindowEvent::Draw=>window.draw(|c,g|{
+                WindowEvent::RedrawRequested=>window.draw(|c,g|{
                     self.main_menu.draw(c,g);
                     self.input.draw(c,g);
                     self.head.draw(c,g);
@@ -141,11 +141,11 @@ impl<'a,'c,'e> EnterUserName<'a,'c,'e>{
 
         while let Some(event)=window.next_event(){
             match event{
-                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
 
                 WindowEvent::MouseMovementDelta(shift)=>self.main_menu.mouse_shift(shift),
                 // Рендеринг
-                WindowEvent::Draw=>{
+                WindowEvent::RedrawRequested=>{
                     if 1f32<window.draw_smooth(|alpha,c,g|{
                         self.main_menu.draw(c,g);
 

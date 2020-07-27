@@ -108,9 +108,9 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
             while let Some(event)=window.next_event(){
 
                 match event{
-                    WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                    WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
                     //Рендеринг
-                    WindowEvent::Draw=>window.draw(|c,g|{
+                    WindowEvent::RedrawRequested=>window.draw(|c,g|{
                         self.draw(c,g);
                     }).unwrap(),
                     
@@ -187,11 +187,11 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
 
         while let Some(event)=window.next_event(){
             match event{
-                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
 
                 WindowEvent::MouseMovementDelta(shift)=>self.mouse_shift(shift),
 
-                WindowEvent::Draw=>{
+                WindowEvent::RedrawRequested=>{
                     if 1f32<window.draw_smooth(|alpha,c,g|{
                         self.draw_smooth(alpha,c,g);
                     }).unwrap(){

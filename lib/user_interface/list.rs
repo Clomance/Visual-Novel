@@ -1,11 +1,8 @@
 use cat_engine::{
     mouse_cursor,
     Colour,
-    graphics::{
-        Graphics,
-        RectangleWithBorder,
-        Line,
-    },
+    graphics::Graphics,
+    shapes::{RectangleWithBorder,Line},
     text::{TextBase,Glyphs},
     glium::DrawParameters,
 };

@@ -16,10 +16,10 @@ use cat_engine::{
     Colour,
     // structs
     text::Glyphs,
-    graphics::{
+    graphics::{Graphics,SimpleObject},
+    shapes::{
         Circle,
         Line,
-        Graphics
     },
     glium::DrawParameters,
 };

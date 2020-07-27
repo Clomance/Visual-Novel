@@ -29,7 +29,8 @@ use cat_engine::{
     Window,
     // structs
     DefaultWindow,
-    graphics::Rectangle,
+    shapes::Rectangle,
+    graphics::SimpleObject,
 };
 
 const page_smooth:f32=default_page_smooth;
@@ -68,9 +69,9 @@ impl<'b> Intro<'b>{
 
         while let Some(event)=window.next_event(){
             match event{
-                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::Draw=>{ // Рендеринг
+                WindowEvent::RedrawRequested=>{ // Рендеринг
                     if 1f32<(*window).draw_smooth(|alpha,c,g|{
                         g.clear_colour(background_color);
                         self.text_view.set_alpha_channel(alpha);
@@ -97,9 +98,9 @@ impl<'b> Intro<'b>{
         window.set_smooth(-1f32/128f32);
         while let Some(event)=window.next_event(){
             match event{
-                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::Draw=>{ //Рендеринг
+                WindowEvent::RedrawRequested=>{ //Рендеринг
                     if 0f32>(*window).draw_smooth(|alpha,c,g|{
                         g.clear_colour(background_color);
                         self.text_view.set_alpha_channel(alpha);
@@ -134,9 +135,9 @@ impl<'b> Intro<'b>{
         while let Some(event)=window.next_event(){
 
             match event{
-                WindowEvent::Exit=>return Game::Exit, // Закрытие игры
+                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
 
-                WindowEvent::Draw=>{
+                WindowEvent::RedrawRequested=>{
                     if 1f32<(*window).draw_smooth(|alpha,p,g|{
                         background.colour[3]=alpha;
                         background.draw(p,g);
