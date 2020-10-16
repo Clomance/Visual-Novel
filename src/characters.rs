@@ -9,7 +9,8 @@ use cat_engine::{
     window_center,
     window_height,
     window_width,
-    image::{ImageBase,Texture,image::RgbaImage},
+    texture::{ImageBase,Texture},
+    image::RgbaImage,
     graphics::Graphics,
     glium::{Display,DrawParameters},
 };

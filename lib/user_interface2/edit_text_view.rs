@@ -14,7 +14,12 @@ use cat_engine::{
     // structs
     graphics::Graphics,
     shapes::RectangleWithBorder,
-    text::{TextBase,Glyphs},
+    text::{
+        char_width,
+        text_size,
+        TextBase,
+        rusttype::Font
+    },
     glium::DrawParameters,
 };
 
@@ -25,34 +30,29 @@ pub struct EditTextView<'a>{
     line:String,
     capacity:usize,
     align:Align,
-    glyphs:&'a Glyphs,
+    font:&'a Font<'static>,
 }
 
 impl<'a> EditTextView<'a>{
-    pub fn new<S:Into<String>>(settings:EditTextViewSettings<S>,glyphs:&'a Glyphs)->EditTextView<'a>{
+    pub fn new<S:Into<String>>(settings:EditTextViewSettings<S>,font:&'a Font<'static>)->EditTextView<'a>{
         // Создание заднего фона
         let rect=settings.rect;
         let mut background=RectangleWithBorder::new(rect,settings.background_colour);
         background=background.border(2f32,settings.border_colour);
 
         let line=settings.text.into();
-        // Вычисление длины строки текста
-        let mut text_len=0f32;
-        for ch in line.chars(){
-            let character=glyphs.character(ch,settings.font_size);
-            text_len+=character.width();
-        }
+        let size=text_size(&line,settings.font_size,font);
 
         // Выравнивание текста
-        let (x,y)=settings.align.text_position(settings.rect,[text_len,settings.font_size]);
+        let (x,y)=settings.align.text_position(settings.rect,size);
 
         Self{
             background,
-            base:TextBase::new(settings.text_colour,settings.font_size).position([x,y]),
+            base:TextBase::new([x,y],settings.font_size,settings.text_colour),
             line,
             capacity:settings.capacity,
             align:settings.align,
-            glyphs:glyphs,
+            font:font,
         }
     }
 
@@ -75,43 +75,49 @@ impl<'a> EditTextView<'a>{
     pub fn push_char(&mut self,ch:char){
         if self.line.len()<self.capacity{
             self.line.push(ch);
-            let character_width=self.glyphs.character(ch,self.base.font_size).width(); // Поиск нужной буквы
+            let character_width=char_width(ch,self.base.font_size,self.font);
             
             let dx=match self.align.x{
                 AlignX::Right=>character_width,
                 AlignX::Center=>character_width/2f32,
                 AlignX::Left=>0f32,
             };
-            self.base.shift_x(-dx); // Сдвиг
+
+            self.base.position[0]-=dx; // Сдвиг по X
         }
     }
 
     // Удаление последнего символа с выравниванием
     pub fn pop_char(&mut self){
         if let Some(ch)=self.line.pop(){
-            let character=self.glyphs.character(ch,self.base.font_size); // Поиск нужной буквы
-            let character_width=character.width(); // Ширина буквы
+            let character_width=char_width(ch,self.base.font_size,self.font);
 
             let dx=match self.align.x{
                 AlignX::Right=>character_width,
                 AlignX::Center=>character_width/2f32,
                 AlignX::Left=>0f32,
             };
-            self.base.shift_x(dx); // Сдвиг
+
+            self.base.position[0]+=dx; // Сдвиг по X
         }
     }
 }
 
 impl<'a> Drawable for EditTextView<'a>{
     fn set_alpha_channel(&mut self,alpha:f32){
-        self.base.set_alpha_channel(alpha);
+        self.base.colour[3]=alpha;
         self.background.rect.colour[3]=alpha;
         self.background.border_colour[3]=alpha;
     }
 
     fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.background.draw(draw_parameters,graphics);
-        self.base.draw(&self.line,draw_parameters,graphics,&self.glyphs).unwrap();
+        self.base.draw_str(
+            &self.line,
+            &self.font,
+            draw_parameters,
+            graphics
+        ).unwrap();
     }
 }
 

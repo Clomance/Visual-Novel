@@ -40,7 +40,6 @@ use cat_engine::{
     // structs
     DefaultWindow,
     shapes::Rectangle,
-    graphics::SimpleObject,
 };
 
 

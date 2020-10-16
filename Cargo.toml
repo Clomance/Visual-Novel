@@ -1,6 +1,6 @@
 [package]
 name = "Visual_Novel"
-version = "1.6.6"
+version = "2.0.0"
 authors = ["Clomance"]
 edition = "2018"
 build = "build.rs"
@@ -9,9 +9,9 @@ build = "build.rs"
 qrelease = []
 
 [dependencies.cat_engine]
-# path = "../cat_engine"
-version = "0.3.2"
-features = ["mouse_cursor_icon","audio","auto_hide","alpha_smoothing"]
+path = "../cat_engine"
+# version = "0.4.5"
+features = ["audio","auto_hide"]
 
 [lib]
 name="lib"

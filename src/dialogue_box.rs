@@ -1,7 +1,6 @@
 use crate::{
     Dialogue,
     DialogueFormatted,
-    Settings,
 };
 
 use lib::{
@@ -18,8 +17,9 @@ use cat_engine::{
     window_width,
     // structs
     DefaultWindow,
-    image::{ImageBase,Texture,image::RgbaImage},
-    text::{TextBase,Glyphs},
+    texture::{ImageBase,Texture},
+    image::RgbaImage,
+    text::{TextBase,rusttype::Font},
     graphics::{Graphics,Vertex2D,Graphics2D},
     shapes::{
         Quadrilateral,
@@ -50,11 +50,11 @@ pub struct DialogueBox<'b,'c>{
     whole_text:bool, // Флаг вывода всего текста
     chars:f32, // Количесво выводимых в данный момент символов диалога
     dialogue_step:usize,
-    glyphs:&'c Glyphs
+    font:&'c Font<'static>
 }
 
 impl<'b,'c> DialogueBox<'b,'c>{
-    pub fn new(texture:&RgbaImage,window:&mut DefaultWindow,glyphs:&'c Glyphs)->DialogueBox<'b,'c>{
+    pub fn new(texture:&RgbaImage,window:&mut DefaultWindow,font:&'c Font<'static>)->DialogueBox<'b,'c>{
         unsafe{
             let height=window_height/k; // Высота диалогового окна
             let y1=window_height-height; // Верхняя граница диалогового окна
@@ -103,15 +103,14 @@ impl<'b,'c> DialogueBox<'b,'c>{
                     .font_size(font_size)
                     .align_x(AlignX::Left)
                     .align_y(AlignY::Up)
-                    .text_colour([0.0, 0.0, 1.0, 1.0]);
+                    .text_colour([0.0,0.0,1.0,1.0]);
 
             Self{
                 // Имя
                 name_box,
-                name_base:TextBase::new(White,font_size)
-                        .position([name_position[0],name_position[1]]),
+                name_base:TextBase::new([name_position[0],name_position[1]],font_size,White),
 
-                lines:TextViewLined::new(line_settings,&glyphs),
+                lines:TextViewLined::new(line_settings,&font),
                 image_border,
                 image:ImageBase::new(White,rect),
                 texture:texture,
@@ -119,8 +118,8 @@ impl<'b,'c> DialogueBox<'b,'c>{
                 dialogue:DialogueFormatted::empty(),
                 whole_text:false,
                 chars:0f32,
-                dialogue_step:Settings.saved_dialogue,
-                glyphs:glyphs
+                dialogue_step:settings.saved_dialogue,
+                font:font
             }
         }
     }
@@ -193,7 +192,7 @@ impl<'b,'c> DialogueBox<'b,'c>{
         g.draw_simple_object(self.image_border,draw_parameters);
         g.draw_simple_object(self.name_box,draw_parameters);
 
-        self.name_base.draw(name,draw_parameters,g,&self.glyphs); // Имя
+        self.name_base.draw_str(name,&self.font,draw_parameters,g); // Имя
 
         // Реплика
         if self.whole_text{

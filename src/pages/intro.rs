@@ -30,7 +30,6 @@ use cat_engine::{
     // structs
     DefaultWindow,
     shapes::Rectangle,
-    graphics::SimpleObject,
 };
 
 const page_smooth:f32=default_page_smooth;

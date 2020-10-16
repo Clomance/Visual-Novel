@@ -8,7 +8,7 @@ use cat_engine::{
     window_width,
     window_height,
     // 
-    image::image::{
+    image::{
         self,
         GenericImageView,
         DynamicImage,

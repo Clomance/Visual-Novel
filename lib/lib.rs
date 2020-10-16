@@ -1,10 +1,19 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use)]
 
-mod sync_raw_ptr;
-pub use sync_raw_ptr::SyncRawPtr;
+mod click_map;
+pub use click_map::{
+    ClickMap,
+    Clickable,
+};
 
-mod traits;
-pub use traits::*;
+mod drawable;
+pub use drawable::{
+    DrawableObject,
+    Drawable
+};
+
+mod object_map;
+pub use object_map::ObjectMap;
 
 pub mod colours;
 

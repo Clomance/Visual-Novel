@@ -3,7 +3,10 @@ use cat_engine::{
     Colour,
     graphics::Graphics,
     shapes::{RectangleWithBorder,Line},
-    text::{TextBase,Glyphs},
+    text::{
+        TextBase,
+        rusttype::Font
+    },
     glium::DrawParameters,
 };
 
@@ -25,7 +28,7 @@ pub struct List<'a>{
     list:RectangleWithBorder,
     list_lines:Line,
     text:TextBase,
-    glyphs:&'a Glyphs,
+    font:&'a Font<'static>,
     pressed:ListFocus,
     item_line_height:f32,
     items:Vec<String>,
@@ -34,7 +37,7 @@ pub struct List<'a>{
 }
 
 impl<'b> List<'b>{
-    pub fn new<'a,T:ToString>(settings:ListSettings<'a,T>,glyphs:&'b Glyphs)->List<'b>{
+    pub fn new<'a,T:ToString>(settings:ListSettings<'a,T>,font:&'b Font<'static>)->List<'b>{
         let item_len=settings.items.len();
         let line_len=settings.item_line_height*item_len as f32;
 
@@ -64,8 +67,8 @@ impl<'b> List<'b>{
                 Black
             ),
             list_lines:Line::new([x1,y2,x2,y2],1f32,Black),
-            text:TextBase::new(Black,20f32).position([x1,y2-item_margin]),
-            glyphs:glyphs,
+            text:TextBase::new([x1,y2-item_margin],20f32,Black),
+            font:font,
             item_line_height:settings.item_line_height,
             items,
             chosen_item:settings.chosen_item,
@@ -149,7 +152,7 @@ impl<'b> List<'b>{
         self.base.draw(draw_parameters,graphics);
         if let Some(item)=self.chosen_item{
             let text=&self.items[item];
-            self.text.draw(text,draw_parameters,graphics,self.glyphs).unwrap();
+            self.text.draw_str(text,self.font,draw_parameters,graphics).unwrap();
         }
     }
 
@@ -164,17 +167,17 @@ impl<'b> List<'b>{
         let x=self.list.rect.x1;
         let y=self.list.rect.y1+dy-item_margin;
 
-        self.text.set_position([x,y]);
+        self.text.position=[x,y];
 
         for item in &self.items{
-            self.text.draw(item,draw_parameters,graphics,self.glyphs);
+            self.text.draw_str(item,self.font,draw_parameters,graphics);
             self.text.shift_y(dy);
             self.list_lines.shift_y(dy);
             self.list_lines.draw(draw_parameters,graphics);
         }
 
         self.list_lines.set_position(lines_position);
-        self.text.set_position(position)
+        self.text.move_to(position)
     }
 
     pub fn draw(&mut self,draw_parameters:&mut DrawParameters,g:&mut Graphics){

@@ -8,22 +8,23 @@ use cat_engine::{
     graphics::{Graphics,Graphics2D},
     DefaultWindow,
     Window,
-    image::{
+    texture::{
         ImageBase,
-        Texture,image::{
-            self,
-            RgbaImage,
-            DynamicImage,
-            imageops::FilterType,
-            GenericImageView
-        }
+        Texture,
+    },
+    image::{
+        self,
+        RgbaImage,
+        DynamicImage,
+        imageops::FilterType,
+        GenericImageView
     },
     glium::DrawParameters,
 };
 
 use std::path::Path;
 
-pub const wallpaper_movement_scale:f32=16f32;
+
 
 // Подвижные обои
 pub struct Wallpaper{

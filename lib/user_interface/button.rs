@@ -1,165 +1,72 @@
+use crate::{
+    Drawable,
+    Clickable,
+    GeneralSettings,
+};
+
 use super::{
     Black,
-    Drawable,
     Light_blue,
     TextViewSettings,
-    TextViewStaticLine,
+    TextView,
 };
 
 use cat_engine::{
-    // statics
-    mouse_cursor,
     // types
     Colour,
     // structs
-    text::Glyphs,
-    graphics::{Graphics,SimpleObject},
+    graphics::{
+        DrawType,
+        ObjectType,
+        Graphics2D
+    },
     shapes::Rectangle,
-    glium::DrawParameters,
 };
 
-const dcolour:f32=0.125; // На столько измененяется цвет при нажитии/освобождении
-
-// Обычная кнопка с собственным шрифтом
-pub struct Button<'a>{
-    base:ButtonBase,
-    text:TextViewStaticLine<'a>, // Зависимый от шрифта текстовый блок
+pub struct Button{
+    pub text:TextView,
+    index:usize,
+    draw_type:DrawType,
+    click_area:[f32;4],
 }
 
-impl<'a> Button<'a>{
-    pub fn new<S:Into<String>>(settings:ButtonSettings<S>,glyphs:&'a Glyphs)->Button<'a>{
+impl Button{
+    pub fn new<S:Into<String>>(settings:ButtonSettings<S>,graphics:&mut Graphics2D)->Button{
+
         let text_view_settings=TextViewSettings::new(settings.text,settings.rect)
-                .text_colour(settings.text_colour)
-                .font_size(settings.font_size);
+            .draw_type(settings.general.draw_type.clone())
+            .font_size(settings.font_size)
+            .font(settings.font)
+            .text_colour(settings.text_colour);
+
+        let rect=Rectangle::new(settings.rect,settings.background_colour);
 
         Self{
-            base:ButtonBase::new(settings.rect,settings.background_colour),
-            text:TextViewStaticLine::new(text_view_settings,glyphs),
+            text:TextView::new(text_view_settings,graphics),
+            index:graphics.add_simple_object(&rect).unwrap(),
+            draw_type:settings.general.draw_type,
+            click_area:settings.rect
         }
-    }
-
-    pub fn position(&self)->[f32;4]{
-        [
-            self.base.rect.x1,
-            self.base.rect.y1,
-            self.base.rect.x2,
-            self.base.rect.y2
-        ]
-    }
-
-    // Сдвиг
-    pub fn shift(&mut self,dx:f32,dy:f32){
-        self.base.shift(dx,dy);
-        self.text.shift(dx,dy)
-    }
-
-    #[inline(always)]
-    pub fn pressed(&mut self)->bool{
-        self.base.pressed()
-    }
-
-    #[inline(always)] // Проверка находится ли курсор на кнопке и локальные действия
-    pub fn released(&mut self)->bool{ // лучше подходит название "clicked"
-        self.base.released()
     }
 }
 
-impl<'a> Drawable for Button<'a>{
-    fn set_alpha_channel(&mut self,alpha:f32){
-        self.base.set_alpha_channel(alpha);
-        self.text.set_alpha_channel(alpha);
-    }
-
-    fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.base.draw(draw_parameters,graphics);
-        self.text.draw(draw_parameters,graphics);
+impl Clickable for Button{
+    fn area(&self)->[f32;4]{
+        self.click_area
     }
 }
 
-// Основа для кнопок
-pub struct ButtonBase{
-    rect:Rectangle,
-    pressed:bool,
-}
-
-impl ButtonBase{
-    pub fn new(rect:[f32;4],colour:Colour)->ButtonBase{
-        Self{
-            rect:Rectangle::new(rect,colour),
-            pressed:false,
-        }
+impl Drawable for Button{
+    fn index(&self)->usize{
+        self.index
     }
 
-    // Сдвиг
-    pub fn shift(&mut self,dx:f32,dy:f32){
-        self.rect.x1+=dx;
-        self.rect.y1+=dy;
-        self.rect.x2+=dx;
-        self.rect.y2+=dy;
+    fn draw_type(&self)->DrawType{
+        self.draw_type.clone()
     }
 
-    #[inline(always)] // Установка альфа-канала
-    pub fn set_alpha_channel(&mut self,alpha:f32){
-        self.rect.colour[3]=alpha;
-    }
-
-    /// Изменение цвета при нажатии
-    pub fn press_colour(&mut self){
-        self.rect.colour[0]-=dcolour;
-        self.rect.colour[1]-=dcolour;
-        self.rect.colour[2]-=dcolour;
-    }
-
-    /// Изменение цвета при освобождении
-    pub fn release_colour(&mut self){
-        self.rect.colour[0]+=dcolour;
-        self.rect.colour[1]+=dcolour;
-        self.rect.colour[2]+=dcolour;
-    }
-
-    /// Проверка нажатия на кнопку и локальные действия
-    pub fn pressed(&mut self)->bool{
-        let [x,y]=unsafe{mouse_cursor.position()};
-
-        if self.rect.x1<x && self.rect.x2>x && self.rect.y1<y && self.rect.y2>y{
-            self.pressed=true;
-            self.press_colour();
-            true
-        }
-        else{
-            false
-        }
-    }
-
-    /// Проверка находится ли курсор на кнопке при освобождении кнопки мыши
-    /// и локальные действия.
-    /// Функции лучше подходит название "clicked"
-    pub fn released(&mut self)->bool{
-        if self.pressed{
-            self.release_colour();
-            self.pressed=false;
-
-            let [x,y]=unsafe{mouse_cursor.position()};
-
-            if self.rect.x1<x && self.rect.x2>x && self.rect.y1<y && self.rect.y2>y{
-                true
-            }
-            else{
-                false
-            }
-        }
-        else{
-            false
-        }
-    }
-
-    #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics){
-        self.rect.draw(draw_parameters,g);
-    }
-
-    pub fn draw_shift(&self,shift:[f32;2],draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
-        self.rect.draw_shift(shift,draw_parameters,graphics);
+    fn object_type(&self)->ObjectType{
+        ObjectType::Simple
     }
 }
 
@@ -167,31 +74,45 @@ impl ButtonBase{
 /// 
 /// Settings for building buttons
 pub struct ButtonSettings<S:Into<String>>{
+    general:GeneralSettings,
     rect:[f32;4],
     background_colour:Colour,
     text:S,
     font_size:f32,
+    font:usize,
     text_colour:Colour
 }
 
 impl<S:Into<String>> ButtonSettings<S>{
     pub fn new(text:S,rect:[f32;4])->ButtonSettings<S>{
         Self{
+            general:GeneralSettings::new(),
             rect,
             background_colour:Light_blue,
             text,
             font_size:20f32,
+            font:0usize,
             text_colour:Black,
         }
+    }
+
+    pub fn draw_type(mut self,draw_type:DrawType)->ButtonSettings<S>{
+        self.general.draw_type=draw_type;
+        self
     }
 
     pub fn background_colour(mut self,colour:Colour)->ButtonSettings<S>{
         self.background_colour=colour;
         self
     }
-    
+
     pub fn font_size(mut self,size:f32)->ButtonSettings<S>{
         self.font_size=size;
+        self
+    }
+
+    pub fn font(mut self,font:usize)->ButtonSettings<S>{
+        self.font=font;
         self
     }
     

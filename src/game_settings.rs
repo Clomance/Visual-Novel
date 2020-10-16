@@ -34,7 +34,9 @@ impl GameSettings{
     }
 
     /// Загрузка настроек
-    pub fn load(&mut self){
+    pub fn load()->GameSettings{
+        let mut settings=GameSettings::new();
+
         // Общие настройки пользоавателя
         let mut settings_file=OpenOptions::new().read(true).open("settings/game_settings").unwrap();
         let mut buffer=[0u8;8];
@@ -42,36 +44,38 @@ impl GameSettings{
         // Продолжение игры
         settings_file.read_exact(&mut buffer[0..1]).unwrap();
         if buffer[0]!=0{
-            self.continue_game=true;
+            settings.continue_game=true;
             // Имя пользователя при продолжении игры
             settings_file.read_exact(&mut buffer[0..1]).unwrap();
             
             let mut name=vec![0u8;buffer[0] as usize];
             settings_file.read_exact(&mut name).unwrap();
-            self.user_name=String::from_utf8(name).unwrap();
+            settings.user_name=String::from_utf8(name).unwrap();
         }
         // Текущая страница игры
         settings_file.read_exact(&mut buffer).unwrap();
-        self.saved_page=usize::from_be_bytes(buffer);
+        settings.saved_page=usize::from_be_bytes(buffer);
         // Текущее положение в диалоге на странице
         settings_file.read_exact(&mut buffer).unwrap();
-        self.saved_dialogue=usize::from_be_bytes(buffer);
+        settings.saved_dialogue=usize::from_be_bytes(buffer);
         //
         let mut buffer=[0u8;4];
         // Количество символов в секунду
         settings_file.read_exact(&mut buffer).unwrap();
-        self.signs_per_frame=f32::from_be_bytes(buffer);
+        settings.signs_per_frame=f32::from_be_bytes(buffer);
         // Значение громкости
         settings_file.read_exact(&mut buffer).unwrap();
-        self.volume=f32::from_be_bytes(buffer);
+        settings.volume=f32::from_be_bytes(buffer);
         // Количество сделанных скриншотов (номер следующего)
         settings_file.read_exact(&mut buffer).unwrap();
-        self.screenshot=u32::from_be_bytes(buffer);
+        settings.screenshot=u32::from_be_bytes(buffer);
 
         // Выбранный монитор
         let mut buffer=[0u8;8];
         settings_file.read_exact(&mut buffer).unwrap();
-        self.monitor=usize::from_be_bytes(buffer);
+        settings.monitor=usize::from_be_bytes(buffer);
+
+        settings
     }
 
     /// Установка позиций для сохранения

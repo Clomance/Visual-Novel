@@ -15,8 +15,8 @@ use cat_engine::{
     // types
     Colour,
     // structs
-    text::Glyphs,
-    graphics::{Graphics,SimpleObject},
+    text::rusttype::Font,
+    graphics::Graphics,
     shapes::{
         Circle,
         Line,
@@ -33,12 +33,12 @@ const line_radius:f32=5f32;
 pub struct Slider<'a>{
     head:TextViewStaticLine<'a>, // Надпись над слайдером
     value:TextViewLine<'a>, // Значение справа от слайдера
-    glyphs:&'a Glyphs,
+    font:&'a Font<'static>,
     base:SimpleSlider,
 }
 
 impl<'a> Slider<'a>{
-    pub fn new(settings:SliderSettings,glyphs:&'a Glyphs)->Slider<'a>{
+    pub fn new(settings:SliderSettings,font:&'a Font<'static>)->Slider<'a>{
         // Настройки заголовка слайдера
         let head_settings=TextViewSettings::new(settings.head.clone(),[
                     settings.position[0],
@@ -60,9 +60,9 @@ impl<'a> Slider<'a>{
                 .text_colour(settings.circle_colour);
 
         Self{
-            head:TextViewStaticLine::new(head_settings,&glyphs),
-            value:TextViewLine::new(value_settings,&glyphs),
-            glyphs:glyphs,
+            head:TextViewStaticLine::new(head_settings,&font),
+            value:TextViewLine::new(value_settings,&font),
+            font:font,
             base:SimpleSlider::new(settings),
         }
     }
@@ -73,14 +73,14 @@ impl<'a> Slider<'a>{
 
     pub fn released(&mut self)->f32{
         let value=self.base.released();
-        self.value.set_text(format!("{:.2}",value),&self.glyphs);
+        self.value.set_text(format!("{:.2}",value),&self.font);
         value
     }
 
     pub fn grab(&mut self){
         if self.base.grab(){
             let value=self.base.current_value();
-            self.value.set_text(format!("{:.2}",value),&self.glyphs);
+            self.value.set_text(format!("{:.2}",value),&self.font);
         }
     }
 }
@@ -94,7 +94,7 @@ impl<'a> Drawable for Slider<'a>{
 
     fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         self.head.draw(draw_parameters,graphics);
-        self.value.draw(draw_parameters,graphics,&self.glyphs);
+        self.value.draw(draw_parameters,graphics,&self.font);
         self.base.draw(draw_parameters,graphics);
     }
 }

@@ -9,8 +9,14 @@ use cat_engine::{
     // types
     Colour,
     // structs
-    text::{TextBase,Glyphs},
-    graphics::Graphics,
+    text::{
+        char_width,
+        text_width,
+        text_size,
+        TextBase,
+        rusttype::{Font,Point,Scale}
+    },
+    graphics::{Graphics,Graphics2D},
     glium::DrawParameters,
 };
 
@@ -25,11 +31,11 @@ pub struct TextViewLine<'a>{
 }
 
 impl<'a> TextViewLine<'a>{
-    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&'a Glyphs)->TextViewLine{
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,font:&'a Font<'static>)->TextViewLine<'a>{
         Self{
             rect:settings.rect,
             align:settings.align.clone(),
-            base:TextViewStaticLine::new(settings,glyphs),
+            base:TextViewStaticLine::new(settings,font),
         }
     }
 
@@ -38,14 +44,10 @@ impl<'a> TextViewLine<'a>{
         self.base.font_size()
     }
 
-    pub fn set_text<S:Into<String>>(&mut self,text:S,glyphs:&Glyphs){
+    pub fn set_text<S:Into<String>>(&mut self,text:S,font:&Font<'static>){
         self.base.line=text.into();
 
-        let mut line_len=0f32;
-        for ch in self.base.line.chars(){
-            let character=glyphs.character(ch,self.font_size());
-            line_len+=character.width();
-        }
+        let line_len=text_width(&self.base.line,self.base.base.font_size,font);
 
         let x=match self.align.x{
             AlignX::Right=>self.rect[0]+self.rect[2]-line_len,
@@ -67,13 +69,13 @@ impl<'a> TextViewLine<'a>{
     }
 
     #[inline(always)]
-    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics,glyphs:&Glyphs){
-        self.base.base.draw(&self.base.line,draw_parameters,g,glyphs);
+    pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics,font:&Font<'static>){
+        self.base.base.draw_str(&self.base.line,font,draw_parameters,g);
     }
 
-    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut Graphics,glyphs:&Glyphs){
+    pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut Graphics,font:&Font<'static>){
         self.set_alpha_channel(alpha);
-        self.draw(draw_parameters,g,glyphs)
+        self.draw(draw_parameters,g,font)
     }
 }
 
@@ -84,11 +86,11 @@ pub struct TextViewLined<'a>{
 }
 
 impl<'a> TextViewLined<'a>{
-    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&'a Glyphs)->TextViewLined<'a>{
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,font:&'a Font<'static>)->TextViewLined<'a>{
         Self{
             rect:settings.rect,
             align:settings.align.clone(),
-            base:TextViewStaticLined::new(settings,glyphs)
+            base:TextViewStaticLined::new(settings,font)
         }
     }
 
@@ -99,7 +101,7 @@ impl<'a> TextViewLined<'a>{
         let dline=line_margin+font_size; // Расстояние между строками
 
         let mut height=dline; // Высота всего текста
-        
+
         let line_length=self.rect[2]; // Максимальная длина строки текста
 
         let mut last_whitespace=0; // Последний пробел - по нему разделяется текст при переходе на новую строку
@@ -107,16 +109,14 @@ impl<'a> TextViewLined<'a>{
         let mut line_len=0f32; // Длина строки текста
         let mut word_len=0f32; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
 
-        let whitespace_width=self.base.glyphs.character(' ',self.base.base.font_size).width();
-        let nl_whitespace_width=self.base.glyphs.character('\n',self.base.base.font_size).width();
+        let whitespace_width=char_width(' ',self.base.base.font_size,self.base.font);
+        let nl_whitespace_width=char_width('\n',self.base.base.font_size,self.base.font);
 
         let text=text.into();
 
         for (c,ch) in text.char_indices(){
 
-            let character=self.base.glyphs.character(ch,self.base.base.font_size);
-
-            let char_width=character.width();
+            let char_width=char_width(ch,self.base.base.font_size,self.base.font);
             line_len+=char_width;
             word_len+=char_width;
 
@@ -170,7 +170,7 @@ impl<'a> TextViewLined<'a>{
             AlignY::Down=>self.rect[3]-height,
         };
 
-        self.base.base.set_position([x,y]);
+        self.base.base.move_to([x,y]);
     }
 
     #[inline(always)]
@@ -193,28 +193,22 @@ impl<'a> TextViewLined<'a>{
 pub struct TextViewStaticLine<'a>{
     base:TextBase,
     line:String,
-    glyphs:&'a Glyphs
+    font:&'a Font<'static>
 }
 
 impl<'a> TextViewStaticLine<'a>{
-    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&'a Glyphs)->TextViewStaticLine<'a>{
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,font:&'a Font<'static>)->TextViewStaticLine<'a>{
         let line=settings.text.into();
 
-        let font_size=settings.font_size;
-
-        let mut line_len=0f32;
-        for ch in line.chars(){
-            let character=glyphs.character(ch,settings.font_size);
-            line_len+=character.width();
-        }
+        let text_size=text_size(&line,settings.font_size,font);
 
         // Выравнивание
-        let (x,y)=settings.align.text_position(settings.rect,[line_len,font_size]);
+        let (x,y)=settings.align.text_position(settings.rect,text_size);
 
         Self{
-            base:TextBase::new(settings.text_colour,settings.font_size).position([x,y]),
+            base:TextBase::new([x,y],settings.font_size,settings.text_colour),
             line:line,
-            glyphs:glyphs
+            font:font
         }
     }
 
@@ -235,12 +229,16 @@ impl<'a> TextViewStaticLine<'a>{
 
     #[inline(always)]
     pub fn draw(&self,draw_parameters:&mut DrawParameters,g:&mut Graphics){
-        self.base.draw(&self.line,draw_parameters,g,self.glyphs);
+        self.base.draw_str(&self.line,self.font,draw_parameters,g);
     }
 
     pub fn draw_smooth(&mut self,alpha:f32,draw_parameters:&mut DrawParameters,g:&mut Graphics){
         self.set_alpha_channel(alpha);
         self.draw(draw_parameters,g)
+    }
+
+    pub fn add_object(&self,graphics:&mut Graphics2D)->usize{
+        graphics.add_text_object(self.line.clone(),&self.base,0).unwrap()
     }
 }
 
@@ -248,12 +246,12 @@ impl<'a> TextViewStaticLine<'a>{
 // Зависим от шрифта
 pub struct TextViewStaticLined<'a>{
     base:TextBase,
-    glyphs:&'a Glyphs,
+    font:&'a Font<'static>,
     lines:Vec<(f32,String)>,
 }
 
 impl<'a> TextViewStaticLined<'a>{
-    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,glyphs:&'a Glyphs)->TextViewStaticLined<'a>{
+    pub fn new<S:Into<String>>(settings:TextViewSettings<S>,font:&'a Font<'static>)->TextViewStaticLined<'a>{
         let mut lines=Vec::new();
 
         let font_size=settings.font_size;
@@ -268,16 +266,13 @@ impl<'a> TextViewStaticLined<'a>{
         let mut line_len=0f32; // Длина строки текста
         let mut word_len=0f32; // Длина слова - нужна для определения начальной длины строки текста при переходе на новую строку
 
-        let whitespace_width=glyphs.character(' ',settings.font_size).width();
-        let nl_whitespace_width=glyphs.character('\n',settings.font_size).width();
+        let whitespace_width=char_width(' ',settings.font_size,font);
+        let nl_whitespace_width=char_width('\n',settings.font_size,font);
 
         let text=settings.text.into();
 
         for (c,ch) in text.char_indices(){
-
-            let character=glyphs.character(ch,settings.font_size);
-
-            let char_width=character.width();
+            let char_width=char_width(ch,settings.font_size,font);
             line_len+=char_width;
             word_len+=char_width;
 
@@ -332,9 +327,9 @@ impl<'a> TextViewStaticLined<'a>{
         };
 
         Self{
-            base:TextBase::new(settings.text_colour,settings.font_size).position([x,y]),
+            base:TextBase::new([x,y],settings.font_size,settings.text_colour),
             lines,
-            glyphs:glyphs,
+            font:font,
         }
     }
 
@@ -352,17 +347,27 @@ impl<'a> TextViewStaticLined<'a>{
             let dx=line.0; // Выравнивание строки
             self.base.shift_x(dx);
 
-            self.base.draw(&line.1,draw_parameters,graphics,self.glyphs);
+            self.base.draw_str(&line.1,self.font,draw_parameters,graphics);
 
             self.base.shift(-dx,dy);
         }
 
-        self.base.set_position(position);
+        self.base.move_to(position);
     }
 
     // Вывод части текста
-    pub fn draw_part(&mut self,chars:usize,draw_parameters:&mut DrawParameters,g:&mut Graphics)->bool{
-        let mut position=self.base.position;
+    pub fn draw_part(
+        &mut self,
+        chars:usize,
+        draw_parameters:&mut DrawParameters,
+        graphics:&mut Graphics
+    )->bool{
+        let mut point=Point{
+            x:self.base.position[0],
+            y:self.base.position[1]
+        };
+
+        let scale=Scale::uniform(self.base.font_size);
 
         let dy=self.base.font_size+line_margin as f32;
 
@@ -372,68 +377,35 @@ impl<'a> TextViewStaticLined<'a>{
 
         // Перебор строк
         'lines:for line in &self.lines{
-            position[0]+=line.0 as f32; // Сдвиг строки
+            point.x+=line.0 as f32; // Сдвиг строки (выравнивание)
 
-            for ch in line.1.chars(){
+            for character in line.1.chars(){
                 if chars_passed==chars{
                     whole_text=false;
                     break 'lines
                 }
                 chars_passed+=1;
 
-                let character=self.glyphs.character_positioned(ch,self.base.font_size,position);
-                self.base.draw_character(&character,draw_parameters,g);
+                let scaled_glyph=self.font.glyph(character).scaled(scale);
 
-                // Сдвиг дальше вдоль горизонтальной линии и выравнивае по горизонтали
-                position[0]+=character.width();
+                // ширина символа
+                let width_offset=scaled_glyph.h_metrics().advance_width;
+
+                // символ с позицией
+                let glyph=scaled_glyph.positioned(point);
+
+                graphics.draw_glyph(glyph,self.base.colour,draw_parameters).unwrap();
+
+                // Сдвиг дальше вдоль горизонтальной линии
+                point.x+=width_offset;
             }
 
             // Переход на новую строку
-            position[0]=self.base.position[0] as f32;
-            position[1]+=dy;
+            point.x=self.base.position[0] as f32;
+            point.y+=dy;
         }
 
         whole_text
     }
 }
 
-#[derive(Clone)] // Настройки текстового поля
-pub struct TextViewSettings<S:Into<String>>{
-    rect:[f32;4], // [x1,y1,width,height] - сюда вписывается текст
-    text:S,
-    font_size:f32,
-    text_colour:Colour,
-    align:Align,
-}
-
-impl<S:Into<String>> TextViewSettings<S>{
-    pub fn new(text:S,rect:[f32;4])->TextViewSettings<S>{
-        Self{
-            rect:rect,
-            text:text,
-            font_size:20f32,
-            text_colour:Black,
-            align:Align::center()
-        }
-    }
-
-    pub fn font_size(mut self,size:f32)->TextViewSettings<S>{
-        self.font_size=size;
-        self
-    }
-
-    pub fn text_colour(mut self,colour:Colour)->TextViewSettings<S>{
-        self.text_colour=colour;
-        self
-    }
-
-    pub fn align_x(mut self,align:AlignX)->TextViewSettings<S>{
-        self.align.x=align;
-        self
-    }
-
-    pub fn align_y(mut self,align:AlignY)->TextViewSettings<S>{
-        self.align.y=align;
-        self
-    }
-}

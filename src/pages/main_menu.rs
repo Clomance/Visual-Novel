@@ -1,22 +1,22 @@
 use crate::{
+    // consts
+    wallpaper,
     game_name,
-    Main_font,
-    make_screenshot,
+    // enums
+    Wallpaper,
+    // structs
     Game,
-    Settings,
+    Drawable,
+    DrawableObject,
 };
 
 use super::{
     default_page_smooth,
-    EnterUserName,
-    SettingsPage,
 };
 
 use lib::{
-    Wallpaper,
     Menu,
     MenuSettings,
-    Drawable,
 };
 
 use cat_engine::{
@@ -32,68 +32,158 @@ use cat_engine::{
     Window,
     // structs
     DefaultWindow,
-    graphics::Graphics,
-    
+    PagedWindow,
+    graphics::{
+        Graphics,
+        DrawType,
+        ObjectType
+    },
 };
 
 const page_smooth:f32=default_page_smooth; // Сглаживание переходов - 1 к количеству кадров перехода
 
 const menu_movement_scale:f32=10f32; // Обратный коэфициент сдвига меню при движении мышью
 
-// Кнопки меню
-// Для упрощение определения нажатой кнопки,
-// так как меню может иметь ещё и кпопку "Продолжить"
-enum MenuButtons{
-    Continue,
-    New,
-    Settings,
-    Exit
+// Индекс картинки для главного меню
+// Пока что так
+const main_menu_image:usize=0;
+
+pub fn set_main_menu(game:&mut Game,window:&mut PagedWindow){
+    // Устновка обоев для главного меню
+    window.graphics2d().get_textured_object_texture(wallpaper).update(&game.images[main_menu_image]);
+    game.wallpaper=Wallpaper::Texture;
+
+    let mut buttons_text=Vec::with_capacity(4);
+
+    if game.settings.continue_game{
+        buttons_text.push("Продолжить");
+    }
+    buttons_text.push("Новая игра");
+    buttons_text.push("Настройки");
+    buttons_text.push("Выход");
+
+    // Настройка меню
+    let menu_settings=MenuSettings::new(game_name,buttons_text.into_iter())
+            .draw_type(DrawType::Shifting([0f32;2]))
+            .head_size([180f32,80f32])
+            .buttons_size([180f32,60f32]);
+
+    let menu=Menu::new(menu_settings,window.graphics2d());
+
+    // Добавление заголовка меню
+    game.object_map.add_drawable_object(menu.head);
+
+    // Добавление кнопок меню
+    for button in menu.buttons{
+        let text=button.text.clone();
+        game.object_map.add_object(button);
+        game.object_map.add_drawable_object(text);
+    }
+
+    game.prerendering=main_menu_prerendering;
+    game.updates=Game::empty_updates;
+    game.click_handler=main_menu_click_handler;
+
+    game.audio.play_track(0,0);
 }
 
-impl MenuButtons{
-    #[inline(always)]
-    fn button(mut id:u8)->MenuButtons{
-        if unsafe{!Settings.continue_game}{
-            id+=1;
-        }
-        match id{
-            0=>MenuButtons::Continue,
-            1=>MenuButtons::New,
-            2=>MenuButtons::Settings,
-            _=>MenuButtons::Exit
+pub fn main_menu_prerendering(game:&mut Game){
+    for drawable in game.object_map.get_drawables(){
+        if let DrawType::Shifting(shift)=&mut drawable.draw_type{
+            let new_shift=unsafe{mouse_cursor.center_radius()};
+            *shift=[
+                new_shift[0]/menu_movement_scale,
+                new_shift[1]/menu_movement_scale
+            ];
         }
     }
 }
 
-// Главное меню
-pub struct MainMenu<'a,'wallpaper>{
-    pub menu:Menu<'a>,
-    pub wallpaper:&'wallpaper mut Wallpaper
+pub fn main_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,window:&mut PagedWindow){
+    let shift_position=unsafe{
+        let position=mouse_cursor.position();
+        let shift=mouse_cursor.center_radius();
+        [
+            position[0]-shift[0]/menu_movement_scale,
+            position[1]-shift[1]/menu_movement_scale,
+        ]
+    };
+
+    if pressed{
+        match button{
+            MouseButton::Left=>{
+                if let Some(mut button)=game.object_map.pressed(shift_position){
+                    if !game.settings.continue_game{
+                        button+=1;
+                    }
+                    match button{
+                        // continue
+                        0=>{
+                            println!("pressed")
+                        }
+                        // new game
+                        1=>{
+                            println!("pressed")
+                        }
+                        // settings
+                        2=>{
+                            println!("pressed")
+                        }
+                        // exit
+                        3=>{
+                            println!("pressed")
+                        }
+                        _=>{
+
+                        }
+                    }
+                }
+            }
+            _=>{}
+        }
+    }
+    else{
+        match button{
+            MouseButton::Left=>{
+                if let Some((mut button,clicked))=game.object_map.released(shift_position){
+                    if !game.settings.continue_game{
+                        button+=1;
+                    }
+                    match button{
+                        0=>{
+                            if clicked{
+                                println!("continue")
+                            }
+                        }
+                        1=>{
+                            if clicked{
+                                println!("continue")
+                            }
+                        }
+                        2=>{
+                            if clicked{
+                                println!("continue")
+                            }
+                        }
+                        3=>{
+                            if clicked{
+                                window.stop_events();
+                                println!("exit")
+                            }
+                        }
+                        _=>{
+    
+                        }
+                    }
+                }
+            }
+            _=>{}
+        }
+    }
 }
+/*
 
 impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
-    pub fn new(wallpaper:&'wallpaper mut Wallpaper)->MainMenu<'a,'wallpaper>{
-
-        // Настройка заголовка меню
-        let mut buttons_text=Vec::with_capacity(4);
-
-        if unsafe{Settings.continue_game}{
-            buttons_text.push("Продолжить".to_string());
-        }
-        buttons_text.push("Новая игра".to_string());
-        buttons_text.push("Настройки".to_string());
-        buttons_text.push("Выход".to_string());
-
-        // Настройка меню
-        let menu_settings=MenuSettings::new(game_name,&buttons_text)
-                .head_size([180f32,80f32])
-                .buttons_size([180f32,60f32]);
-
-        Self{
-            menu:Menu::new(menu_settings,Main_font!()), // Создание меню
-            wallpaper,
-        }
-    }
 
     pub fn start(mut self,window:&mut DefaultWindow,music:&Audio)->Game{
         self.mouse_shift(unsafe{
@@ -220,3 +310,4 @@ impl<'a,'wallpaper> MainMenu<'a,'wallpaper>{
         self.wallpaper.mouse_shift(unsafe{mouse_cursor.center_radius()});
     }
 }
+*/
