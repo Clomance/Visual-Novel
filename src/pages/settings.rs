@@ -1,294 +1,163 @@
 use crate::{
-    Main_font,
-    make_screenshot,
+    // consts
+    wallpaper,
+    game_name,
+    // enums
+    Wallpaper,
+    // structs
     Game,
-    Settings,
+    Drawable,
+    DrawableObject,
 };
 
-use super::default_page_smooth;
+use super::{
+    default_page_smooth,
+};
 
 use lib::{
-    colours::{White,Settings_page_colour},
-    Drawable,
-    Slider,
-    SliderSettings,
-    TextViewSettings,
-    TextViewStaticLine,
-    Button,
-    ButtonSettings,
-    List,
-    ListSettings,
-    ListFocus
+    Menu,
+    MenuSettings,
 };
 
 use cat_engine::{
     // statics
-    window_width,
-    window_height,
-    window_center,
-    // fns
-    window_rect,
-    // types
-    Colour,
+    mouse_cursor,
     // enums
     WindowEvent,
-    MouseButton,
     KeyboardButton,
+    MouseButton,
+    glium::DrawParameters,
     audio::Audio,
     // traits
     Window,
     // structs
     DefaultWindow,
-    shapes::Rectangle,
+    PagedWindow,
+    graphics::{
+        Graphics,
+        DrawType,
+        ObjectType
+    },
 };
 
+pub fn set_settings_menu(game:&mut Game,window:&mut PagedWindow){
+    // Устновка обоев для главного меню
+    game.wallpaper=Wallpaper::Colour([1f32,0f32,0f32,1f32]);
 
-const page_smooth:f32=default_page_smooth;
+    let mut buttons_text=Vec::with_capacity(4);
 
-const background_color:Colour=Settings_page_colour;
+    if game.settings.continue_game{
+        buttons_text.push("Продолжить");
+    }
+    buttons_text.push("Новая игра");
+    buttons_text.push("Растройки :(");
+    buttons_text.push("Выход");
 
-pub struct SettingsPage<'a>{
-    head:TextViewStaticLine<'a>,
-    monitor_head:TextViewStaticLine<'a>,
-    monitor_label:TextViewStaticLine<'a>,
-    monitor_list:List<'a>,
-    signs_per_sec:Slider<'a>,
-    volume:Slider<'a>,
-    back_button:Button<'a>,
-}
+    // Настройка меню
+    let menu_settings=MenuSettings::new(game_name,buttons_text.into_iter())
+            .draw_type(DrawType::Common)
+            .head_size([180f32,80f32])
+            .buttons_size([180f32,60f32]);
 
-impl<'a> SettingsPage<'a>{
-    pub unsafe fn new(window:&DefaultWindow)->SettingsPage<'a>{
-        let head_settings=TextViewSettings::new("Настройки",[
-                    0f32,
-                    0f32,
-                    window_width,
-                    80f32,
-                ])
-                .font_size(40f32)
-                .text_colour(White);
+    let menu=Menu::new(menu_settings,window.graphics2d());
 
-        let mut monitors:Vec<String>=Vec::new();
-        let available_monitors=window.display().gl_window().window().available_monitors();
+    // Добавление заголовка меню
+    game.object_map.add_drawable_object(menu.head);
 
-        for (c,_) in available_monitors.enumerate(){
-            monitors.push(format!("Монитор {}",c+1))
-        }
-
-        let monitor_list_head_settings=TextViewSettings::new("Выбор монитора",
-                [
-                    140f32,
-                    140f32,
-                    260f32,
-                    40f32,
-                ])
-                .text_colour(White);
-
-        let monitor_list_label_settings=TextViewSettings::new("Требуется перезапуск",
-                [
-                    140f32,
-                    180f32,
-                    260f32,
-                    20f32,
-                ])
-                .font_size(15f32)
-                .text_colour(White);
-
-        let monitor_list_settings=ListSettings::new(
-                [
-                    140f32,
-                    200f32,
-                    260f32,
-                    50f32,
-                ],
-                &monitors
-            )
-            .chosen_item(Settings.monitor);
-
-        let signs_per_sec_slider_sets=SliderSettings::new()
-                .head("Количество символов в секунду")
-                .position([window_center[0],160f32])
-                .length(250f32)
-                .min_value(15f32)
-                .max_value(120f32)
-                .current_value(Settings.signs_per_frame*60f32);
-
-
-        let volume_settings=SliderSettings::new()
-                .head("Громкость")
-                .position([window_center[0],250f32])
-                .length(250f32)
-                .min_value(0f32)
-                .max_value(100f32)
-                .current_value(Settings.volume as f32*100f32);
-
-
-        let volume=Slider::new(volume_settings,Main_font!());
-
-        // Настройки кнопки выхода
-        let button_settings=ButtonSettings::new("Назад",[
-                    40f32,
-                    window_height-80f32,
-                    120f32,
-                    60f32
-                ]);
-
-
-        Self{
-            head:TextViewStaticLine::new(head_settings,Main_font!()),
-            monitor_head:TextViewStaticLine::new(monitor_list_head_settings,Main_font!()),
-            monitor_label:TextViewStaticLine::new(monitor_list_label_settings,Main_font!()),
-            monitor_list:List::new(monitor_list_settings,Main_font!()),
-            signs_per_sec:Slider::new(signs_per_sec_slider_sets,Main_font!()),
-            volume:volume,
-            back_button:Button::new(button_settings,Main_font!()),
-        }
+    // Добавление кнопок меню
+    for button in menu.buttons{
+        let text=button.text.clone();
+        game.object_map.add_object(button);
+        game.object_map.add_drawable_object(text);
     }
 
-    pub unsafe fn start(mut self,window:&mut DefaultWindow,music:&Audio)->Game{
+    game.prerendering=settings_menu_prerendering;
+    game.updates=Game::empty_updates;
+    game.click_handler=settings_menu_click_handler;
 
-        match self.smooth(window){
-            Game::Back=>return Game::Back,
-            Game::Exit=>return Game::Exit,
+}
+pub fn settings_menu_prerendering(game:&mut Game){}
+
+pub fn settings_click_handler(game:&mut Game,pressed:bool,button:MouseButton,window:&mut PagedWindow){
+    let shift_position=unsafe{
+        let position=mouse_cursor.position();
+        let shift=mouse_cursor.center_radius();
+        [
+            position[0]-shift[0]/menu_movement_scale,
+            position[1]-shift[1]/menu_movement_scale,
+        ]
+    };
+
+    if pressed{
+        match button{
+            MouseButton::Left=>{
+                if let Some(mut button)=game.object_map.pressed(shift_position){
+
+                    if !game.settings.continue_game{
+                        button+=1;
+                    }
+                    match button{
+                        // continue
+                        0=>{
+                            println!("pressed")
+                        }
+                        // new game
+                        1=>{
+                            println!("pressed")
+                        }
+                        // settings
+                        2=>{
+                            println!("pressed")
+                        }
+                        // exit
+                        3=>{
+                            println!("pressed")
+                        }
+                        _=>{
+
+                        }
+                    }
+                }
+            }
             _=>{}
         }
-
-        while let Some(event)=window.next_event(){
-            match event{
-                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
-
-                WindowEvent::MouseMovementDelta(_)=>{
-                    self.signs_per_sec.grab();
-                    self.volume.grab();
-                }
-
-                //Рендеринг
-                WindowEvent::RedrawRequested=>window.draw(|c,g|{
-                    g.clear_colour(background_color);
-
-                    self.head.draw(c,g);
-
-                    self.monitor_head.draw(c,g);
-                    self.monitor_label.draw(c,g);
-                    self.monitor_list.draw(c,g);
-
-                    self.signs_per_sec.draw(c,g);
-                    self.volume.draw(c,g);
-
-                    self.back_button.draw(c,g);
-                }).unwrap(),
-
-                WindowEvent::MousePressed(button)=>match button{
-                    MouseButton::Left=>{
-                        self.monitor_list.pressed();
-                        self.back_button.pressed();
-                        self.signs_per_sec.pressed();
-                        self.volume.pressed();
-                    },
-                    _=>{}
-                }
-
-                WindowEvent::MouseReleased(button)=>match button{
-                    MouseButton::Left=>{
-                        if let ListFocus::Item(m)=self.monitor_list.released(){
-                            if Settings.monitor!=m{
-                                //window.choose_fullscreen_monitor(m);
-                                Settings.monitor=m;
-                            }
-                            
-                        }
-
-                        Settings.signs_per_frame=self.signs_per_sec.released()/60f32;
-
-                        Settings.volume=self.volume.released()/100f32;
-                        music.set_volume(Settings.volume); // Установка громкости
-
-
-                        if self.back_button.released(){ // Кнопка "Назад"
-                            return Game::Back
-                        }
-                    }
-                    _=>{}
-                }
-
-                WindowEvent::KeyboardReleased(button)=>match button{
-                    KeyboardButton::F5=>if Game::Exit==make_screenshot(window,|p,g|{
-                        g.clear_colour(background_color);
-
-                        self.head.draw(p,g);
-
-                        self.monitor_head.draw(p,g);
-                        self.monitor_label.draw(p,g);
-                        self.monitor_list.draw(p,g);
-
-                        self.signs_per_sec.draw(p,g);
-                        self.volume.draw(p,g);
-
-                        self.back_button.draw(p,g);
-                    }){
-                        return Game::Exit
-                    },
-
-                    KeyboardButton::Escape=>return Game::Back,
-
-                    _=>{}
-                }
-
-                _=>{} // Остальные события
-            }
-        }
-
-        Game::Exit
     }
+    else{
+        match button{
+            MouseButton::Left=>{
+                if let Some((mut button,clicked))=game.object_map.released(shift_position){
+                    if !game.settings.continue_game{
+                        button+=1;
+                    }
+                    match button{
+                        0=>{
+                            if clicked{
+                                println!("continue")
+                            }
+                        }
+                        1=>{
+                            if clicked{
+                                println!("continue")
+                            }
+                        }
+                        2=>{
+                            if clicked{
+                                println!("continue")
+                            }
+                        }
+                        3=>{
+                            if clicked{
+                                window.stop_events();
+                                println!("exit")
+                            }
+                        }
+                        _=>{
 
-    // Плавное открытие
-    pub unsafe fn smooth(&mut self,window:&mut DefaultWindow)->Game{
-        window.set_new_smooth(page_smooth);
-
-        let mut background=Rectangle::new(window_rect(),Settings_page_colour);
-
-        while let Some(event)=window.next_event(){
-            match event{
-                WindowEvent::CloseRequested=>return Game::Exit, // Закрытие игры
-
-                WindowEvent::RedrawRequested=>{ //Рендеринг
-                    if 1f32<window.draw_smooth(|alpha,c,g|{
-                        background.colour[3]=alpha;
-                        background.draw(c,g);
-                        self.head.draw_smooth(alpha,c,g);
-
-                        self.monitor_head.draw_smooth(alpha,c,g);
-                        self.monitor_label.draw_smooth(alpha,c,g);
-                        self.monitor_list.draw_smooth(alpha,c,g);
-
-                        self.signs_per_sec.draw_smooth(alpha,c,g);
-                        self.volume.draw_smooth(alpha,c,g);
-
-                        self.back_button.draw_smooth(alpha,c,g);
-                    }).unwrap(){
-                        break
+                        }
                     }
                 }
-
-                WindowEvent::KeyboardReleased(button)=>match button{
-                    KeyboardButton::F5=>if Game::Exit==make_screenshot(window,|d,g|{
-                        self.head.draw(d,g);
-
-                        self.signs_per_sec.draw(d,g);
-                        self.volume.draw(d,g);
-
-                        self.back_button.draw(d,g);
-                    }){
-                        return Game::Exit
-                    },
-
-                    KeyboardButton::Escape=>return Game::Back,
-                    _=>{}
-                }
-
-                _=>{}
             }
+            _=>{}
         }
-        Game::Current
     }
 }
