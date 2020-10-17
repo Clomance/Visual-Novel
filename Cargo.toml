@@ -9,7 +9,8 @@ build = "build.rs"
 qrelease = []
 
 [dependencies.cat_engine]
-path = "../cat_engine"
+# Works only for Martya
+path = "../CatEngine"
 # version = "0.4.5"
 features = ["audio","auto_hide"]
 

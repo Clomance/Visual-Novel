@@ -12,6 +12,7 @@ use crate::{
 
 use super::{
     default_page_smooth,
+    set_settings_menu,
 };
 
 use lib::{
@@ -84,7 +85,6 @@ pub fn set_main_menu(game:&mut Game,window:&mut PagedWindow){
     game.updates=Game::empty_updates;
     game.click_handler=main_menu_click_handler;
 
-    game.audio.play_track(0,0);
 }
 
 pub fn main_menu_prerendering(game:&mut Game){
@@ -162,7 +162,7 @@ pub fn main_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,wi
                         }
                         2=>{
                             if clicked{
-                                println!("continue")
+                                set_settings_menu(game, window);
                             }
                         }
                         3=>{

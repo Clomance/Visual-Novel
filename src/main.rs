@@ -105,6 +105,7 @@ pub struct Game{
     saved_drawables:Vec<DrawableObject>,
 
 
+    keyboard_handler:fn(&mut Self,bool,KeyboardButton,&mut PagedWindow),
     //
     prerendering:fn(&mut Self),
     updates:fn(&mut Self,&mut PagedWindow),
@@ -170,6 +171,7 @@ impl Game{
             prerendering:Game::empty_prerendering,
             updates:Game::loading_updates,
             click_handler:Game::empty_click_handler,
+            keyboard_handler:Game::empty_keyboard_handler,
         }
     }
 
@@ -185,6 +187,7 @@ impl Game{
             for _ in 0..3{
                 window.graphics2d().delete_last_textured_object();
             }
+            self.audio.play_track(0,0);
 
             return set_main_menu(self,window)
         }
@@ -217,6 +220,10 @@ impl Game{
     }
 
     pub fn empty_click_handler(&mut self,_pressed:bool,_button:MouseButton,_window:&mut PagedWindow){
+
+    }
+
+    pub fn empty_keyboard_handler(&mut self,_:bool,_:KeyboardButton,_:&mut PagedWindow){
 
     }
 }
@@ -271,11 +278,12 @@ impl WindowPage<'static> for Game{
     fn on_mouse_moved(&mut self,_window:&mut PagedWindow,_:[f32;2]){}
     fn on_mouse_scrolled(&mut self,_window:&mut PagedWindow,_:MouseScrollDelta){}
 
-    fn on_keyboard_pressed(&mut self,_window:&mut PagedWindow,_button:KeyboardButton){
-        
+    fn on_keyboard_pressed(&mut self,window:&mut PagedWindow,button:KeyboardButton){
+        (self.keyboard_handler) (self,true,button,window)
     }
-    fn on_keyboard_released(&mut self,_window:&mut PagedWindow,_button:KeyboardButton){
-        
+    fn on_keyboard_released(&mut self,window:&mut PagedWindow,button:KeyboardButton){
+        (self.keyboard_handler) (self,false,button,window)
+
     }
 
     fn on_character_recieved(&mut self,_window:&mut PagedWindow,_character:char){}
@@ -295,7 +303,7 @@ impl WindowPage<'static> for Game{
 }
 
 // Алфавит для рендеринга текста (остальные символы будут выведены как неопределённые)
-const alphabet:&'static str="АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя1234567890";
+const alphabet:&'static str="АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя1234567890AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZzÕõÄäÖöÜü:();[]!.,";
 
 pub const game_name:&'static str="Любимый в УГАТУ";
 
@@ -387,7 +395,7 @@ fn main(){
         (dx,dy,width,height)
     };
 
-    let scale=Scale::new(0.1f32,0.1f32);
+    let scale=Scale::new(0.2f32,0.2f32);
     for font in &fonts{
         let face=Face::from_slice(font,0).unwrap();
         let glyph_cache=GlyphCache::new_alphabet(&face,alphabet,scale,window.display());

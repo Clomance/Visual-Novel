@@ -7,8 +7,8 @@ pub use main_menu::*;
 // mod pause_menu;
 // pub use pause_menu::PauseMenu;
 
-// mod settings;
-// pub use settings::SettingsPage;
+mod settings;
+pub use settings::*;
 
 // mod intro;
 // pub use intro::Intro;

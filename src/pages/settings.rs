@@ -14,14 +14,13 @@ use super::{
     default_page_smooth,
 };
 
-use lib::{
-    Menu,
-    MenuSettings,
-};
+use lib::{Menu, MenuSettings, colours::Light_blue, ButtonSettings, Align, AlignX, AlignY, Button};
 
 use cat_engine::{
     // statics
     mouse_cursor,
+    window_height,
+    window_width,
     // enums
     WindowEvent,
     KeyboardButton,
@@ -39,8 +38,12 @@ use cat_engine::{
         ObjectType
     },
 };
+use crate::pages::set_main_menu;
 
 pub fn set_settings_menu(game:&mut Game,window:&mut PagedWindow){
+    // Clearing buffer
+    window.graphics2d().clear_simple_object_array();
+    game.object_map.clear();
     // Устновка обоев для главного меню
     game.wallpaper=Wallpaper::Colour([1f32,0f32,0f32,1f32]);
 
@@ -54,7 +57,7 @@ pub fn set_settings_menu(game:&mut Game,window:&mut PagedWindow){
     buttons_text.push("Выход");
 
     // Настройка меню
-    let menu_settings=MenuSettings::new(game_name,buttons_text.into_iter())
+    let menu_settings=MenuSettings::new("asd",buttons_text.into_iter())
             .draw_type(DrawType::Common)
             .head_size([180f32,80f32])
             .buttons_size([180f32,60f32]);
@@ -70,54 +73,33 @@ pub fn set_settings_menu(game:&mut Game,window:&mut PagedWindow){
         game.object_map.add_object(button);
         game.object_map.add_drawable_object(text);
     }
+    // Добавление кнопки назад
+    let window_size = unsafe{[window_width, window_height]};
+    let button_size = [175f32, 30f32];
+    let rect = [window_size[0]-button_size[0]-20f32, window_size[1]-button_size[1]-20f32, button_size[0], button_size[1]];
+    let back_button_settings = ButtonSettings::new("Назад в меню", rect);
+    let back_button=Button::new(back_button_settings, window.graphics2d());
+    let text=back_button.text.clone();
+    game.object_map.add_object(back_button);
+    game.object_map.add_drawable_object(text);
 
     game.prerendering=settings_menu_prerendering;
     game.updates=Game::empty_updates;
     game.click_handler=settings_menu_click_handler;
+    game.keyboard_handler=keyboard_handler;
 
 }
-pub fn settings_menu_prerendering(game:&mut Game){}
+pub fn settings_menu_prerendering(_game:&mut Game){}
 
-pub fn settings_click_handler(game:&mut Game,pressed:bool,button:MouseButton,window:&mut PagedWindow){
-    let shift_position=unsafe{
-        let position=mouse_cursor.position();
-        let shift=mouse_cursor.center_radius();
-        [
-            position[0]-shift[0]/menu_movement_scale,
-            position[1]-shift[1]/menu_movement_scale,
-        ]
-    };
+pub fn settings_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,window:&mut PagedWindow){
+    let position=unsafe{mouse_cursor.position()};
 
     if pressed{
         match button{
             MouseButton::Left=>{
-                if let Some(mut button)=game.object_map.pressed(shift_position){
-
-                    if !game.settings.continue_game{
-                        button+=1;
-                    }
-                    match button{
-                        // continue
-                        0=>{
-                            println!("pressed")
-                        }
-                        // new game
-                        1=>{
-                            println!("pressed")
-                        }
-                        // settings
-                        2=>{
-                            println!("pressed")
-                        }
-                        // exit
-                        3=>{
-                            println!("pressed")
-                        }
-                        _=>{
-
-                        }
-                    }
-                }
+                if let Some(button)=game.object_map.pressed(position){
+                    window.graphics2d().set_simple_object_colour(button, [0f32,0f32,1f32,1f32]);
+               }
             }
             _=>{}
         }
@@ -125,7 +107,15 @@ pub fn settings_click_handler(game:&mut Game,pressed:bool,button:MouseButton,win
     else{
         match button{
             MouseButton::Left=>{
-                if let Some((mut button,clicked))=game.object_map.released(shift_position){
+                let button_amount = if !game.settings.continue_game{
+                    4
+                } else {
+                    5
+                };
+                for b in 0..button_amount{
+                    window.graphics2d().set_simple_object_colour(b, Light_blue)
+                }
+                if let Some((mut button,clicked))=game.object_map.released(position){
                     if !game.settings.continue_game{
                         button+=1;
                     }
@@ -151,6 +141,13 @@ pub fn settings_click_handler(game:&mut Game,pressed:bool,button:MouseButton,win
                                 println!("exit")
                             }
                         }
+                        4=>{
+                            if clicked{
+                                window.graphics2d().clear_simple_object_array();
+                                game.object_map.clear();
+                                set_main_menu(game,window)
+                            }
+                        }
                         _=>{
 
                         }
@@ -160,4 +157,16 @@ pub fn settings_click_handler(game:&mut Game,pressed:bool,button:MouseButton,win
             _=>{}
         }
     }
+}
+pub fn keyboard_handler(game:&mut Game,pressed:bool,button:KeyboardButton,window:&mut PagedWindow){
+   if pressed{
+       match button{
+           KeyboardButton::Escape => {
+               window.graphics2d().clear_simple_object_array();
+               game.object_map.clear();
+               set_main_menu(game,window)
+           }
+           _ => {}
+       }
+   }
 }
