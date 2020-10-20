@@ -64,6 +64,7 @@ use std::{
     fs::{metadata,read_dir},
     path::PathBuf,
 };
+use cat_engine::text::{CachedFont, FontOwner};
 
 
 // mod page_table;
@@ -319,9 +320,9 @@ fn main(){
     let mut fonts=Vec::with_capacity(2);
 
     {
-        let main_font_data=std::fs::read("./resources/fonts/main.font").unwrap();
+        let main_font_data=FontOwner::load("./resources/fonts/main.font").unwrap();
         fonts.push(main_font_data);
-        let dialogue_font_data=std::fs::read("./resources/fonts/dialogue.font").unwrap();
+        let dialogue_font_data=FontOwner::load("./resources/fonts/dialogue.font").unwrap();
         fonts.push(dialogue_font_data);
     }
 
@@ -340,7 +341,7 @@ fn main(){
 
         let size=monitor.size();
 
-        let fullscreen=cat_engine::glium::glutin::window::Fullscreen::Borderless(monitor);
+        let fullscreen=cat_engine::glium::glutin::window::Fullscreen::Borderless(Some(monitor));
 
         let icon=load_window_icon();
 
@@ -396,10 +397,10 @@ fn main(){
     };
 
     let scale=Scale::new(0.2f32,0.2f32);
-    for font in &fonts{
-        let face=Face::from_slice(font,0).unwrap();
-        let glyph_cache=GlyphCache::new_alphabet(&face,alphabet,scale,window.display());
-        window.graphics2d().add_glyph_cache(glyph_cache).unwrap();
+    for font in fonts{
+        let glyph_cache=GlyphCache::new_alphabet(font.face(),alphabet,scale,window.display());
+        let cached_font = CachedFont::raw(font, glyph_cache);
+        window.graphics2d().add_font(cached_font).unwrap();
     }
 
     let loading_resources_thread=move||{

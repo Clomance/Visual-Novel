@@ -42,10 +42,9 @@ use crate::pages::set_main_menu;
 
 pub fn set_settings_menu(game:&mut Game,window:&mut PagedWindow){
     // Clearing buffer
-    window.graphics2d().clear_simple_object_array();
-    game.object_map.clear();
-    // Устновка обоев для главного меню
-    game.wallpaper=Wallpaper::Colour([1f32,0f32,0f32,1f32]);
+    clear_all_buffers(game, window);
+    // Устновка обоев для меню
+    game.wallpaper=Wallpaper::Colour([0.3f32,0.6f32,0.6f32,1f32]);
 
     let mut buttons_text=Vec::with_capacity(4);
 
@@ -143,8 +142,7 @@ pub fn settings_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButto
                         }
                         4=>{
                             if clicked{
-                                window.graphics2d().clear_simple_object_array();
-                                game.object_map.clear();
+                                clear_all_buffers(game,window);
                                 set_main_menu(game,window)
                             }
                         }
@@ -169,4 +167,9 @@ pub fn keyboard_handler(game:&mut Game,pressed:bool,button:KeyboardButton,window
            _ => {}
        }
    }
+}
+pub fn clear_all_buffers(game:&mut Game,window:&mut PagedWindow){
+    window.graphics2d().clear_simple_object_array();
+    window.graphics2d().clear_text_object_array();
+    game.object_map.clear();
 }

@@ -12,6 +12,8 @@ use cat_engine::{
     Colour,
     text::{
         TextBase,
+        Font,
+        RawGlyphCache,
     },
     graphics::{
         Graphics2D,
@@ -28,16 +30,19 @@ pub struct TextView{
 
 impl TextView{
     pub fn new<S:Into<String>>(settings:TextViewSettings<S>,graphics:&mut Graphics2D)->TextView{
+        // Создаем строку текста
         let line=settings.text.into();
 
         let font=graphics.get_glyph_cache(settings.font);
 
-        let text_size=font.text_size(&line,settings.font_size);
+        let scale=RawGlyphCache::scale_for_height(font, settings.font_size);
+
+        let text_size=font.text_size(&line,scale);
 
         // Выравнивание
         let (x,y)=settings.align.text_position(settings.rect,text_size);
 
-        let text_base=TextBase::new([x,y],settings.font_size,settings.text_colour);
+        let text_base=TextBase::new([x,y],scale,settings.text_colour);
 
         Self{
             index:graphics.add_text_object(line,&text_base,settings.font).unwrap(),
@@ -51,12 +56,12 @@ impl Drawable for TextView{
         self.index
     }
 
-    fn draw_type(&self)->DrawType{
-        self.draw_type.clone()
-    }
-
     fn object_type(&self)->ObjectType{
         ObjectType::Text
+    }
+
+    fn draw_type(&self)->DrawType{
+        self.draw_type.clone()
     }
 }
 
@@ -75,8 +80,8 @@ impl<S:Into<String>> TextViewSettings<S>{
     pub fn new(text:S,rect:[f32;4])->TextViewSettings<S>{
         Self{
             general:GeneralSettings::new(),
-            rect:rect,
-            text:text,
+            rect,
+            text,
             font_size:20f32,
             font:0usize,
             text_colour:Black,
