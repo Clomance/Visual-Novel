@@ -29,7 +29,8 @@ pub const Cyan:Colour=[0.2,0.8,0.8,1.0]; // Бирюзовый
 pub const Gray:Colour=[0.5,0.5,0.5,1.0]; // Истинный серый, выше - светлее, ниже - темнее
 pub const Dark_gray:Colour=[0.09,0.09,0.09,1.0];
 
-
+// Bleak orange \\
+pub const Bleak_orange:Colour=[1.0, 0.545, 0.349, 1.0];
 // Специальные \\
 pub const Head_main_menu_colour:Colour=White;
 

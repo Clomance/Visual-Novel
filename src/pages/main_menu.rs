@@ -15,23 +15,23 @@ use super::{
     set_settings_menu,
 };
 
-use lib::{
-    Menu,
-    MenuSettings,
-};
+use lib::{Menu, MenuSettings, TextView, TextViewSettings, ButtonSettings, Button};
 
 use cat_engine::{
     // statics
+    window_height,
+    window_width,
     mouse_cursor,
     // enums
     WindowEvent,
     KeyboardButton,
     MouseButton,
     glium::DrawParameters,
-    audio::Audio,
     // traits
     Window,
     // structs
+    audio::Audio,
+    shapes::*,
     DefaultWindow,
     PagedWindow,
     graphics::{
@@ -40,6 +40,7 @@ use cat_engine::{
         ObjectType
     },
 };
+use lib::colours::Bleak_orange;
 
 const page_smooth:f32=default_page_smooth; // Сглаживание переходов - 1 к количеству кадров перехода
 
@@ -84,6 +85,7 @@ pub fn set_main_menu(game:&mut Game,window:&mut PagedWindow){
     game.prerendering=main_menu_prerendering;
     game.updates=Game::empty_updates;
     game.click_handler=main_menu_click_handler;
+    game.keyboard_handler=keyboard_handler;
 
 }
 
@@ -113,6 +115,7 @@ pub fn main_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,wi
         match button{
             MouseButton::Left=>{
                 if let Some(mut button)=game.object_map.pressed(shift_position){
+                    game.audio.play_track(1,1);
                     if !game.settings.continue_game{
                         button+=1;
                     }
@@ -171,6 +174,19 @@ pub fn main_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,wi
                                 println!("exit")
                             }
                         }
+                        4=>{
+                            if clicked{
+                                window.stop_events();
+                                println!("exit")
+                            }
+                        }
+                        5=>{
+                            if clicked{
+                                clear_all_buffers(game,window);
+                                set_main_menu(game,window);
+                                println!("exit cancelled")
+                            }
+                        }
                         _=>{
     
                         }
@@ -180,6 +196,46 @@ pub fn main_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,wi
             _=>{}
         }
     }
+}
+pub fn keyboard_handler(game:&mut Game,pressed:bool,button:KeyboardButton,window:&mut PagedWindow){
+   if pressed{
+       match button{
+           KeyboardButton::Escape => {
+               // making a box for dialog to fit in
+               let window_size = unsafe{[window_width, window_height]};
+               let rect_size = [window_size[0]/2f32-200f32, window_size[1]/2f32-100f32, 400f32, 200f32];
+               let dialog_box_rect = Rectangle::new(rect_size, [1.0, 0.545, 0.349, 0.75]); // Uses Bleak_orange with lowered alpha
+               let dialog_box_rect_index = window.graphics2d().add_simple_object(&dialog_box_rect).unwrap();
+               game.object_map.add_drawable(dialog_box_rect_index, ObjectType::Simple, DrawType::Common);
+
+               // making confirmation text
+               let confirmation_text_settings = TextViewSettings::new("Точно изволишь выйти?", [window_size[0]/2f32-200f32+5f32, window_size[1]/2f32-100f32+5f32, 195f32, 20f32]);
+               let confirmation_text = TextView::new(confirmation_text_settings, window.graphics2d());
+               game.object_map.add_drawable_object(confirmation_text);
+
+               // making confirmation buttons
+               let confirmation_button_size = [window_size[0]/16f32, window_size[1]/10f32];
+               let confirmation_button_yes_placement = [window_size[0]/2f32-200f32+20f32, window_size[1]/2f32-20f32, confirmation_button_size[0], confirmation_button_size[1]];
+               let confirmation_button_yes_settings = ButtonSettings::new("Да", confirmation_button_yes_placement);
+               let confirmation_button_yes = Button::new(confirmation_button_yes_settings, window.graphics2d());
+               let confirmation_button_no_placement = [window_size[0]/2f32+175f32-confirmation_button_size[1], window_size[1]/2f32-20f32, confirmation_button_size[0], confirmation_button_size[1]];
+               let confirmation_button_no_settings = ButtonSettings::new("Нет", confirmation_button_no_placement);
+               let confirmation_button_no = Button::new(confirmation_button_no_settings, window.graphics2d());
+               let yes = confirmation_button_yes.text.clone();
+               let no = confirmation_button_no.text.clone();
+               game.object_map.add_object(confirmation_button_yes);
+               game.object_map.add_drawable_object(yes);
+               game.object_map.add_object(confirmation_button_no);
+               game.object_map.add_drawable_object(no);
+           }
+           _ => {}
+       }
+   }
+}
+pub fn clear_all_buffers(game:&mut Game,window:&mut PagedWindow){
+    window.graphics2d().clear_simple_object_array();
+    window.graphics2d().clear_text_object_array();
+    game.object_map.clear();
 }
 /*
 

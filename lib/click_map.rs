@@ -34,7 +34,7 @@ impl ClickMap{
 
     /// Проверка нажатия
     pub fn pressed(&mut self,[x,y]:[f32;2])->Option<usize>{
-        for (c,object) in self.objects.iter_mut().enumerate(){
+        for (c,object) in self.objects.iter_mut().enumerate().rev(){
             if object.x1<x && object.x2>x && object.y1<y && object.y2>y{
                 object.pressed=true;
                 return Some(c)
@@ -47,7 +47,7 @@ impl ClickMap{
     /// Функции лучше подходит название "clicked"
     /// true - clicked
     pub fn released(&mut self,[x,y]:[f32;2])->Option<(usize,bool)>{
-        for (c,object) in self.objects.iter_mut().enumerate(){
+        for (c,object) in self.objects.iter_mut().enumerate().rev(){
             if object.pressed{
                 object.pressed=false;
                 if object.x1<x && object.x2>x && object.y1<y && object.y2>y{

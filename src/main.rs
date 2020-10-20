@@ -153,6 +153,7 @@ impl Game{
         let host=cat_engine::audio::cpal::default_host();
         let audio=Audio::new(host,AudioSettings::new()).unwrap();
         audio.add_track("./resources/music/audio.mp3");
+        audio.add_track("./resources/music/button.mp3");
 
 
         let thread=std::thread::spawn(background);
@@ -371,8 +372,8 @@ fn main(){
 
 
         window_settings.graphics_base_settings.simple.vertex_buffer_size=100usize;
-        window_settings.graphics_base_settings.simple.vertex_buffer_offset=80usize;
-        window_settings.graphics_base_settings.simple.object_buffer_size=4usize;
+        window_settings.graphics_base_settings.simple.vertex_buffer_offset=0usize;
+        window_settings.graphics_base_settings.simple.object_buffer_size=10usize;
 
         window_settings.graphics_base_settings.text.glyph_texture_size=[512u32;2];
     }){
