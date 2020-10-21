@@ -1,8 +1,19 @@
-use super::{
-    DrawableObject,
+mod traits;
+pub use traits::{
     Drawable,
-    ClickMap,
+    ComplexDrawable,
     Clickable,
+};
+
+mod objects;
+pub use objects::{
+    DrawableObject,
+    ClickableObject,
+};
+
+mod click_map;
+pub use click_map::{
+    ClickMap,
 };
 
 use cat_engine::{
@@ -27,22 +38,6 @@ impl ObjectMap{
         }
     }
 
-    pub fn add_drawable(&mut self,index:usize,object_type:ObjectType,draw_type:DrawType){
-        let drawable_object=DrawableObject::new(index,object_type,draw_type);
-
-        self.drawable.push(drawable_object);
-    }
-
-    pub fn add_drawable_object<O:Drawable>(&mut self,object:O){
-        let index=object.index();
-        let object_type=object.object_type();
-        let draw_type=object.draw_type();
-
-        let drawable_object=DrawableObject::new(index,object_type,draw_type);
-
-        self.drawable.push(drawable_object);
-    }
-
     pub fn add_object<O:Clickable+Drawable>(&mut self,object:O){
         let index=object.index();
         let object_type=object.object_type();
@@ -64,18 +59,6 @@ impl ObjectMap{
         self.click_map.add_object(click_coords);
     }
 
-    pub fn set_drawable_object(&mut self,index:usize,object:DrawableObject){
-        self.drawable[index]=object
-    }
-
-    pub fn get_drawable(&mut self,index:usize)->&mut DrawableObject{
-        &mut self.drawable[index]
-    }
-
-    pub fn get_drawables(&mut self)->&mut Vec<DrawableObject>{
-        &mut self.drawable
-    }
-
     pub fn clear(&mut self){
         self.drawable.clear();
         self.click_map.clear()
@@ -93,5 +76,42 @@ impl ObjectMap{
         for drawable in &self.drawable{
             drawable.draw(draw_parameters,graphics).unwrap();
         }
+    }
+}
+
+/// Drawable Object
+impl ObjectMap{
+    pub fn add_drawable(&mut self,index:usize,object_type:ObjectType,draw_type:DrawType){
+        let drawable_object=DrawableObject::new(index,object_type,draw_type);
+
+        self.drawable.push(drawable_object);
+    }
+
+    pub fn add_drawable_object<O:Drawable>(&mut self,object:O){
+        let index=object.index();
+        let object_type=object.object_type();
+        let draw_type=object.draw_type();
+
+        let drawable_object=DrawableObject::new(index,object_type,draw_type);
+
+        self.drawable.push(drawable_object);
+    }
+
+    /// Убирает из массива отрисовки объект
+    pub fn remove_drawable(&mut self,index:usize)->DrawableObject{
+        self.drawable.remove(index)
+    }
+
+    /// Заменяет объект
+    pub fn set_drawable_object(&mut self,index:usize,object:DrawableObject){
+        self.drawable[index]=object
+    }
+
+    pub fn get_drawable(&mut self,index:usize)->&mut DrawableObject{
+        &mut self.drawable[index]
+    }
+
+    pub fn get_drawables(&mut self)->&mut Vec<DrawableObject>{
+        &mut self.drawable
     }
 }

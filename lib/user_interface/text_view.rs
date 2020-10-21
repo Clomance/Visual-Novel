@@ -12,7 +12,6 @@ use cat_engine::{
     Colour,
     text::{
         TextBase,
-        Font,
         RawGlyphCache,
     },
     graphics::{

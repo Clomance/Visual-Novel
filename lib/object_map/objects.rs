@@ -40,8 +40,18 @@ impl DrawableObject{
     }
 }
 
-pub trait Drawable{
-    fn index(&self)->usize;
-    fn object_type(&self)->ObjectType;
-    fn draw_type(&self)->DrawType;
+#[derive(Clone)]
+pub struct ComplexDrawableObject{
+    pub objects:Vec<DrawableObject>
+}
+
+/// Объект для проверки нажатий.
+/// 
+/// Содержит координаты верхней левой и 
+/// нижней правой точек прямоугольника.
+pub struct ClickableObject{
+    pub x1:f32,
+    pub y1:f32,
+    pub x2:f32,
+    pub y2:f32,
 }
