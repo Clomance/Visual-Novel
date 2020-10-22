@@ -59,29 +59,21 @@ pub fn set_settings_menu(game:&mut Game,window:&mut PagedWindow){
     // Настройка меню
     let menu_settings=MenuSettings::new("asd",buttons_text.into_iter())
             .draw_type(DrawType::Common)
-            .head_size([180f32,80f32])
+            .header_size([180f32,80f32])
             .buttons_size([180f32,60f32]);
 
     let menu=Menu::new(menu_settings,window.graphics2d());
 
-    // Добавление заголовка меню
-    game.object_map.add_drawable_object(menu.head);
+    // Добавление меню
+    game.object_map.add_complex_object(menu);
 
-    // Добавление кнопок меню
-    for button in menu.buttons{
-        let text=button.text.clone();
-        game.object_map.add_object(button);
-        game.object_map.add_drawable_object(text);
-    }
     // Добавление кнопки назад
     let window_size = unsafe{[window_width, window_height]};
     let button_size = [175f32, 30f32];
     let rect = [window_size[0]-button_size[0]-20f32, window_size[1]-button_size[1]-20f32, button_size[0], button_size[1]];
     let back_button_settings = ButtonSettings::new("Назад в меню", rect);
     let back_button=Button::new(back_button_settings, window.graphics2d());
-    let text=back_button.text.clone();
-    game.object_map.add_object(back_button);
-    game.object_map.add_drawable_object(text);
+    game.object_map.add_complex_object(back_button);
 
     game.prerendering=settings_menu_prerendering;
     game.updates=Game::empty_updates;

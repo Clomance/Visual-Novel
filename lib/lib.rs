@@ -7,6 +7,9 @@ pub use object_map::{
     Drawable,
     ClickMap,
     Clickable,
+    ComplexDrawable,
+    ComplexClickable,
+    ClickableObject,
 };
 
 pub mod colours;

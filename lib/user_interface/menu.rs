@@ -1,3 +1,12 @@
+use crate::{
+    Drawable,
+    DrawableObject,
+    ComplexDrawable,
+    Clickable,
+    ClickableObject,
+    ComplexClickable,
+};
+
 use super::{
     TextView,
     TextViewSettings,
@@ -25,7 +34,7 @@ const button_margin:f32=10f32; // Расстояние между кнопкам
 const dmargin:f32=head_margin-button_margin; // Для расчёта высоты меню - чтобы не вычитать button_margin
 
 pub struct Menu{
-    pub head:TextView,
+    pub header:TextView,
     pub buttons:Vec<Button>
 }
 
@@ -42,7 +51,7 @@ impl Menu{
         let height=settings.rect[3];    //
 
         // Полная высота меню
-        let menu_height=settings.head_size[1]+dmargin+(settings.buttons_size[1]+button_margin)*buttons_text.len() as f32;
+        let menu_height=settings.header_size[1]+dmargin+(settings.buttons_size[1]+button_margin)*buttons_text.len() as f32;
 
         // Положение заголовка по Y
         let mut y=match settings.align.y{
@@ -53,27 +62,27 @@ impl Menu{
 
         // Положение заголовка по X
         let mut x=match settings.align.x{
-            AlignX::Right=>x0+width-settings.head_size[0],
-            AlignX::Center=>x0+(width-settings.head_size[0])/2f32,
+            AlignX::Right=>x0+width-settings.header_size[0],
+            AlignX::Center=>x0+(width-settings.header_size[0])/2f32,
             AlignX::Left=>x0,
         };
 
         // Настройки для заголовка
-        let head_settings=TextViewSettings::new(settings.head_text,
+        let head_settings=TextViewSettings::new(settings.header_text,
                 [
                     x,
                     y,
-                    settings.head_size[0],
-                    settings.head_size[1]
+                    settings.header_size[0],
+                    settings.header_size[1]
                 ])
                 .draw_type(settings.general.draw_type.clone())
                 .align_x(settings.align.x.clone())
-                .font_size(settings.head_font_size)
+                .font_size(settings.header_font_size)
                 .font(settings.font)
-                .text_colour(settings.head_text_colour);
+                .text_colour(settings.header_text_colour);
 
         // Положение верней кнопки по Y
-        y+=settings.head_size[1]+head_margin;
+        y+=settings.header_size[1]+head_margin;
 
         // Положение кнопок по X
         x=match settings.align.x{
@@ -95,7 +104,6 @@ impl Menu{
 
         // Создание кнопок
         for text in buttons_text.into_iter(){
-
             let button_sets=ButtonSettings::<String>::new(text,button_rect)
                     .draw_type(settings.general.draw_type.clone())
                     .background_colour(settings.buttons_colour)
@@ -109,9 +117,38 @@ impl Menu{
 
 
         Self{
-            head:TextView::new(head_settings,graphics),
+            header:TextView::new(head_settings,graphics),
             buttons,
         }
+    }
+}
+
+impl ComplexDrawable for Menu{
+    fn drawables(&self)->Vec<DrawableObject>{
+        let mut drawables=Vec::with_capacity(self.buttons.len()+1);
+
+        drawables.push(self.header.drawable());
+
+        for button in &self.buttons{
+            let button_drawables=button.drawables();
+            for drawable in button_drawables{
+                drawables.push(drawable)
+            }
+        }
+
+        drawables
+    }
+}
+
+impl ComplexClickable for Menu{
+    fn clickables(&self)->Vec<ClickableObject>{
+        let mut clickables=Vec::with_capacity(self.buttons.len());
+
+        for button in &self.buttons{
+            clickables.push(button.clickable())
+        }
+
+        clickables
     }
 }
 
@@ -120,11 +157,11 @@ pub struct MenuSettings<S:Into<String>,BS:Into<String>,B:Iterator<Item=BS>>{
     general:GeneralSettings,
     rect:[f32;4], // [x1,y1,width,height] - сюда встроивается меню, по умочанию размер окна
     align:Align, // Выравнивание меню
-    head_text:S, // Текст заголовка меню
-    head_size:[f32;2], // Ширина и высота заголовка
+    header_text:S, // Текст заголовка меню
+    header_size:[f32;2], // Ширина и высота заголовка
     font:usize, // Номер сохранённого шрифта
-    head_font_size:f32,
-    head_text_colour:Colour,
+    header_font_size:f32,
+    header_text_colour:Colour,
     buttons_size:[f32;2], // [width,height], по умолчанию [100, 60]
     buttons_text:B,
     buttons_font_size:f32,
@@ -136,11 +173,11 @@ impl<S:Into<String>,BS:Into<String>,B:Iterator<Item=BS>> MenuSettings<S,BS,B>{
         Self{
             general:GeneralSettings::new(),
             rect:window_rect(),
-            head_text:head,
-            head_size:[100f32,60f32],
+            header_text:head,
+            header_size:[100f32,60f32],
             font:0usize,
-            head_font_size:40f32,
-            head_text_colour:White,
+            header_font_size:40f32,
+            header_text_colour:White,
             align:Align::center(),
             buttons_size:[100f32,60f32],
             buttons_text:buttons,
@@ -159,8 +196,8 @@ impl<S:Into<String>,BS:Into<String>,B:Iterator<Item=BS>> MenuSettings<S,BS,B>{
         self
     }
 
-    pub fn head_size(mut self,size:[f32;2])->MenuSettings<S,BS,B>{
-        self.head_size=size;
+    pub fn header_size(mut self,size:[f32;2])->MenuSettings<S,BS,B>{
+        self.header_size=size;
         self
     }
 

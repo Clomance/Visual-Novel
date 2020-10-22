@@ -2,6 +2,10 @@ use crate::{
     Drawable,
     Clickable,
     GeneralSettings,
+    ComplexDrawable,
+    DrawableObject,
+    ComplexClickable,
+    ClickableObject,
 };
 
 use super::{
@@ -67,6 +71,29 @@ impl Drawable for Button{
 
     fn object_type(&self)->ObjectType{
         ObjectType::Simple
+    }
+}
+
+impl ComplexDrawable for Button{
+    fn drawables(&self)->Vec<DrawableObject>{
+        let mut drawables=Vec::with_capacity(2);
+
+        let drawable=DrawableObject::new(
+            self.index,
+            ObjectType::Simple,
+            self.draw_type.clone()
+        );
+
+        drawables.push(drawable);
+        drawables.push(self.text.drawable());
+
+        drawables
+    }
+}
+
+impl ComplexClickable for Button{
+    fn clickables(&self)->Vec<ClickableObject>{
+        vec![self.clickable()]
     }
 }
 

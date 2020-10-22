@@ -130,7 +130,7 @@ impl Game{
         let cat=window.graphics2d().add_textured_object(&image_base,cat).unwrap();
 
         saved_drawables.push(DrawableObject::new(cat,ObjectType::Textured,DrawType::Common));
-        object_map.add_drawable(cat,ObjectType::Textured,DrawType::Common);
+        object_map.add_raw_simple_drawable_object(cat,ObjectType::Textured,DrawType::Common);
 
         let cat_eyes_closed=Texture::from_path("./resources/images/cat_eyes_closed.png",window.display()).unwrap();
         let cat_eyes_closed=window.graphics2d().add_textured_object(&image_base,cat_eyes_closed).unwrap();
@@ -147,7 +147,7 @@ impl Game{
         let gear=Texture::from_path("./resources/images/gear.png",window.display()).unwrap();
         let gear=window.graphics2d().add_textured_object(&image_base,gear).unwrap();
 
-        object_map.add_drawable(gear,ObjectType::Textured,DrawType::Rotating((0f32,unsafe{window_center})));
+        object_map.add_raw_simple_drawable_object(gear,ObjectType::Textured,DrawType::Rotating((0f32,unsafe{window_center})));
 
         // Подключение аудио системы
         let host=cat_engine::audio::cpal::default_host();
@@ -199,13 +199,13 @@ impl Game{
         }
 
         if self.frames==20{
-            self.object_map.set_drawable_object(0,self.saved_drawables[1].clone());
+            self.object_map.set_drawable(0,self.saved_drawables[1].clone());
             // self.cat_eyes_closed
         }
         else{
             if self.frames==30{
                 // self.cat
-                self.object_map.set_drawable_object(0,self.saved_drawables[0].clone());
+                self.object_map.set_drawable(0,self.saved_drawables[0].clone());
                 self.frames=0;
             }
         };

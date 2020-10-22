@@ -1,22 +1,25 @@
 use super::ClickableObject;
 
 pub struct ClickMap{
+    /// Области объектов.
     objects:Vec<ClickableObject>,
+    /// Индексы объектов в `ObjectMap`.
+    indices:Vec<usize>,
+    /// Состояние объекта (нажат ли).
     pressed:Vec<bool>,
 }
 
 impl ClickMap{
-    pub fn new()->ClickMap{
+    pub fn new(capacity:usize)->ClickMap{
         Self{
-            objects:Vec::new(),
-            pressed:Vec::new(),
+            objects:Vec::with_capacity(capacity),
+            indices:Vec::with_capacity(capacity),
+            pressed:Vec::with_capacity(capacity),
         }
     }
 
-    /// Добавляет объект.
     /// 
-    /// Возвращает индекс в массиве.
-    pub fn add_object(&mut self,[x1,y1,x2,y2]:[f32;4])->usize{
+    pub fn add_raw_clickable(&mut self,index:usize,[x1,y1,x2,y2]:[f32;4]){
         let object=ClickableObject{
             x1,
             y1,
@@ -24,15 +27,22 @@ impl ClickMap{
             y2,
         };
 
-        let len=self.objects.len();
         self.objects.push(object);
+        self.indices.push(index);
         self.pressed.push(false);
-        len
+    }
+
+    /// Добавляет объект.
+    pub fn add_object(&mut self,index:usize,object:ClickableObject){
+        self.objects.push(object);
+        self.indices.push(index);
+        self.pressed.push(false);
     }
 
     /// Отчистка массива.
     pub fn clear(&mut self){
         self.objects.clear();
+        self.indices.clear();
         self.pressed.clear()
     }
 
@@ -44,13 +54,15 @@ impl ClickMap{
     /// Проверка нажатия.
     /// 
     /// Проверка в обратном порядке (с конца)).
-    pub fn pressed(&mut self,[x,y]:[f32;2])->Option<usize>{
+    /// 
+    /// (usize,usize) - (local_id,object_map_id)
+    pub fn pressed(&mut self,[x,y]:[f32;2])->Option<(usize,usize)>{
         // Перебор всех элементов для проверки.
         // Если какой-то был нажат, проверка заканчивается.
         for (c,object) in self.objects.iter_mut().enumerate().rev(){
             if object.x1<x && object.x2>x && object.y1<y && object.y2>y{
                 self.pressed[c]=true;
-                return Some(c)
+                return Some((c,self.indices[c]))
             }
         }
         None
@@ -62,16 +74,18 @@ impl ClickMap{
     /// 
     /// Функции лучше подходит название "clicked"
     /// true - clicked
-    pub fn released(&mut self,[x,y]:[f32;2])->Option<(usize,bool)>{
+    /// 
+    /// (usize,usize,bool) - (local_id,object_map_id,clicked)
+    pub fn released(&mut self,[x,y]:[f32;2])->Option<(usize,usize,bool)>{
         for (c,object) in self.objects.iter_mut().enumerate().rev(){
             if object.x1<x && object.x2>x && object.y1<y && object.y2>y{
                 let pressed=&mut self.pressed[c]; // Ссылка на параметр
                 if *pressed==true{
                     *pressed=false;
-                    return Some((c,true))
+                    return Some((c,self.indices[c],true))
                 }
                 else{
-                    return Some((c,false))
+                    return Some((c,self.indices[c],false))
                 }
             }
         }

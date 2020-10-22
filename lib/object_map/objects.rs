@@ -6,7 +6,7 @@ use cat_engine::glium::{
 use cat_engine::graphics::{
     Graphics,
     DrawType,
-    ObjectType
+    ObjectType,
 };
 
 #[derive(Clone)]
@@ -54,4 +54,15 @@ pub struct ClickableObject{
     pub y1:f32,
     pub x2:f32,
     pub y2:f32,
+}
+
+impl ClickableObject{
+    pub fn new([x1,y1,x2,y2]:[f32;4])->ClickableObject{
+        Self{
+            x1,
+            y1,
+            x2,
+            y2,
+        }
+    }
 }
