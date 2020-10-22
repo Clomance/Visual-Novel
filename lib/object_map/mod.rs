@@ -68,6 +68,13 @@ impl ObjectMap{
         }
     }
 
+    pub fn set_len(&mut self,len:usize){
+        unsafe{
+            self.drawable_type.set_len(len);
+            self.clickable_type.set_len(len);
+        }
+    }
+
     /// Полностью отчищает всю карту объектов.
     pub fn clear(&mut self){
         self.drawable_type.clear();
@@ -76,7 +83,7 @@ impl ObjectMap{
         self.click_map.clear()
     }
 
-    pub fn pressed(&mut self,cursor:[f32;2])->Option<usize>{
+    pub fn pressed(&mut self,cursor:[f32;2])->Option<(usize)>{
         if let Some((local_id,object_map_id))=self.click_map.pressed(cursor){
             Some(local_id)
         }
@@ -230,6 +237,17 @@ impl ObjectMap{
         self.clickable_type.push(ClickableObjectType::Complex(clickables_range));
     }
 }
+
+// /// Замена объектов.
+// impl ObjectMap{
+//     pub fn delete_object(&mut self,index:usize){
+//         let drawable_object=self.drawable_type.remove(index);
+//         let clickable_object=self.clickable_type.remove(index);
+
+
+//     }
+// }
+
 
 /// Замена объектов.
 impl ObjectMap{
