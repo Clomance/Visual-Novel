@@ -10,6 +10,9 @@ use pages::*;
 mod wallpaper;
 use wallpaper::Wallpaper;
 
+mod locale;
+use locale::*;
+
 use lib::{
     ObjectMap,
     DrawableObject,

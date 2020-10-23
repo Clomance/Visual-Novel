@@ -1,0 +1,4 @@
+
+fn load(locale){
+    locale
+}
