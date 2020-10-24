@@ -1,4 +1,0 @@
-
-fn load(locale){
-    locale
-}
