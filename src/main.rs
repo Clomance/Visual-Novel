@@ -42,15 +42,21 @@ use cat_engine::{
         Graphics,
         DrawType,
         ObjectType,
+        ColourFilter
     },
     text::{
         ttf_parser::Face,
         Scale,
         GlyphCache,
-        TextBase
+        TextBase,
+        CachedFont,
+        FontOwner
     },
     glium::{
         DrawParameters,
+        Blend,
+        BlendingFunction,
+        LinearBlendingFactor,
         glutin::window::Icon,
         glutin::dpi::Size,
         DrawError,
@@ -64,7 +70,6 @@ use std::{
     fs::{metadata,read_dir},
     path::PathBuf,
 };
-use cat_engine::text::{CachedFont, FontOwner};
 
 
 // mod page_table;
@@ -109,7 +114,7 @@ pub struct Game{
     keyboard_handler:fn(&mut Self,bool,KeyboardButton,&mut PagedWindow),
     //
     prerendering:fn(&mut Self),
-    updates:fn(&mut Self,&mut PagedWindow),
+    updates:fn(&mut Self,&mut PagedWindow), 
     click_handler:fn(&mut Self,bool,MouseButton,&mut PagedWindow)
 }
 
@@ -118,6 +123,8 @@ impl Game{
         // Объекты интерфейса
         let mut saved_drawables=Vec::with_capacity(10);
         let mut object_map=ObjectMap::new();
+
+        object_map.add_new_layer();
 
         let mut image_base=ImageBase::new(White,unsafe{[
             window_center[0]-100f32,
@@ -130,7 +137,7 @@ impl Game{
         let cat=window.graphics2d().add_textured_object(&image_base,cat).unwrap();
 
         saved_drawables.push(DrawableObject::new(cat,ObjectType::Textured,DrawType::Common));
-        object_map.add_raw_simple_drawable_object(cat,ObjectType::Textured,DrawType::Common);
+        object_map.add_raw_simple_drawable_object(0,cat,ObjectType::Textured,DrawType::Common);
 
         let cat_eyes_closed=Texture::from_path("./resources/images/cat_eyes_closed.png",window.display()).unwrap();
         let cat_eyes_closed=window.graphics2d().add_textured_object(&image_base,cat_eyes_closed).unwrap();
@@ -147,7 +154,7 @@ impl Game{
         let gear=Texture::from_path("./resources/images/gear.png",window.display()).unwrap();
         let gear=window.graphics2d().add_textured_object(&image_base,gear).unwrap();
 
-        object_map.add_raw_simple_drawable_object(gear,ObjectType::Textured,DrawType::Rotating((0f32,unsafe{window_center})));
+        object_map.add_raw_simple_drawable_object(0,gear,ObjectType::Textured,DrawType::Rotating((0f32,unsafe{window_center})));
 
         // Подключение аудио системы
         let host=cat_engine::audio::cpal::default_host();
@@ -184,7 +191,8 @@ impl Game{
             }
 
             self.saved_drawables.clear();
-            self.object_map.clear();
+            // Отчистка слоёв
+            self.object_map.clear_layers();
 
             for _ in 0..3{
                 window.graphics2d().delete_last_textured_object();
@@ -194,18 +202,18 @@ impl Game{
             return set_main_menu(self,window)
         }
 
-        if let DrawType::Rotating((angle,_))=&mut self.object_map.get_drawable(1).draw_type{
+        if let DrawType::Rotating((angle,_))=&mut self.object_map.get_drawable(0,1).draw_type{
             *angle+=0.05f32;
         }
 
         if self.frames==20{
-            self.object_map.set_drawable(0,self.saved_drawables[1].clone());
+            self.object_map.set_drawable(0,0,self.saved_drawables[1].clone());
             // self.cat_eyes_closed
         }
         else{
             if self.frames==30{
                 // self.cat
-                self.object_map.set_drawable(0,self.saved_drawables[0].clone());
+                self.object_map.set_drawable(0,0,self.saved_drawables[0].clone());
                 self.frames=0;
             }
         };
@@ -260,14 +268,14 @@ impl WindowPage<'static> for Game{
                     dx/wallpaper_movement_scale,
                     dy/wallpaper_movement_scale,
                 ];
-                graphics.draw_shift_textured_object(wallpaper,shift,parameters).unwrap();
+                graphics.draw_shift_textured_object(wallpaper,shift,ColourFilter::new_mul([1f32;4]),parameters).unwrap();
             }
 
             // Рендеринг объектов
             self.object_map.draw(parameters,graphics);
 
             // Рендеринг курсора
-            graphics.draw_shift_textured_object(mouse_cursor_icon,[dx,dy],parameters).unwrap();
+            graphics.draw_shift_textured_object(mouse_cursor_icon,[dx,dy],ColourFilter::new_mul([1f32;4]),parameters).unwrap();
         }).unwrap();
     }
 

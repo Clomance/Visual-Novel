@@ -39,6 +39,12 @@ impl ClickMap{
         self.pressed.push(false);
     }
 
+    pub fn delete(&mut self,index:usize){
+        self.objects.remove(index);
+        self.indices.remove(index);
+        self.pressed.remove(index);
+    }
+
     /// Отчистка массива.
     pub fn clear(&mut self){
         self.objects.clear();

@@ -201,6 +201,11 @@ impl<S:Into<String>,BS:Into<String>,B:Iterator<Item=BS>> MenuSettings<S,BS,B>{
         self
     }
 
+    pub fn header_font_size(mut self,font_size:f32)->MenuSettings<S,BS,B>{
+        self.header_font_size=font_size;
+        self
+    }
+
     pub fn align_x(mut self,align:AlignX)->MenuSettings<S,BS,B>{
         self.align.x=align;
         self
@@ -211,12 +216,12 @@ impl<S:Into<String>,BS:Into<String>,B:Iterator<Item=BS>> MenuSettings<S,BS,B>{
         self
     }
 
-    pub fn buttons_size(mut self,size:[f32;2])->MenuSettings<S,BS,B>{
+    pub fn button_size(mut self,size:[f32;2])->MenuSettings<S,BS,B>{
         self.buttons_size=size;
         self
     }
 
-    pub fn buttons_font_size(mut self,size:f32)->MenuSettings<S,BS,B>{
+    pub fn button_font_size(mut self,size:f32)->MenuSettings<S,BS,B>{
         self.buttons_font_size=size;
         self
     }

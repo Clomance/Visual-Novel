@@ -47,6 +47,8 @@ pub fn set_settings_menu(game:&mut Game,window:&mut PagedWindow){
     // Устновка обоев для меню
     game.wallpaper=Wallpaper::Colour([0.3f32,0.6f32,0.6f32,1f32]);
 
+    game.object_map.add_new_layer();
+
     let mut buttons_text=Vec::with_capacity(4);
 
     if game.settings.continue_game{
@@ -60,12 +62,12 @@ pub fn set_settings_menu(game:&mut Game,window:&mut PagedWindow){
     let menu_settings=MenuSettings::new("asd",buttons_text.into_iter())
             .draw_type(DrawType::Common)
             .header_size([180f32,80f32])
-            .buttons_size([180f32,60f32]);
+            .button_size([180f32,60f32]);
 
     let menu=Menu::new(menu_settings,window.graphics2d());
 
     // Добавление меню
-    game.object_map.add_complex_object(menu);
+    game.object_map.add_complex_object(0,menu);
 
     // Добавление кнопки назад
     let window_size = unsafe{[window_width, window_height]};
@@ -73,7 +75,7 @@ pub fn set_settings_menu(game:&mut Game,window:&mut PagedWindow){
     let rect = [window_size[0]-button_size[0]-20f32, window_size[1]-button_size[1]-20f32, button_size[0], button_size[1]];
     let back_button_settings = ButtonSettings::new("Назад в меню", rect);
     let back_button=Button::new(back_button_settings, window.graphics2d());
-    game.object_map.add_complex_object(back_button);
+    game.object_map.add_complex_object(0,back_button);
 
     game.prerendering=settings_menu_prerendering;
     game.updates=Game::empty_updates;

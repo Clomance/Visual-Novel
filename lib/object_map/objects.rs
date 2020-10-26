@@ -7,6 +7,7 @@ use cat_engine::graphics::{
     Graphics,
     DrawType,
     ObjectType,
+    ColourFilter,
 };
 
 #[derive(Clone)]
@@ -35,8 +36,19 @@ impl DrawableObject{
         }
     }
 
-    pub fn draw(&self,draw_parameters:&DrawParameters,graphics:&mut Graphics)->Result<(),DrawError>{
-        graphics.draw_object(self.index,self.object_type.clone(),self.draw_type.clone(),draw_parameters)
+    pub fn draw(
+        &self,
+        colour_filter:ColourFilter,
+        draw_parameters:&DrawParameters,
+        graphics:&mut Graphics
+    )->Result<(),DrawError>{
+        graphics.draw_object(
+            self.index,
+            self.object_type.clone(),
+            self.draw_type.clone(),
+            colour_filter,
+            draw_parameters
+        )
     }
 }
 

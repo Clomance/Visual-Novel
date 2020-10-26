@@ -68,11 +68,13 @@ pub fn set_main_menu(game:&mut Game,window:&mut PagedWindow){
     let menu_settings=MenuSettings::new(game_name,buttons_text.into_iter())
             .draw_type(DrawType::Shifting([0f32;2]))
             .header_size([180f32,80f32])
-            .buttons_size([180f32,60f32]);
+            .header_font_size(60f32)
+            .button_size([180f32,60f32])
+            .button_font_size(30f32);
 
     let menu=Menu::new(menu_settings,window.graphics2d());
 
-    game.object_map.add_complex_object(menu);
+    game.object_map.add_complex_object(0,menu);
 
     game.prerendering=main_menu_prerendering;
     game.updates=Game::empty_updates;
@@ -82,7 +84,7 @@ pub fn set_main_menu(game:&mut Game,window:&mut PagedWindow){
 }
 
 pub fn main_menu_prerendering(game:&mut Game){
-    for drawable in game.object_map.get_drawables(){
+    for drawable in game.object_map.get_drawables(0){
         if let DrawType::Shifting(shift)=&mut drawable.draw_type{
             let new_shift=unsafe{mouse_cursor.center_radius()};
             *shift=[
@@ -189,7 +191,7 @@ pub fn main_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,wi
         }
     }
 }
-pub fn keyboard_handler(game:&mut Game,pressed:bool,button:KeyboardButton,window:&mut PagedWindow){
+pub fn keyboard_handler(_game:&mut Game,pressed:bool,button:KeyboardButton,_window:&mut PagedWindow){
    if pressed{
        match button{
            KeyboardButton::Escape => {
