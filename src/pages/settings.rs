@@ -47,7 +47,6 @@ pub fn set_settings_menu(game:&mut Game,window:&mut PagedWindow){
     // Устновка обоев для меню
     game.wallpaper=Wallpaper::Colour([0.3f32,0.6f32,0.6f32,1f32]);
 
-    game.object_map.add_new_layer();
 
     let mut buttons_text=Vec::with_capacity(4);
 
@@ -167,5 +166,6 @@ pub fn keyboard_handler(game:&mut Game,pressed:bool,button:KeyboardButton,window
 pub fn clear_all_buffers(game:&mut Game,window:&mut PagedWindow){
     window.graphics2d().clear_simple_object_array();
     window.graphics2d().clear_text_object_array();
-    game.object_map.clear();
+    game.object_map.clear_layers();
+    game.object_map.clear_click_map();
 }

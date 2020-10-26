@@ -17,6 +17,12 @@ pub use click_map::{
     ClickMap,
 };
 
+mod layers;
+use layers::{
+    DrawableLayer,
+    DrawableObjectLayer
+};
+
 use cat_engine::{
     Colour,
     glium::DrawParameters,
@@ -31,7 +37,7 @@ use cat_engine::{
 use std::ops::Range;
 
 /// Тип объекта отрисовки
-enum DrawableObjectType{
+pub enum DrawableObjectType{
     Empty,
     /// Простой объект с номером объекта отрисовки
     Simple{
@@ -54,25 +60,12 @@ enum ClickableObjectType{
     Complex(Range<usize>),
 }
 
-struct DrawableLayer{
-    drawables:Vec<DrawableObject>,
-    /// Цветовой фильтр
-    filter:ColourFilter,
-}
 
-impl DrawableLayer{
-    pub fn new()->DrawableLayer{
-        Self{
-            drawables:Vec::new(),
-            filter:ColourFilter::new_mul([1f32;4]),
-        }
-    }
-}
 
 pub struct ObjectMap{
     /// Тип объекта отрисовки или
     /// количество объектов отрисовки для объекта с индексом `i`.
-    drawable_object_types:Vec<Vec<DrawableObjectType>>,
+    drawable_object_types:Vec<DrawableObjectLayer>,
     /// Тип объекта нажатия или
     /// количество объектов нажатия для объекта с индексом `i`.
     clickable_object_types:Vec<ClickableObjectType>,
@@ -92,7 +85,7 @@ impl ObjectMap{
     }
 
     pub fn add_new_layer(&mut self){
-        self.drawable_object_types.push(Vec::new());
+        self.drawable_object_types.push(DrawableObjectLayer::new());
         self.drawables.push(DrawableLayer::new())
     }
 
@@ -101,11 +94,8 @@ impl ObjectMap{
         self.drawables[layer].filter.colour=colour
     }
 
-    pub fn set_len(&mut self,len:usize){
-        unsafe{
-            self.drawable_object_types.set_len(len);
-            self.clickable_object_types.set_len(len);
-        }
+    pub fn set_layer_enabled(&mut self,layer:usize,enabled:bool){
+        self.drawable_object_types[layer].enabled=enabled
     }
 
     /// Отчищает все слоит от объектов.
@@ -151,35 +141,37 @@ impl ObjectMap{
     pub fn draw(&self,draw_parameters:&mut DrawParameters,graphics:&mut Graphics){
         // Перебор слоёв
         for layer in &self.drawable_object_types{
-            // Перебор объектов в слое
-            for object in layer{
-                // Определение типа объекта
-                match object{
-                    // Пустой
-                    DrawableObjectType::Empty=>continue,
-                    // Простой
-                    DrawableObjectType::Simple{
-                        layer,
-                        index,
-                    }=>{
-                        // Ссылка на слой подобъектов
-                        let layer=&self.drawables[layer.clone()];
-                        // Ссылка на объект отрисовки
-                        let drawable=&layer.drawables[index.clone()];
-                        // Рендеринг
-                        drawable.draw(layer.filter,draw_parameters,graphics).unwrap();
-                    }
-                    // Составной
-                    DrawableObjectType::Complex{
-                        layer,
-                        range,
-                    }=>{
-                        // Ссылка на слой подобъектов
-                        let layer=&self.drawables[layer.clone()];
-                        // Перебор подобъектов
-                        for drawable in &layer.drawables[range.clone()]{
+            if layer.enabled{
+                // Перебор объектов в слое
+                for object in &layer.objects{
+                    // Определение типа объекта
+                    match object{
+                        // Пустой
+                        DrawableObjectType::Empty=>continue,
+                        // Простой
+                        DrawableObjectType::Simple{
+                            layer,
+                            index,
+                        }=>{
+                            // Ссылка на слой подобъектов
+                            let layer=&self.drawables[layer.clone()];
+                            // Ссылка на объект отрисовки
+                            let drawable=&layer.drawables[index.clone()];
                             // Рендеринг
                             drawable.draw(layer.filter,draw_parameters,graphics).unwrap();
+                        }
+                        // Составной
+                        DrawableObjectType::Complex{
+                            layer,
+                            range,
+                        }=>{
+                            // Ссылка на слой подобъектов
+                            let layer=&self.drawables[layer.clone()];
+                            // Перебор подобъектов
+                            for drawable in &layer.drawables[range.clone()]{
+                                // Рендеринг
+                                drawable.draw(layer.filter,draw_parameters,graphics).unwrap();
+                            }
                         }
                     }
                 }
@@ -224,7 +216,7 @@ impl ObjectMap{
 
         self.drawables[layer].drawables.push(drawable_object);
 
-        self.drawable_object_types[layer].push(DrawableObjectType::Simple{index:drawable_index,layer});
+        self.drawable_object_types[layer].objects.push(DrawableObjectType::Simple{index:drawable_index,layer});
         self.clickable_object_types.push(ClickableObjectType::Empty);
     }
 
@@ -260,13 +252,13 @@ impl ObjectMap{
         let clickable_index=self.click_map.len();
 
         // Индекс объекта
-        let object_index=self.drawable_object_types[layer].len();
+        let object_index=self.drawable_object_types[layer].objects.len();
 
         // Добавление подобъектов
         self.drawables[layer].drawables.push(drawable_object);
         self.click_map.add_raw_clickable(object_index,click_coords);
 
-        self.drawable_object_types[layer].push(DrawableObjectType::Simple{index:drawable_index,layer});
+        self.drawable_object_types[layer].objects.push(DrawableObjectType::Simple{index:drawable_index,layer});
         self.clickable_object_types.push(ClickableObjectType::Simple(clickable_index));
     }
 
@@ -287,7 +279,7 @@ impl ObjectMap{
         let clickables_start=self.click_map.len();
 
         // Индекс объекта
-        let object_index=self.drawable_object_types.len();
+        let object_index=self.drawable_object_types[layer].objects.len();
 
         // Области для сложного объекта
         let drawables_range=drawables_start..drawables_start+drawables_len;
@@ -301,7 +293,7 @@ impl ObjectMap{
             self.click_map.add_object(object_index,clickable);
         }
 
-        self.drawable_object_types[layer].push(DrawableObjectType::Complex{range:drawables_range,layer});
+        self.drawable_object_types[layer].objects.push(DrawableObjectType::Complex{range:drawables_range,layer});
         self.clickable_object_types.push(ClickableObjectType::Complex(clickables_range));
     }
 }

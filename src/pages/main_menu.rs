@@ -76,10 +76,12 @@ pub fn set_main_menu(game:&mut Game,window:&mut PagedWindow){
 
     game.object_map.add_complex_object(0,menu);
 
-    let confirmation_menu = ExitConfirmationDialogue::new(window);
-    game.object_map.add_complex_object(confirmation_menu);
+    game.object_map.add_new_layer();
+    game.object_map.set_layer_enabled(1,false);
 
-    game.object_map.set_len(1);
+    let confirmation_menu = ExitConfirmationDialogue::new(window);
+    game.object_map.add_complex_object(1,confirmation_menu);
+
     game.prerendering=main_menu_prerendering;
     game.updates=Game::empty_updates;
     game.click_handler=main_menu_click_handler;
@@ -180,7 +182,7 @@ pub fn main_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,wi
                         }
                         5=>{
                             if clicked{
-                                game.object_map.set_len(1);
+                                game.object_map.set_layer_enabled(1,false);
                                 println!("exit cancelled")
                             }
                         }
@@ -194,11 +196,11 @@ pub fn main_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,wi
         }
     }
 }
-pub fn keyboard_handler(_game:&mut Game,pressed:bool,button:KeyboardButton,_window:&mut PagedWindow){
+pub fn keyboard_handler(game:&mut Game,pressed:bool,button:KeyboardButton,_window:&mut PagedWindow){
    if pressed{
        match button{
            KeyboardButton::Escape => {
-               game.object_map.set_len(2)
+               game.object_map.set_layer_enabled(1,true)
            }
            _ => {}
        }
