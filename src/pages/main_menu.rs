@@ -15,7 +15,7 @@ use super::{
     set_settings_menu,
 };
 
-use lib::{Menu, MenuSettings, TextView, TextViewSettings, ButtonSettings, Button};
+use lib::{Menu, MenuSettings, TextView, TextViewSettings, ButtonSettings, Button, ComplexClickable, ComplexDrawable, ClickableObject};
 
 use cat_engine::{
     // statics
@@ -76,6 +76,10 @@ pub fn set_main_menu(game:&mut Game,window:&mut PagedWindow){
 
     game.object_map.add_complex_object(0,menu);
 
+    let confirmation_menu = ExitConfirmationDialogue::new(window);
+    game.object_map.add_complex_object(confirmation_menu);
+
+    game.object_map.set_len(1);
     game.prerendering=main_menu_prerendering;
     game.updates=Game::empty_updates;
     game.click_handler=main_menu_click_handler;
@@ -176,8 +180,7 @@ pub fn main_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,wi
                         }
                         5=>{
                             if clicked{
-                                clear_all_buffers(game,window);
-                                set_main_menu(game,window);
+                                game.object_map.set_len(1);
                                 println!("exit cancelled")
                             }
                         }
@@ -195,32 +198,7 @@ pub fn keyboard_handler(_game:&mut Game,pressed:bool,button:KeyboardButton,_wind
    if pressed{
        match button{
            KeyboardButton::Escape => {
-               // making a box for dialog to fit in
-            //    let window_size = unsafe{[window_width, window_height]};
-            //    let rect_size = [window_size[0]/2f32-200f32, window_size[1]/2f32-100f32, 400f32, 200f32];
-            //    let dialog_box_rect = Rectangle::new(rect_size, [1.0, 0.545, 0.349, 0.75]); // Uses Bleak_orange with lowered alpha
-            //    let dialog_box_rect_index = window.graphics2d().add_simple_object(&dialog_box_rect).unwrap();
-            //    game.object_map.add_drawable(dialog_box_rect_index, ObjectType::Simple, DrawType::Common);
-
-            //    // making confirmation text
-            //    let confirmation_text_settings = TextViewSettings::new("Точно изволишь выйти?", [window_size[0]/2f32-200f32+5f32, window_size[1]/2f32-100f32+5f32, 195f32, 20f32]);
-            //    let confirmation_text = TextView::new(confirmation_text_settings, window.graphics2d());
-            //    game.object_map.add_drawable_object(confirmation_text);
-
-            //    // making confirmation buttons
-            //    let confirmation_button_size = [window_size[0]/16f32, window_size[1]/10f32];
-            //    let confirmation_button_yes_placement = [window_size[0]/2f32-200f32+20f32, window_size[1]/2f32-20f32, confirmation_button_size[0], confirmation_button_size[1]];
-            //    let confirmation_button_yes_settings = ButtonSettings::new("Да", confirmation_button_yes_placement);
-            //    let confirmation_button_yes = Button::new(confirmation_button_yes_settings, window.graphics2d());
-            //    let confirmation_button_no_placement = [window_size[0]/2f32+175f32-confirmation_button_size[1], window_size[1]/2f32-20f32, confirmation_button_size[0], confirmation_button_size[1]];
-            //    let confirmation_button_no_settings = ButtonSettings::new("Нет", confirmation_button_no_placement);
-            //    let confirmation_button_no = Button::new(confirmation_button_no_settings, window.graphics2d());
-            //    let yes = confirmation_button_yes.text.clone();
-            //    let no = confirmation_button_no.text.clone();
-            //    game.object_map.add_object(confirmation_button_yes);
-            //    game.object_map.add_drawable_object(yes);
-            //    game.object_map.add_object(confirmation_button_no);
-            //    game.object_map.add_drawable_object(no);
+               game.object_map.set_len(2)
            }
            _ => {}
        }
@@ -230,6 +208,65 @@ pub fn clear_all_buffers(game:&mut Game,window:&mut PagedWindow){
     window.graphics2d().clear_simple_object_array();
     window.graphics2d().clear_text_object_array();
     game.object_map.clear();
+}
+struct ExitConfirmationDialogue{
+    button_yes:Button,
+    button_no:Button,
+    header:TextView,
+    dialog_box:usize,
+}
+impl ExitConfirmationDialogue{
+   fn new(window:&mut PagedWindow)->Self{
+       // making a box for dialog to fit in
+       let window_size = unsafe{[window_width, window_height]};
+       let rect_size = [window_size[0]/2f32-200f32, window_size[1]/2f32-100f32, 400f32, 200f32];
+       let dialog_box_rect = Rectangle::new(rect_size, [1.0, 0.545, 0.349, 0.75]); // Uses Bleak_orange with lowered alpha
+       let dialog_box_rect_index = window.graphics2d().add_simple_object(&dialog_box_rect).unwrap();
+
+       // making confirmation text
+       let confirmation_text_settings = TextViewSettings::new("Точно изволишь выйти?", [window_size[0]/2f32-200f32+5f32, window_size[1]/2f32-100f32+5f32, 195f32, 20f32]);
+       let confirmation_text = TextView::new(confirmation_text_settings, window.graphics2d());
+
+       // making confirmation buttons
+       let confirmation_button_size = [window_size[0]/16f32, window_size[1]/10f32];
+       let confirmation_button_yes_placement = [window_size[0]/2f32-200f32+20f32, window_size[1]/2f32-20f32, confirmation_button_size[0], confirmation_button_size[1]];
+       let confirmation_button_yes_settings = ButtonSettings::new("Да", confirmation_button_yes_placement);
+       let confirmation_button_yes = Button::new(confirmation_button_yes_settings, window.graphics2d());
+       let confirmation_button_no_placement = [window_size[0]/2f32+175f32-confirmation_button_size[1], window_size[1]/2f32-20f32, confirmation_button_size[0], confirmation_button_size[1]];
+       let confirmation_button_no_settings = ButtonSettings::new("Нет", confirmation_button_no_placement);
+       let confirmation_button_no = Button::new(confirmation_button_no_settings, window.graphics2d());
+       Self{
+           button_yes: confirmation_button_yes,
+           button_no: confirmation_button_no,
+           header: confirmation_text,
+           dialog_box: dialog_box_rect_index
+       }
+   }
+}
+
+impl ComplexDrawable for ExitConfirmationDialogue{
+    fn drawables(&self)->Vec<DrawableObject>{
+        let mut drawables = Vec::with_capacity(6);
+        let drawable = DrawableObject{
+            index: self.dialog_box,
+            object_type: ObjectType::Simple,
+            draw_type: DrawType::Common,
+        };
+        drawables.push(drawable);
+        drawables.push(self.header.drawable());
+        drawables.append(&mut self.button_yes.drawables());
+        drawables.append(&mut self.button_no.drawables());
+        drawables
+    }
+}
+impl ComplexClickable for ExitConfirmationDialogue{
+    fn clickables(&self)->Vec<ClickableObject>{
+        let mut clickable = Vec::with_capacity(2);
+        clickable.append(&mut self.button_yes.clickables());
+        clickable.append(&mut self.button_no.clickables());
+        clickable
+    }
+
 }
 /*
 
