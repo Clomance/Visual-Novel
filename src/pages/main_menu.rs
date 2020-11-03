@@ -115,7 +115,7 @@ pub fn main_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButton,wi
         match button{
             MouseButton::Left=>{
                 if let Some(mut button)=game.object_map.pressed(shift_position){
-                    game.audio.play_track(1,1);
+                    game.audio.play_track("button_click");
                     if !game.settings.continue_game{
                         button+=1;
                     }

@@ -63,7 +63,7 @@ use cat_engine::{
         DrawError,
     },
     texture::{ImageBase,Texture},
-    audio::{Audio,AudioSettings},
+    audio::{Audio,AudioSettings,AudioWrapper},
     image::RgbaImage,
 };
 
@@ -98,7 +98,7 @@ const wallpaper:usize=1;
 
 pub struct Game{
     settings:GameSettings,
-    audio:Audio,
+    audio:AudioWrapper,
 
     wallpaper:Wallpaper,
     images:Vec<RgbaImage>,
@@ -158,10 +158,11 @@ impl Game{
         object_map.add_raw_simple_drawable_object(0,gear,ObjectType::Textured,DrawType::Rotating((0f32,unsafe{window_center})));
 
         // Подключение аудио системы
-        let host=cat_engine::audio::cpal::default_host();
-        let audio=Audio::new(host,AudioSettings::new()).unwrap();
-        audio.add_track("./resources/music/audio.mp3");
-        audio.add_track("./resources/music/button.mp3");
+        let audio=Audio::default(AudioSettings::new()).unwrap();
+        let mut audio = AudioWrapper::new(audio);
+        audio.load_track("./resources/music/audio.mp3", "main_theme".to_string());
+        audio.load_track("./resources/music/button.mp3", "button_click".to_string());
+        audio.load_track("./resources/music/click.mp3", "mouse_click".to_string());
 
 
         let thread=std::thread::spawn(background);
@@ -198,7 +199,7 @@ impl Game{
             for _ in 0..3{
                 window.graphics2d().delete_last_textured_object();
             }
-            self.audio.play_track(0,0);
+            self.audio.play_track("main_theme");
 
             return set_main_menu(self,window)
         }
@@ -281,6 +282,7 @@ impl WindowPage<'static> for Game{
     }
 
     fn on_mouse_pressed(&mut self,window:&mut PagedWindow,button:MouseButton){
+        self.audio.play_track("mouse_click");
         (self.click_handler)(self,true,button,window)
     }
     fn on_mouse_released(&mut self,window:&mut PagedWindow,button:MouseButton){

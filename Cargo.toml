@@ -10,9 +10,9 @@ qrelease = []
 
 [dependencies.cat_engine]
 # Works only for Martya
-# path = "../CatEngine"
+path = "../CatEngine"
 # Works only for Osya
-path = "../cat_engine"
+#path = "../cat_engine"
 #version = "0.5.0-alpha"
 features = ["audio","auto_hide","colour_filter"]
 

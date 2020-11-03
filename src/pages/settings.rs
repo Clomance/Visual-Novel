@@ -90,7 +90,7 @@ pub fn settings_menu_click_handler(game:&mut Game,pressed:bool,button:MouseButto
     if pressed{
         match button{
             MouseButton::Left=>{
-                game.audio.play_track(1,1);
+                game.audio.play_track("button_click");
                 if let Some(button)=game.object_map.pressed(position){
                     window.graphics2d().set_simple_object_colour(button, [0f32,0f32,1f32,1f32]);
                }
