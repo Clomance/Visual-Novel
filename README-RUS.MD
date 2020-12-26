@@ -5,10 +5,10 @@
 Последняя стабильная версия Rust, минимальная версия OpenGL - `2.0`.
 
 #### Библиотеки
- - графика - [glium](https://github.com/glium/glium)
- - изображения - [image](https://github.com/image-rs/image)
- - шрифты - [rusttype](https://gitlab.redox-os.org/redox-os/rusttype)
- - звук - [cpal](https://github.com/RustAudio/cpal) и [minimp3](https://github.com/germangb/minimp3-rs)
+ - Графика - [glium](https://github.com/glium/glium)
+ - Изображения - [image](https://github.com/image-rs/image)
+ - Шрифты - [rusttype](https://gitlab.redox-os.org/redox-os/rusttype)
+ - Звук - [cpal](https://github.com/RustAudio/cpal) и [minimp3](https://github.com/germangb/minimp3-rs)
 
 Стабильно работает на 64-разрядных Window 10. На остальных системах не проверялась.
 
@@ -164,7 +164,7 @@ O - Да, {}?
 #### Остальное
 
 Путь текстуры для окна с диалогами - `./resources/images/dialog_box.png`;
-для картинки во время загрузки - `./resources/images/cat.png` и `./resources/images/gear.png`;
+для картинки во время загрузки - `./resources/images/cat.png` и `./resources/images/loading_screen_assets.png`;
 для иконки окна - `./resources/images/window_icon.png`;
 для курсора мыши - `./resources/images/mouse_icon.png`.
 

@@ -3,22 +3,18 @@ name = "Visual_Novel"
 version = "2.0.0"
 authors = ["Clomance"]
 edition = "2018"
-build = "build.rs"
+# build = "build.rs"
 
-[features]
-qrelease = []
-
-[dependencies.cat_engine]
-# Works only for Martya
-path = "../CatEngine"
-# Works only for Osya
-#path = "../cat_engine"
-#version = "0.5.0-alpha"
-features = ["audio","auto_hide","colour_filter"]
+# [features]
+# qrelease = []
 
 [lib]
-name="lib"
-path="lib/lib.rs"
+name = "lib"
+path = "lib/lib.rs"
+
+[dependencies.cat_engine]
+path = "0.6.0"
+features = ["audio","auto_hide"]
 
 [profile.dev]
 opt-level = 3

@@ -5,15 +5,12 @@ mod game_settings;
 use game_settings::GameSettings;
 
 mod pages;
-use pages::*;
-
-mod wallpaper;
-use wallpaper::Wallpaper;
-
+use pages::{
+    LoadingScreen,
+    MainMenu
+};
 
 use lib::{
-    ObjectMap,
-    DrawableObject,
     *,
     colours::*,
 };
@@ -30,20 +27,19 @@ use cat_engine::{
     KeyboardButton,
     // traits
     image::GenericImageView,
-    Window,
     WindowPage,
     // types
     Colour,
     // structs and else
     MouseScrollDelta,
     ModifiersState,
-    DefaultWindow,
-    PagedWindow,
+    Window,
     graphics::{
         Graphics,
         DrawType,
         ObjectType,
-        ColourFilter
+        DependentObject,
+        //ColourFilter
     },
     text::{
         ttf_parser::Face,
@@ -62,7 +58,7 @@ use cat_engine::{
         glutin::dpi::Size,
         DrawError,
     },
-    texture::{ImageBase,Texture},
+    texture::{ImageBase,ImageObject,Texture},
     audio::{Audio,AudioSettings,AudioWrapper},
     image::RgbaImage,
 };
@@ -72,253 +68,22 @@ use std::{
     path::PathBuf,
 };
 
-
-// mod page_table;
-// use page_table::*;
-
-// mod characters;
-// use characters::*;
-
-// mod dialogue;
-// use dialogue::*;
-
-// mod textures;
-// use textures::Textures;
-
-// mod dialogue_box;
-// pub use dialogue_box::DialogueBox;
-
-
-// Т.к. добавляется в массив объектов самым первым
-const mouse_cursor_icon:usize=0;
-
-// Т.к. добавляется в массив объектов вторым
-const wallpaper:usize=1;
-
-
-pub struct Game{
-    settings:GameSettings,
-    audio:AudioWrapper,
-
-    wallpaper:Wallpaper,
-    images:Vec<RgbaImage>,
-
-    frames:u64,
-    thread:Option<std::thread::JoinHandle<Vec<RgbaImage>>>,
-
-    // Карта объектов
-    // Отрисовываемые объекты и зоны активные для клика
-    object_map:ObjectMap,
-    saved_drawables:Vec<DrawableObject>,
-
-
-    keyboard_handler:fn(&mut Self,bool,KeyboardButton,&mut PagedWindow),
-    //
-    prerendering:fn(&mut Self),
-    updates:fn(&mut Self,&mut PagedWindow), 
-    click_handler:fn(&mut Self,bool,MouseButton,&mut PagedWindow)
+pub enum Game{
+    MainMenu,
+    Pause,
+    Next,
+    Exit,
 }
 
-impl Game{
-    pub fn new<F:FnOnce()->Vec<RgbaImage>+Send+'static>(settings:GameSettings,window:&mut PagedWindow,background:F)->Game{
-        // Объекты интерфейса
-        let mut saved_drawables=Vec::with_capacity(10);
-        let mut object_map=ObjectMap::new();
+// Индексы главных тектстур
+const cursor_texture_index:usize=0;
 
-        object_map.add_new_layer();
-
-        let mut image_base=ImageBase::new(White,unsafe{[
-            window_center[0]-100f32,
-            window_center[1]-100f32,
-            200f32,
-            200f32
-        ]});
-
-        let cat=Texture::from_path("./resources/images/cat.png",window.display()).unwrap();
-        let cat=window.graphics2d().add_textured_object(&image_base,cat).unwrap();
-
-        saved_drawables.push(DrawableObject::new(cat,ObjectType::Textured,DrawType::Common));
-        object_map.add_raw_simple_drawable_object(0,cat,ObjectType::Textured,DrawType::Common);
-
-        let cat_eyes_closed=Texture::from_path("./resources/images/cat_eyes_closed.png",window.display()).unwrap();
-        let cat_eyes_closed=window.graphics2d().add_textured_object(&image_base,cat_eyes_closed).unwrap();
-
-        saved_drawables.push(DrawableObject::new(cat_eyes_closed,ObjectType::Textured,DrawType::Common));
-
-        image_base.set_rect(unsafe{[
-            window_center[0]-200f32,
-            window_center[1]-200f32,
-            400f32,
-            400f32
-        ]});
-
-        let gear=Texture::from_path("./resources/images/gear.png",window.display()).unwrap();
-        let gear=window.graphics2d().add_textured_object(&image_base,gear).unwrap();
-
-        object_map.add_raw_simple_drawable_object(0,gear,ObjectType::Textured,DrawType::Rotating((0f32,unsafe{window_center})));
-
-        // Подключение аудио системы
-        let audio=Audio::default(AudioSettings::new()).unwrap();
-        let mut audio = AudioWrapper::new(audio);
-        audio.load_track("./resources/music/audio.mp3", "main_theme".to_string());
-        audio.load_track("./resources/music/button.mp3", "button_click".to_string());
-        audio.load_track("./resources/music/click.mp3", "mouse_click".to_string());
-
-
-        let thread=std::thread::spawn(background);
-
-        Self{
-            audio:audio,
-            settings:settings,
-            wallpaper:Wallpaper::Colour(White),
-            images:Vec::new(),
-
-            frames:0u64,
-            thread:Some(thread),
-
-            saved_drawables,
-            object_map,
-
-            prerendering:Game::empty_prerendering,
-            updates:Game::loading_updates,
-            click_handler:Game::empty_click_handler,
-            keyboard_handler:Game::empty_keyboard_handler,
-        }
-    }
-
-    pub fn loading_updates(&mut self,window:&mut PagedWindow){
-        if unsafe{!loading}{
-            if let Some(thread)=self.thread.take(){
-                self.images=thread.join().expect("Ошибка начальной загрузки");
-            }
-
-            self.saved_drawables.clear();
-            // Отчистка слоёв
-            self.object_map.clear_layers();
-
-            for _ in 0..3{
-                window.graphics2d().delete_last_textured_object();
-            }
-            self.audio.play_track("main_theme");
-
-            return set_main_menu(self,window)
-        }
-
-        if let DrawType::Rotating((angle,_))=&mut self.object_map.get_drawable(0,1).draw_type{
-            *angle+=0.05f32;
-        }
-
-        if self.frames==20{
-            self.object_map.set_drawable(0,0,self.saved_drawables[1].clone());
-            // self.cat_eyes_closed
-        }
-        else{
-            if self.frames==30{
-                // self.cat
-                self.object_map.set_drawable(0,0,self.saved_drawables[0].clone());
-                self.frames=0;
-            }
-        };
-
-        self.frames+=1;
-    }
-
-    pub fn empty_prerendering(&mut self){
-
-    }
-
-    pub fn empty_updates(&mut self,_window:&mut PagedWindow){
-
-    }
-
-    pub fn empty_click_handler(&mut self,_pressed:bool,_button:MouseButton,_window:&mut PagedWindow){
-
-    }
-
-    pub fn empty_keyboard_handler(&mut self,_:bool,_:KeyboardButton,_:&mut PagedWindow){
-
-    }
-}
-
-
-impl WindowPage<'static> for Game{
-    type Window=PagedWindow;
-
-    type Output=();
-
-    fn on_window_close_requested(&mut self,_window:&mut PagedWindow){
-
-    }
-
-    fn on_update_requested(&mut self,window:&mut PagedWindow){
-        (self.updates)(self,window)
-    }
-
-    fn on_redraw_requested(&mut self,window:&mut PagedWindow){
-        (self.prerendering)(self);
-
-        window.draw(|parameters,graphics|{
-            let [dx,dy]=unsafe{mouse_cursor.center_radius()};
-            // Рендеринг фона
-            if let Wallpaper::Colour(colour)=self.wallpaper{
-                // Заполнение цветом
-                graphics.clear_colour(colour)
-            }
-            else{
-                // Заполнение картинкой
-                let shift=[
-                    dx/wallpaper_movement_scale,
-                    dy/wallpaper_movement_scale,
-                ];
-                graphics.draw_shift_textured_object(wallpaper,shift,ColourFilter::new_mul([1f32;4]),parameters).unwrap();
-            }
-
-            // Рендеринг объектов
-            self.object_map.draw(parameters,graphics);
-
-            // Рендеринг курсора
-            graphics.draw_shift_textured_object(mouse_cursor_icon,[dx,dy],ColourFilter::new_mul([1f32;4]),parameters).unwrap();
-        }).unwrap();
-    }
-
-    fn on_mouse_pressed(&mut self,window:&mut PagedWindow,button:MouseButton){
-        self.audio.play_track("mouse_click");
-        (self.click_handler)(self,true,button,window)
-    }
-    fn on_mouse_released(&mut self,window:&mut PagedWindow,button:MouseButton){
-        (self.click_handler)(self,false,button,window)
-    }
-    fn on_mouse_moved(&mut self,_window:&mut PagedWindow,_:[f32;2]){}
-    fn on_mouse_scrolled(&mut self,_window:&mut PagedWindow,_:MouseScrollDelta){}
-
-    fn on_keyboard_pressed(&mut self,window:&mut PagedWindow,button:KeyboardButton){
-        (self.keyboard_handler) (self,true,button,window)
-    }
-    fn on_keyboard_released(&mut self,window:&mut PagedWindow,button:KeyboardButton){
-        (self.keyboard_handler) (self,false,button,window)
-
-    }
-
-    fn on_character_recieved(&mut self,_window:&mut PagedWindow,_character:char){}
-
-    fn on_modifiers_changed(&mut self,_window:&mut PagedWindow,_modifiers:ModifiersState){}
-
-    fn on_window_resized(&mut self,_window:&mut PagedWindow,_new_size:[u32;2]){}
-
-    fn on_suspended(&mut self,_window:&mut PagedWindow){}
-    fn on_resumed(&mut self,_window:&mut PagedWindow){}
-
-    fn on_window_moved(&mut self,_window:&mut PagedWindow,_:[i32;2]){}
-
-    fn on_window_focused(&mut self,_window:&mut PagedWindow,_:bool){}
-
-    fn on_event_loop_closed(&mut self,_window:&mut Self::Window){}
-}
+const wallpaper_texture_index:usize=1;
 
 // Алфавит для рендеринга текста (остальные символы будут выведены как неопределённые)
 const alphabet:&'static str="АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя1234567890AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZzÕõÄäÖöÜü:();[]!.,";
 
-pub const game_name:&'static str="Любимый в УГАТУ";
+pub const game_name:&'static str="A Visual Novel by Clomance";
 
 pub const wallpaper_movement_scale:f32=16f32;
 
@@ -326,28 +91,32 @@ pub static mut loading:bool=true; // Флаг загрузки
 
 
 fn main(){
-    let mut game_settings=GameSettings::load();
+    //let mut game_settings=GameSettings::load();
 
     // Коллекция шрифтов
-    let mut fonts=Vec::with_capacity(2);
+    // let mut fonts=Vec::with_capacity(2);
 
-    {
-        let main_font_data=FontOwner::load("./resources/fonts/main.font").unwrap();
-        fonts.push(main_font_data);
-        let dialogue_font_data=FontOwner::load("./resources/fonts/dialogue.font").unwrap();
-        fonts.push(dialogue_font_data);
-    }
+    // { // Загрузка шрифтов
+    //     let main_font_data=FontOwner::load("./resources/fonts/main.font").unwrap();
+    //     fonts.push(main_font_data);
+    //     let dialogue_font_data=FontOwner::load("./resources/fonts/dialogue.font").unwrap();
+    //     fonts.push(dialogue_font_data);
+    // }
 
+    // Подключение аудио системы
+    let audio=Audio::default(AudioSettings::new()).unwrap();
+    let mut audio = AudioWrapper::new(audio);
+    audio.load_track("./resources/music/audio.mp3","main_theme".to_string());
 
     // Настройка и создание окна и загрузка функций OpenGL
-    let mut window:PagedWindow=match PagedWindow::new(|mut monitors,window_settings|{
+    let (mut window,mut graphics)=match Window::new(|mut monitors,window_settings|{
         // Установка полноэкранного режима для нужного экрана
-        let monitor=game_settings.monitor;
+        let monitor=0;//game_settings.monitor;
         let monitor=if monitor<monitors.len(){
             monitors.remove(monitor)
         }
         else{
-            game_settings.monitor=0;
+            //game_settings.monitor=0;
             monitors.remove(0)
         };
 
@@ -394,10 +163,30 @@ fn main(){
             println!("{:?}",e);
             return
         }
-    };  
-
+    };
+    // Установка видимости курсора
     window.display().gl_window().window().set_cursor_visible(false);
 
+    // Загрузка иконки курсора мыши
+    let mut image_base=ImageObject::new(unsafe{[
+            window_center[0]-15f32,
+            window_center[1]-15f32,
+            30f32,
+            30f32
+        ]},
+        [
+            0f32,
+            0f32,
+            1f32,
+            1f32,
+        ],
+        White
+    );
+    let mouse_texture=Texture::from_path("./resources/images/mouse_icon.png",window.display()).unwrap();
+    graphics.add_texture(mouse_texture);
+    let mouse_cursor_icon=graphics.add_textured_object(&image_base,0).unwrap();
+
+    // Создание тектуры для обоев
     // Размеры для обоев
     let (dx,dy,width,height)=unsafe{
         let dx=window_width/(wallpaper_movement_scale*2f32);
@@ -408,51 +197,43 @@ fn main(){
         (dx,dy,width,height)
     };
 
-    let scale=Scale::new(0.2f32,0.2f32);
-    for font in fonts{
-        let glyph_cache=GlyphCache::new_alphabet(font.face(),alphabet,scale,window.display());
-        let cached_font = CachedFont::raw(font, glyph_cache);
-        window.graphics2d().add_font(cached_font).unwrap();
-    }
-
-    let loading_resources_thread=move||{
-        let mut wallpapers=Vec::with_capacity(1);
-        let menu_wallpaper=load_image("./resources/images/wallpapers/main_menu_wallpaper.png",width as u32,height as u32);
-        wallpapers.push(menu_wallpaper);
-        unsafe{loading=false};
-        wallpapers
-    };
-
-
-    let mut image_base=ImageBase::new(White,unsafe{[
-        window_center[0]-15f32,
-        window_center[1]-15f32,
-        30f32,
-        30f32
-    ]});
-
-    // Загрузка иконки курсора мыши
-    let mouse_texture=Texture::from_path("./resources/images/mouse_icon.png",window.display()).unwrap();
-    window.graphics2d().add_textured_object(&image_base,mouse_texture).unwrap();
-
-    // Создание тектуры для обоев
-    let rect=[
-        -dx,
-        -dy,
-        width,
-        height,
-    ];
-
-    image_base.set_rect(rect);
+    image_base.set_rect([-dx,-dy,width,height]);
 
     // Создание текстуры чуть больше размера экрана
     let wallpaper_texture=Texture::empty([width as u32,height as u32],window.display()).unwrap();
-    window.graphics2d().add_textured_object(&image_base,wallpaper_texture).unwrap();
+    graphics.add_texture(wallpaper_texture);
+    let wallpaper=graphics.add_textured_object(&image_base,wallpaper_texture_index).unwrap();
 
+    // let scale=Scale::new(0.2f32,0.2f32);
+    // for font in fonts{
+    //     let glyph_cache=GlyphCache::new_alphabet(font.face(),alphabet,scale,window.display());
+    //     let cached_font=CachedFont::raw(font,glyph_cache);
+    //     graphics.add_font(cached_font).unwrap();
+    // }
 
-    let mut page=Game::new(game_settings,&mut window,loading_resources_thread);
+    // let loading_resources_thread=move||{
+    //     let mut wallpapers=Vec::with_capacity(1);
+    //     let menu_wallpaper=load_image("./resources/images/wallpapers/main_menu_wallpaper.png",width as u32,height as u32);
+    //     wallpapers.push(menu_wallpaper);
+    //     unsafe{loading=false};
+    //     wallpapers
+    // };
 
-    window.run_page(&mut page)
+    // Создание и запуск страницы загрузки
+    if let Game::Exit=LoadingScreen::new(&window,&mut graphics).run(&mut window,&mut graphics){
+        return
+    }
+
+    audio.play_track("main_theme",0);
+
+    // Цикл игры
+    'game:loop{
+        // Главное меню
+        match MainMenu::new(&window,&mut graphics).run(&mut window,&mut graphics){
+            Game::Exit=>break 'game,
+            _=>{}
+        }
+    }
 }
 
 /// Загрузка иконки окна
@@ -473,6 +254,6 @@ fn load_image<P:AsRef<std::path::Path>>(path:P,width:u32,height:u32)->RgbaImage{
         image
     }
     else{
-        image.into_rgba()
+        image.into_rgba8()
     }
 }

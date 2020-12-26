@@ -1,21 +1,6 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use)]
 
-mod object_map;
-pub use object_map::{
-    ObjectMap,
-    DrawableObject,
-    Drawable,
-    ClickMap,
-    Clickable,
-    ComplexDrawable,
-    ComplexClickable,
-    ClickableObject,
-};
-
 pub mod colours;
-
-mod user_interface;
-pub use user_interface::*;
 
 // Выравнивание
 #[derive(Clone)]

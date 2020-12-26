@@ -1,6 +1,6 @@
 # Rustil kirjutatud visuaalne novell.
 
-### Versioon 1.6.6
+### Versioon 2.0.0
 
 Viimane stabiilne Rust, minimaalne OpenGL-i versioon - `2.0`.
 
