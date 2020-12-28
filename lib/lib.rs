@@ -1,6 +1,10 @@
 #![allow(non_snake_case,non_upper_case_globals,non_camel_case_types,unused_must_use)]
 
+pub mod user_interface;
+
 pub mod colours;
+
+pub mod loading_flag;
 
 // Выравнивание
 #[derive(Clone)]

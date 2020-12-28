@@ -5,15 +5,12 @@ authors = ["Clomance"]
 edition = "2018"
 # build = "build.rs"
 
-# [features]
-# qrelease = []
-
 [lib]
 name = "lib"
 path = "lib/lib.rs"
 
 [dependencies.cat_engine]
-path = "0.6.0"
+version = "0.6.2"
 features = ["audio","auto_hide"]
 
 [profile.dev]
