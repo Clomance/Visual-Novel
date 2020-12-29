@@ -86,11 +86,6 @@ pub enum Game{
     Exit,
 }
 
-// Индексы главных текстур
-const cursor_texture_index:usize=0;
-
-const wallpaper_texture_index:usize=1;
-
 // Индексы главных текстурных объектов
 const mouse_cursor_icon_index:usize=0;
 
@@ -191,7 +186,6 @@ fn main(){
     // Установка видимости курсора
     window.display().gl_window().window().set_cursor_visible(false);
 
-    // Загрузка иконки курсора мыши
     let mut image_base=ImageObject::new(unsafe{[
             window_center[0]-15f32,
             window_center[1]-15f32,
@@ -206,10 +200,12 @@ fn main(){
         ],
         White
     );
-    let mouse_texture=Texture::from_path("./resources/images/mouse_icon.png",window.display()).unwrap();
-    graphics.add_texture(mouse_texture);
-    let _mouse_cursor_icon=graphics.add_textured_object(&image_base,0).unwrap();
-
+    { // Загрузка иконки курсора мыши
+        
+        let mouse_texture=Texture::from_path("./resources/images/mouse_icon.png",window.display()).unwrap();
+        let mouse_texture_index=graphics.add_texture(mouse_texture);
+        let _mouse_cursor_icon=graphics.add_textured_object(&image_base,mouse_texture_index).unwrap();
+    }
     { // Создание текстуры чуть больше размера экрана
         // Создание тектуры для обоев
         // Размеры для обоев
@@ -225,7 +221,7 @@ fn main(){
         image_base.set_rect([-dx,-dy,width,height]);
 
         let wallpaper_texture=Texture::empty([width as u32,height as u32],window.display()).unwrap();
-        graphics.add_texture(wallpaper_texture);
+        let wallpaper_texture_index=graphics.add_texture(wallpaper_texture);
         let _wallpaper=graphics.add_textured_object(&image_base,wallpaper_texture_index).unwrap();
     }
 
@@ -242,7 +238,7 @@ fn main(){
     for font in main_data.fonts{
         let glyph_cache=GlyphCache::new_alphabet(font.face(),alphabet,scale,window.display());
         let cached_font=CachedFont::raw(font,glyph_cache);
-        graphics.add_font(cached_font).unwrap();
+        graphics.add_font(cached_font);
     }
 
     // Загрузка треков в хранилище

@@ -19,7 +19,7 @@ use cat_engine::{
 
 pub struct Button{
     text:TextView,
-    index:usize,
+    background:usize,
     /// [x1,y1,x2,y2]
     click_area:[f32;4],
     pressed:bool,
@@ -45,14 +45,14 @@ impl Button{
 
         Self{
             text:TextView::new(text_view_settings,graphics),
-            index:graphics.add_simple_object(&rect).unwrap(),
+            background:graphics.add_simple_object(&rect).unwrap(),
             click_area,
             pressed:false
         }
     }
 
-    pub fn index(&self)->usize{
-        self.index
+    pub fn background_index(&self)->usize{
+        self.background
     }
 
     /// Проверяет находится ли точка в области кнопки.
@@ -83,17 +83,13 @@ impl Button{
         }
     }
 
-    pub fn set_colour(&self,colour:Colour,graphics:&mut Graphics2D){
-        graphics.set_simple_object_colour(self.index,colour)
-    }
-
     pub fn draw(&self,graphics:&mut Graphics){
-        graphics.draw_simple_object(self.index).unwrap();
+        graphics.draw_simple_object(self.background).unwrap();
         self.text.draw(graphics);
     }
 
     pub fn draw_shift(&self,shift:[f32;2],graphics:&mut Graphics){
-        graphics.draw_shift_simple_object(self.index,shift).unwrap();
+        graphics.draw_shift_simple_object(self.background,shift).unwrap();
         self.text.draw_shift(shift,graphics);
     }
 }

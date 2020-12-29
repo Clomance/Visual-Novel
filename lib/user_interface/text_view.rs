@@ -31,7 +31,7 @@ impl TextView{
         // Создаем строку текста
         let line=settings.text.into();
 
-        let font=graphics.get_glyph_cache(settings.font);
+        let font=graphics.get_font(settings.font);
 
         let scale=RawGlyphCache::scale_for_height(font,settings.font_size);
 
@@ -45,6 +45,10 @@ impl TextView{
         Self{
             index:graphics.add_text_object(line,&text_base,settings.font).unwrap(),
         }
+    }
+
+    pub fn index(&self)->usize{
+        self.index
     }
 
     pub fn draw(&self,graphics:&mut Graphics){

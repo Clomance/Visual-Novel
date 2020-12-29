@@ -1,5 +1,5 @@
-mod buttons;
-pub use buttons::{
+mod button;
+pub use button::{
     Button,
     ButtonSettings
 };
@@ -8,6 +8,12 @@ mod text_view;
 pub use text_view::{
     TextView,
     TextViewSettings
+};
+
+mod edit_text_view;
+pub use edit_text_view::{
+    EditTextView,
+    EditTextViewSettings
 };
 
 mod menu;

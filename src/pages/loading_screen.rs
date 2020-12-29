@@ -1,10 +1,11 @@
 use crate::{
+    // statics
+    game_settings,
     // consts
     fonts_paths,
     audio_tracks_paths,
     main_menu_wallpaper_path,
     wallpaper_movement_scale,
-
     mouse_cursor_icon_index,
     // enums
     Game,
@@ -29,6 +30,8 @@ use cat_engine::{
     window_center,
     window_width,
     window_height,
+    // enums
+    KeyboardButton,
     // structs
     Window,
     WindowEvent,
@@ -228,6 +231,13 @@ impl LoadingScreen{
                         graphics.draw_shift_textured_object(mouse_cursor_icon_index,[dx,dy]).unwrap();
                     }).unwrap();
                 }
+
+                WindowEvent::KeyboardPressed(KeyboardButton::F5)=>unsafe{
+                    let path=format!("screenshots/screenshot{}.png",game_settings.screenshot);
+                    game_settings.screenshot+=1;
+                    window.save_screenshot(path);
+                }
+
                 _=>{
 
                 }

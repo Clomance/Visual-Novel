@@ -17,7 +17,7 @@ pub struct GameSettings{
 }
 
 impl GameSettings{
-    ///
+    /// 
     pub const fn new()->GameSettings{
         Self{
             continue_game:false,

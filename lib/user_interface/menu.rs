@@ -119,7 +119,7 @@ impl Menu{
     }
 
     pub fn button_index(&self,index:usize)->usize{
-        self.buttons[index].index()
+        self.buttons[index].background_index()
     }
 
     pub fn pressed_button(&self)->Option<usize>{

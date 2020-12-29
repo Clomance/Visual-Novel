@@ -15,6 +15,8 @@ use lib::{
     user_interface::{
         Menu,
         MenuSettings,
+        EditTextView,
+        EditTextViewSettings,
     },
 };
 
@@ -24,6 +26,8 @@ use cat_engine::{
     // statics
     mouse_cursor,
     window_center,
+    // enums
+    KeyboardButton,
     // structs
     Window,
     WindowEvent,
@@ -31,8 +35,6 @@ use cat_engine::{
     graphics::{Graphics2D,DependentObject},
     texture::{ImageObject,Texture},
     image::RgbaImage,
-    // fns
-    window_rect,
 };
 
 
@@ -46,6 +48,8 @@ const menu_movement_scale:f32=10f32;
 
 pub struct MainMenu{
     menu:Menu,
+    enter_name:bool,
+    user_name:EditTextView,
 }
 
 impl MainMenu{
@@ -66,8 +70,18 @@ impl MainMenu{
                 .button_size([160f32,60f32])
                 .button_font_size(26f32);
 
+        let enter_name_rect=unsafe{[
+            window_center[0]-120f32,
+            window_center[1]-100f32,
+            240f32,
+            140f32,
+        ]};
+        let enter_name_settings=EditTextViewSettings::new("",enter_name_rect);
+
         Self{
             menu:Menu::new(menu_settings,graphics),
+            enter_name:false,
+            user_name:EditTextView::new(enter_name_settings,graphics),
         }
     }
 
@@ -97,6 +111,10 @@ impl MainMenu{
                         // Отрисовка меню
                         self.menu.draw_shift(menu_shift,graphics);
 
+                        if self.enter_name{
+                            self.user_name.draw(graphics);
+                        }
+
                         // Отрисовка курсора
                         graphics.draw_shift_textured_object(mouse_cursor_icon_index,[dx,dy]).unwrap();
                     }).unwrap();
@@ -106,42 +124,48 @@ impl MainMenu{
                     if let MouseButton::Left=button{
                         let [mut x,mut y]=unsafe{mouse_cursor.position()};
 
-                        let [dx,dy]=unsafe{mouse_cursor.center_radius()};
-                        let menu_shift=[
-                            dx/menu_movement_scale,
-                            dy/menu_movement_scale
-                        ];
+                        if self.enter_name{
+                            if !self.user_name.in_area(x,y){
+                                self.enter_name=false;
+                            }
+                        }
+                        else{
+                            let [dx,dy]=unsafe{mouse_cursor.center_radius()};
+                            let menu_shift=[
+                                dx/menu_movement_scale,
+                                dy/menu_movement_scale
+                            ];
 
-                        x-=menu_shift[0];
-                        y-=menu_shift[1];
-
-                        if let Some(button)=self.menu.pressed(x,y){
-                            // Получение индекса кнопки
-                            let button_index=self.menu.button_index(button);
-                            // Изменение цвета кнопки
-                            graphics.set_simple_object_colour(button_index,button_pressed)
+                            x-=menu_shift[0];
+                            y-=menu_shift[1];
+                            if let Some(button)=self.menu.pressed(x,y){
+                                // Получение индекса кнопки
+                                let button_index=self.menu.button_index(button);
+                                // Изменение цвета кнопки
+                                *graphics.get_simple_object_colour(button_index)=button_pressed;
+                            }
                         }
                     }
                 }
 
                 WindowEvent::MouseReleased(button)=>{
                     if let MouseButton::Left=button{
-                        let [mut x,mut y]=unsafe{mouse_cursor.position()};
-
-                        let [dx,dy]=unsafe{mouse_cursor.center_radius()};
-                        let menu_shift=[
-                            dx/menu_movement_scale,
-                            dy/menu_movement_scale
-                        ];
-
-                        x-=menu_shift[0];
-                        y-=menu_shift[1];
-
                         if let Some(pressed_button)=self.menu.pressed_button(){
+                            let [mut x,mut y]=unsafe{mouse_cursor.position()};
+
+                            let [dx,dy]=unsafe{mouse_cursor.center_radius()};
+                            let menu_shift=[
+                                dx/menu_movement_scale,
+                                dy/menu_movement_scale
+                            ];
+
+                            x-=menu_shift[0];
+                            y-=menu_shift[1];
+
                             // Получение индекса кнопки
                             let button_index=self.menu.button_index(pressed_button);
                             // Изменение цвета кнопки
-                            graphics.set_simple_object_colour(button_index,Light_blue);
+                            *graphics.get_simple_object_colour(button_index)=Light_blue;
 
                             if let Some(mut button)=self.menu.released(x,y){
                                 if unsafe{!game_settings.continue_game}{
@@ -156,7 +180,8 @@ impl MainMenu{
 
                                     // Начать новую игру
                                     1=>{
-                                        window.stop_events();
+                                        // Открытие диалога для ввода имени пользователя
+                                        self.enter_name=true;
                                     }
 
                                     // Настройки
@@ -177,6 +202,30 @@ impl MainMenu{
                     }
                 }
 
+                WindowEvent::CharacterInput(character)=>if self.enter_name{
+                    self.user_name.push_char(character,graphics);
+                }
+
+                WindowEvent::KeyboardPressed(button)=>match button{
+                    KeyboardButton::Escape=>self.enter_name=false,
+
+                    KeyboardButton::Backspace=>if self.enter_name{
+                        self.user_name.pop_char(graphics);
+                    }
+
+                    KeyboardButton::Enter=>if self.enter_name{
+                        unsafe{game_settings.user_name=self.user_name.text(graphics).clone()}
+                        window.stop_events();
+                    }
+
+                    KeyboardButton::F5=>unsafe{
+                        let path=format!("./screenshots/screenshot{}.png",game_settings.screenshot);
+                        game_settings.screenshot+=1;
+                        window.save_screenshot(path);
+                    }
+                    _=>{}
+                }
+
                 _=>{
 
                 }
@@ -184,9 +233,9 @@ impl MainMenu{
         });
 
         // Удаление всех простых объектов
-        graphics.clear_simple_object_array();
+        graphics.remove_all_simple_objects();
         // Удаление всех текстовых объектов
-        graphics.clear_text_object_array();
+        graphics.remove_all_text_objects();
         result
     }
 }
