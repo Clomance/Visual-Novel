@@ -7,6 +7,8 @@ use crate::{
     },
 };
 
+use super::GeneralSettings;
+
 use cat_engine::{
     Colour,
     text::{
@@ -36,7 +38,7 @@ impl TextView{
         let text_size=font.text_size(&line,scale);
 
         // Выравнивание
-        let (x,y)=settings.align.text_position(settings.rect,text_size);
+        let (x,y)=settings.align.text_position(settings.general.layout,text_size);
 
         let text_base=TextBase::new([x,y],scale,settings.text_colour);
 
@@ -54,9 +56,10 @@ impl TextView{
     }
 }
 
-#[derive(Clone)] // Настройки текстового поля
+/// Настройки текстового поля
+#[derive(Clone)]
 pub struct TextViewSettings<S:Into<String>>{
-    rect:[f32;4], // [x1,y1,width,height] - сюда вписывается текст
+    general:GeneralSettings,
     text:S,
     font_size:f32,
     font:usize,
@@ -65,9 +68,9 @@ pub struct TextViewSettings<S:Into<String>>{
 }
 
 impl<S:Into<String>> TextViewSettings<S>{
-    pub fn new(text:S,rect:[f32;4])->TextViewSettings<S>{
+    pub fn new(text:S,general:GeneralSettings)->TextViewSettings<S>{
         Self{
-            rect,
+            general,
             text,
             font_size:20f32,
             font:0usize,

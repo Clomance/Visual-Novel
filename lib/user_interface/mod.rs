@@ -15,3 +15,18 @@ pub use menu::{
     Menu,
     MenuSettings
 };
+
+#[derive(Clone)]
+pub struct GeneralSettings{
+    /// Область для вставки объекта
+    /// [x,y,width,height]
+    layout:[f32;4],
+}
+
+impl GeneralSettings{
+    pub fn new(layout:[f32;4])->GeneralSettings{
+        Self{
+            layout,
+        }
+    }
+}

@@ -13,6 +13,7 @@ use super::{
     TextViewSettings,
     Button,
     ButtonSettings,
+    GeneralSettings,
 };
 
 use cat_engine::{
@@ -30,7 +31,8 @@ const dmargin:f32=head_margin-button_margin; // Для расчёта высот
 
 pub struct Menu{
     header:TextView,
-    buttons:Vec<Button>
+    buttons:Vec<Button>,
+    pressed_button:Option<usize>,
 }
 
 impl Menu{
@@ -40,10 +42,10 @@ impl Menu{
     )->Menu{
         let buttons_text:Vec<String>=settings.buttons_text.into_iter().map(|t|t.into()).collect();
 
-        let x0=settings.rect[0];        //
-        let y0=settings.rect[1];        // Положение и размер
-        let width=settings.rect[2];     // области для вставки
-        let height=settings.rect[3];    //
+        let x0=settings.general.layout[0];        //
+        let y0=settings.general.layout[1];        // Положение и размер
+        let width=settings.general.layout[2];     // области для вставки
+        let height=settings.general.layout[3];    //
 
         // Полная высота меню
         let menu_height=settings.header_size[1]+dmargin+(settings.buttons_size[1]+button_margin)*buttons_text.len() as f32;
@@ -65,12 +67,12 @@ impl Menu{
         // Настройки для заголовка
         let head_settings=TextViewSettings::new(
             settings.header_text,
-            [
+            GeneralSettings::new([
                 x,
                 y,
                 settings.header_size[0],
                 settings.header_size[1]
-            ])
+            ]))
             .align_x(settings.align.x.clone())
             .font_size(settings.header_font_size)
             .font(settings.font)
@@ -112,7 +114,41 @@ impl Menu{
         Self{
             header:TextView::new(head_settings,graphics),
             buttons,
+            pressed_button:None
         }
+    }
+
+    pub fn button_index(&self,index:usize)->usize{
+        self.buttons[index].index()
+    }
+
+    pub fn pressed_button(&self)->Option<usize>{
+        self.pressed_button
+    }
+
+    /// Возвращает порядковый номер в меню.
+    pub fn pressed(&mut self,x:f32,y:f32)->Option<usize>{
+        self.pressed_button=None;
+
+        for (c,button) in self.buttons.iter_mut().enumerate(){
+            if button.pressed(x,y){
+                self.pressed_button=Some(c);
+                break;
+            }
+        }
+
+        self.pressed_button
+    }
+
+    /// Возвращает порядковый номер в меню.
+    pub fn released(&mut self,x:f32,y:f32)->Option<usize>{
+        for (c,button) in self.buttons.iter_mut().enumerate(){
+            if button.released(x,y){
+                return Some(c);
+            }
+        }
+
+        None
     }
 
     pub fn draw(&self,graphics:&mut Graphics){
@@ -133,7 +169,7 @@ impl Menu{
 
 // Настройки меню
 pub struct MenuSettings<S:Into<String>,BS:Into<String>,B:Iterator<Item=BS>>{
-    rect:[f32;4], // [x1,y1,width,height] - сюда встроивается меню, по умочанию размер окна
+    general:GeneralSettings,
     align:Align, // Выравнивание меню
     header_text:S, // Текст заголовка меню
     header_size:[f32;2], // Ширина и высота заголовка
@@ -149,7 +185,7 @@ pub struct MenuSettings<S:Into<String>,BS:Into<String>,B:Iterator<Item=BS>>{
 impl<S:Into<String>,BS:Into<String>,B:Iterator<Item=BS>> MenuSettings<S,BS,B>{
     pub fn new(head:S,buttons:B)->MenuSettings<S,BS,B>{
         Self{
-            rect:window_rect(),
+            general:GeneralSettings::new(window_rect()),
             header_text:head,
             header_size:[100f32,60f32],
             font:0usize,
@@ -163,8 +199,8 @@ impl<S:Into<String>,BS:Into<String>,B:Iterator<Item=BS>> MenuSettings<S,BS,B>{
         }
     }
 
-    pub fn rect(mut self,rect:[f32;4])->MenuSettings<S,BS,B>{
-        self.rect=rect;
+    pub fn layout(mut self,layout:[f32;4])->MenuSettings<S,BS,B>{
+        self.general.layout=layout;
         self
     }
 
