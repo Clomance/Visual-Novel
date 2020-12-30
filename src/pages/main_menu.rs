@@ -11,7 +11,7 @@ use crate::{
 };
 
 use lib::{
-    colours::{Gray,Light_blue},
+    colours::{White,Gray,Light_blue},
     user_interface::{
         Menu,
         MenuSettings,
@@ -26,6 +26,8 @@ use cat_engine::{
     // statics
     mouse_cursor,
     window_center,
+    window_height,
+    window_width,
     // enums
     KeyboardButton,
     // structs
@@ -33,7 +35,7 @@ use cat_engine::{
     WindowEvent,
     MouseButton,
     graphics::{Graphics2D,DependentObject},
-    texture::{ImageObject,Texture},
+    texture::{ImageObject,ImageBase,Texture},
     image::RgbaImage,
 };
 
@@ -46,16 +48,76 @@ const button_pressed:Colour=[
 ];
 const menu_movement_scale:f32=10f32;
 
+const leaf_movement_scale:f32=12f32;
+
+const x_max_speed:f32=3f32;
+const x_min_speed:f32=0f32;
+
+const y_max_speed:f32=2f32;
+const y_min_speed:f32=-1f32;
+
+const x_accelerate:f32=1f32/32f32;
+const y_accelerate:f32=1f32/32f32;
+
+const leaf_spawn_times:&[u16]=&[
+    44,153,10,93,
+    588,97,126,642,
+    323,65,23,224,
+    123,345,49,342,
+    164,32,471
+];
+const leaf_spawn_positions:&[f32]=&[
+    0.123f32,0.42f32,0.73f32,0.154f32,
+    0.223f32,0.96f32,0.5f32,0.3451f32,
+    0.67f32,0.12f32,0.7521f32,0.542f32,
+    0.241f32,0.82f32,0.87f32,0.4111f32
+];
+
+struct Leaf{
+    x:f32,
+    y:f32,
+    x_speed:f32,
+    y_speed:f32,
+    left_side:bool,
+    x_up:bool,
+    y_up:bool
+}
+
+impl Leaf{
+    pub fn new(x:f32)->Leaf{
+        Self{
+            x,
+            y:0f32,
+            x_speed:0f32,
+            y_speed:0f32,
+            // Движение из левой части в правую
+            // или из правой в левую
+            left_side:true,
+            // Ускорение или замедление
+            x_up:true,
+            y_up:true
+        }
+    }
+}
+
 pub struct MainMenu{
+    leaf:usize,
+    leaves:Vec<Leaf>,
     menu:Menu,
     enter_name:bool,
     user_name:EditTextView,
 }
 
 impl MainMenu{
-    pub fn new(_window:&Window,graphics:&mut Graphics2D,wallpaper:&RgbaImage)->MainMenu{
+    pub fn new(window:&Window,graphics:&mut Graphics2D,images:&[RgbaImage])->MainMenu{
         // Изменение картинки обоев
-        graphics.get_textured_object_texture(wallpaper_index).update(wallpaper);
+        graphics.get_textured_object_texture(wallpaper_index).update(&images[0]);
+
+        let leaf=Texture::from_image(&images[1],window.display()).unwrap();
+        let leaf=graphics.add_texture(leaf);
+        let leaf_image_base=ImageBase::new([0f32,-100f32,100f32,100f32],White);
+        let leaf=graphics.add_textured_object(&leaf_image_base,leaf).unwrap();
+
 
         let mut buttons=Vec::with_capacity(4);
         if unsafe{game_settings.continue_game}{
@@ -79,6 +141,8 @@ impl MainMenu{
         let enter_name_settings=EditTextViewSettings::new("",enter_name_rect);
 
         Self{
+            leaf,
+            leaves:Vec::with_capacity(10),
             menu:Menu::new(menu_settings,graphics),
             enter_name:false,
             user_name:EditTextView::new(enter_name_settings,graphics),
@@ -88,10 +152,88 @@ impl MainMenu{
     pub fn run(&mut self,window:&mut Window,graphics:&mut Graphics2D)->Game{
         let mut result=Game::Next;
 
+        let mut frames=0u16;
+        let mut spawn_time=0usize;
+        let mut spawn_position=0usize;
+
         window.run(|window,event|{
             match event{
-                WindowEvent::CloseRequested=>{
-                    result=Game::Exit;
+                WindowEvent::CloseRequested=>result=Game::Exit,
+
+                WindowEvent::Update=>{
+                    frames+=1;
+
+                    if frames==leaf_spawn_times[spawn_time]{
+                        frames=0;
+
+                        spawn_time+=1;
+
+                        if spawn_time==leaf_spawn_times.len(){
+                            spawn_time=0;
+                        }
+
+                        let x=leaf_spawn_positions[spawn_position]*unsafe{window_width};
+
+                        spawn_position+=1;
+                        if spawn_position==leaf_spawn_positions.len(){
+                            spawn_position=0;
+                        }
+
+                        self.leaves.push(Leaf::new(x));
+                    }
+
+                    let mut c=0;
+                    while c<self.leaves.len(){
+                        let leaf=&mut self.leaves[c];
+
+                        if leaf.y>unsafe{window_height}+100f32{
+                            // Удаление упавших лепестков
+                            self.leaves.remove(c);
+                            continue
+                        }
+                        else{
+                            // Движение лепестков
+                            if leaf.left_side{
+                                leaf.x+=leaf.x_speed;
+                            }
+                            else{
+                                leaf.x-=leaf.x_speed;
+                            }
+
+                            leaf.y+=leaf.y_speed;
+
+                            if leaf.x_up{
+                                leaf.x_speed+=x_accelerate;
+                                if leaf.x_speed>=x_max_speed{
+                                    leaf.x_up=false;
+                                }
+                            }
+                            else{
+                                leaf.x_speed-=x_accelerate;
+
+                                if leaf.x_speed<=x_min_speed{
+                                    leaf.x_up=true;
+                                    leaf.left_side=!leaf.left_side;
+                                }
+                            }
+
+                            if leaf.y_up{
+                                leaf.y_speed+=y_accelerate;
+                                if leaf.y_speed>=y_max_speed{
+                                    leaf.y_up=false;
+                                }
+                            }
+                            else{
+                                leaf.y_speed-=y_accelerate;
+
+                                if leaf.y_speed<=y_min_speed{
+                                    leaf.y_up=true;
+                                }
+                            }
+                        }
+                        // Следующий лепесток
+                        c+=1;
+                    }
                 }
 
                 WindowEvent::RedrawRequested=>{
@@ -104,9 +246,23 @@ impl MainMenu{
                         dx/menu_movement_scale,
                         dy/menu_movement_scale
                     ];
+
+                    let leaf_shift=[
+                        dx/leaf_movement_scale,
+                        dy/leaf_movement_scale
+                    ];
+
                     window.draw(graphics,|graphics|{
                         // Отрисовка обоев
                         graphics.draw_shift_textured_object(wallpaper_index,wallpaper_shift).unwrap();
+
+                        for leaf in &self.leaves{
+                            let leaf=[
+                                leaf.x+leaf_shift[0],
+                                leaf.y+leaf_shift[1]
+                            ];
+                            graphics.draw_shift_textured_object(self.leaf,leaf).unwrap();
+                        }
 
                         // Отрисовка меню
                         self.menu.draw_shift(menu_shift,graphics);

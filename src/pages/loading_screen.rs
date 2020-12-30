@@ -5,6 +5,7 @@ use crate::{
     fonts_paths,
     audio_tracks_paths,
     main_menu_wallpaper_path,
+    decoration_image_paths,
     wallpaper_movement_scale,
     mouse_cursor_icon_index,
     // enums
@@ -144,6 +145,11 @@ impl LoadingScreen{
             let main_menu_wallpaper=load_image(main_menu_wallpaper_path,Some([width,height]));
             data.textures.push(main_menu_wallpaper);
 
+            for path in decoration_image_paths{
+                let image=load_image(path,None);
+                data.textures.push(image);
+            }
+
             // Передача данных
             data
         });
@@ -177,6 +183,7 @@ impl LoadingScreen{
                 WindowEvent::Update=>{
                     match self.thread_flag.get_state(){
                         ThreadState::Running=>{
+                            frames+=1;
                             // 0.35 секунды глаза открыты, 0.15 секунды закрыты
                             if frames==35{
                                 // cat_eyes_half_closed
@@ -199,7 +206,6 @@ impl LoadingScreen{
                                 graphics.rewrite_textured_object_vertices(self.cat,&self.cat_image_base.vertices());
                                 frames=0;
                             }
-                            frames+=1;
 
                             // 140 градусов в секунду
                             angle+=0.05;

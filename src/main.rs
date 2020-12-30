@@ -103,6 +103,10 @@ const fonts_paths:&[&'static str]=&[
 
 const main_menu_wallpaper_path:&'static str="./resources/images/wallpapers/main_menu_wallpaper.png";
 
+const decoration_image_paths:&[&'static str]=&[
+    "resources/images/rose.png",
+];
+
 // Названия для аудио треков
 const audio_tracks_names:&[&'static str]=&[
     "main_theme",
@@ -234,7 +238,7 @@ fn main(){
     }
 
     // Кэширование шрифтов
-    let scale=Scale::new(0.2f32,0.2f32);
+    let scale=Scale::new(0.1f32,0.1f32);
     for font in main_data.fonts{
         let glyph_cache=GlyphCache::new_alphabet(font.face(),alphabet,scale,window.display());
         let cached_font=CachedFont::raw(font,glyph_cache);
@@ -249,12 +253,12 @@ fn main(){
     // Запуск мелодии главной темы (повторять бесконечно)
     audio.play_track("main_theme",0u32);
 
-    let wallpaper_images=main_data.textures;
+    let images=main_data.textures;
 
     // Цикл игры
     'game:loop{
         // Главное меню
-        match MainMenu::new(&window,&mut graphics,&wallpaper_images[0]).run(&mut window,&mut graphics){
+        match MainMenu::new(&window,&mut graphics,&images[0..2]).run(&mut window,&mut graphics){
             Game::Exit=>break 'game,
             _=>{}
         }
