@@ -2,12 +2,14 @@ use crate::{
     // statics
     game_settings,
     // consts
+    alphabet,
     fonts_paths,
     audio_tracks_paths,
     main_menu_wallpaper_path,
     decoration_image_paths,
     wallpaper_movement_scale,
     mouse_cursor_icon_index,
+    swipe_screen_index,
     // enums
     Game,
     // structs
@@ -31,15 +33,26 @@ use cat_engine::{
     window_center,
     window_width,
     window_height,
+    // functions
+    default_draw_parameters,
     // enums
     KeyboardButton,
     // structs
     Window,
     WindowEvent,
-    graphics::{Graphics2D,DependentObject},
+    graphics::{
+        Graphics,
+        Graphics2D,
+        DependentObject
+    },
     texture::{ImageObject,Texture},
-    text::FontOwner,
+    text::{Scale,FontOwner,GlyphCache,CachedFont},
     audio::ChanneledTrack,
+
+    glium::{
+        Surface,
+        framebuffer::SimpleFrameBuffer
+    },
 };
 
 use std::{
@@ -50,8 +63,6 @@ use std::{
         TryRecvError
     },
 };
-
-const loading_screen_assets:usize=2;
 
 
 
@@ -66,8 +77,8 @@ pub struct LoadingScreen{
 impl LoadingScreen{
     pub fn new(window:&Window,graphics:&mut Graphics2D)->LoadingScreen{
         // Создание основы для иконки загрузки
-        let cat=Texture::from_path("./resources/images/loading_screen_assets.png",window.display()).unwrap();
-        graphics.add_texture(cat);
+        let loading_screen_assets=Texture::from_path("./resources/images/loading_screen_assets.png",window.display()).unwrap();
+        let loading_screen_assets=graphics.add_texture(loading_screen_assets);
 
         // Шестерня
         let mut image_base=ImageObject::raw_uv(unsafe{[
@@ -111,14 +122,17 @@ impl LoadingScreen{
 
             let mut data=LoadingMainData::new();
 
+            let mut fonts=Vec::new();
             // Загрузка шрифтов
             for path in fonts_paths{
                 if let ThreadState::Finished=loading_flag.get_state(){
                     return data
                 }
                 let font=FontOwner::load(path).unwrap();
-                data.fonts.push(font);
+                fonts.push(font);
             }
+
+            data.fonts=Some(fonts);
 
             // Загрузка аудио
             for path in audio_tracks_paths{
@@ -169,13 +183,24 @@ impl LoadingScreen{
 
         let mut result=Game::Next;
 
+        // Кэширование шрифтов
+        let mut caching_fonts=false;
+
+        let mut alphabet_iter=alphabet.chars();
+
+        let mut current_font:Option<FontOwner>=None;
+        let mut font_iter:Option<std::vec::IntoIter<cat_engine::text::FontOwner>>=None;
+
+        let scale=Scale::new(0.1f32,0.1f32);
+
+        let mut glyph_cache:Option<GlyphCache>=None;
+
         window.run(|window,event|{
             match event{
                 WindowEvent::CloseRequested=>{
                     self.thread_flag.set_state(ThreadState::Finished);
                     if let Some(thread)=self.thread.take(){
-                        *data=thread.join().expect("Ошибка начальной загрузки");
-                        window.stop_events();
+                        thread.join().expect("Ошибка начальной загрузки");
                     }
                     result=Game::Exit;
                 }
@@ -183,38 +208,20 @@ impl LoadingScreen{
                 WindowEvent::Update=>{
                     match self.thread_flag.get_state(){
                         ThreadState::Running=>{
-                            frames+=1;
-                            // 0.35 секунды глаза открыты, 0.15 секунды закрыты
-                            if frames==35{
-                                // cat_eyes_half_closed
-                                self.cat_image_base.set_raw_uv([0f32,2f32/4f32,1f32,3f32/4f32]);
-                                graphics.rewrite_textured_object_vertices(self.cat,&self.cat_image_base.vertices());
-                            }
-                            else if frames==40{
-                                // cat_eyes_closed
-                                self.cat_image_base.set_raw_uv([0f32,1f32/4f32,1f32,2f32/4f32]);
-                                graphics.rewrite_textured_object_vertices(self.cat,&self.cat_image_base.vertices());
-                            }
-                            else if frames==45{
-                                // cat_eyes_half_closed
-                                self.cat_image_base.set_raw_uv([0f32,2f32/4f32,1f32,3f32/4f32]);
-                                graphics.rewrite_textured_object_vertices(self.cat,&self.cat_image_base.vertices());
-                            }
-                            else if frames==50{
-                                // cat
-                                self.cat_image_base.set_raw_uv([0f32,3f32/4f32,1f32,1f32]);
-                                graphics.rewrite_textured_object_vertices(self.cat,&self.cat_image_base.vertices());
-                                frames=0;
-                            }
-
-                            // 140 градусов в секунду
-                            angle+=0.05;
+                            
                         }
 
                         ThreadState::Finished=>
                             if let Some(thread)=self.thread.take(){
                                 *data=thread.join().unwrap();
-                                window.stop_events();
+
+                                let mut fonts=data.fonts.take().unwrap().into_iter();
+                                current_font=fonts.next();
+                                font_iter=Some(fonts);
+
+                                glyph_cache=Some(GlyphCache::new_alphabet(current_font.as_ref().unwrap().face(),"",scale,window.display()));
+
+                                caching_fonts=true;
                             }
 
                         ThreadState::Panicked=>
@@ -224,9 +231,65 @@ impl LoadingScreen{
                                 result=Game::Exit;
                             }
                     }
+
+                    frames+=1;
+                    // 0.35 секунды глаза открыты, 0.15 секунды закрыты
+                    if frames==35{
+                        // cat_eyes_half_closed
+                        self.cat_image_base.set_raw_uv([0f32,2f32/4f32,1f32,3f32/4f32]);
+                        graphics.rewrite_textured_object_vertices(self.cat,&self.cat_image_base.vertices());
+                    }
+                    else if frames==40{
+                        // cat_eyes_closed
+                        self.cat_image_base.set_raw_uv([0f32,1f32/4f32,1f32,2f32/4f32]);
+                        graphics.rewrite_textured_object_vertices(self.cat,&self.cat_image_base.vertices());
+                    }
+                    else if frames==45{
+                        // cat_eyes_half_closed
+                        self.cat_image_base.set_raw_uv([0f32,2f32/4f32,1f32,3f32/4f32]);
+                        graphics.rewrite_textured_object_vertices(self.cat,&self.cat_image_base.vertices());
+                    }
+                    else if frames==50{
+                        // cat
+                        self.cat_image_base.set_raw_uv([0f32,3f32/4f32,1f32,1f32]);
+                        graphics.rewrite_textured_object_vertices(self.cat,&self.cat_image_base.vertices());
+                        frames=0;
+                    }
+
+                    // 140 градусов в секунду
+                    angle+=0.05;
+
+                    if caching_fonts{
+                        if let Some(font)=&current_font{
+                            if let Some(character)=alphabet_iter.next(){
+                                if let Some(glyph_cache)=&mut glyph_cache{
+                                    glyph_cache.insert_char(character,font.face(),scale,window.display());
+                                }
+                            }
+                            else{
+                                alphabet_iter=alphabet.chars();
+
+                                let font=current_font.take().unwrap();
+
+                                let chached_font=CachedFont::raw(font,glyph_cache.take().unwrap());
+                                graphics.add_font(chached_font);
+
+                                current_font=font_iter.as_mut().unwrap().next();
+
+                                if let Some(font)=&current_font{
+                                    glyph_cache=Some(GlyphCache::new_alphabet(font.face(),"",scale,window.display()));
+                                }
+                                else{
+                                    window.stop_events();
+                                }
+                            }
+                        }
+                    }
+
                 }
                 WindowEvent::RedrawRequested=>{
                     let [dx,dy]=unsafe{mouse_cursor.center_radius()};
+
                     window.draw(graphics,|graphics|{
                         graphics.clear_colour(White);
                         // Рендеринг кота
@@ -249,6 +312,25 @@ impl LoadingScreen{
                 }
             }
         });
+
+        let swipe_screen_texture=unsafe{
+            let r=graphics.get_textured_object_texture(swipe_screen_index) as *mut Texture;
+            &*r
+        };
+        let mut frame_buffer=SimpleFrameBuffer::new(window.display(),&swipe_screen_texture.0).unwrap();
+
+        let mut frame_buffer_graphics=Graphics{
+            graphics2d:graphics,
+            draw_parameters:default_draw_parameters(),
+            frame:&mut frame_buffer,
+        };
+
+        frame_buffer_graphics.clear_colour(White);
+        // Рендеринг кота
+        frame_buffer_graphics.draw_textured_object(self.cat).unwrap();
+        // Рендеринг шестерни
+        frame_buffer_graphics.draw_rotate_textured_object(self.gear,unsafe{window_center},angle).unwrap();
+
 
         // Кот
         graphics.remove_last_textured_object();

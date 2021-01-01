@@ -15,6 +15,8 @@ use cat_engine::{
         Graphics,
     },
     shapes::Rectangle,
+
+    glium::Surface,
 };
 
 pub struct Button{
@@ -83,12 +85,12 @@ impl Button{
         }
     }
 
-    pub fn draw(&self,graphics:&mut Graphics){
+    pub fn draw<S:Surface>(&self,graphics:&mut Graphics<S>){
         graphics.draw_simple_object(self.background).unwrap();
         self.text.draw(graphics);
     }
 
-    pub fn draw_shift(&self,shift:[f32;2],graphics:&mut Graphics){
+    pub fn draw_shift<S:Surface>(&self,shift:[f32;2],graphics:&mut Graphics<S>){
         graphics.draw_shift_simple_object(self.background,shift).unwrap();
         self.text.draw_shift(shift,graphics);
     }

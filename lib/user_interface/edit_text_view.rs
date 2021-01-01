@@ -20,6 +20,8 @@ use cat_engine::{
     graphics::{Graphics,Graphics2D},
     shapes::Rectangle,
     text::RawGlyphCache,
+
+    glium::Surface,
 };
 
 // Изменяемый текстовый блок (возможность вписывать и удалять символы)
@@ -112,7 +114,7 @@ impl EditTextView{
         }
     }
 
-    pub fn draw(&self,graphics:&mut Graphics){
+    pub fn draw<S:Surface>(&self,graphics:&mut Graphics<S>){
         graphics.draw_simple_object(self.background).unwrap();
         self.text_view.draw(graphics)
     }

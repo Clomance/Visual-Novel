@@ -34,6 +34,4 @@ pub const Bleak_orange:Colour=[1.0, 0.545, 0.349, 1.0];
 // Специальные \\
 pub const Head_main_menu_colour:Colour=White;
 
-pub const Settings_page_colour:Colour=Dark_gray;
-
 pub const Pause_menu_background_colour:Colour=[0.1,0.2,0.3,1.0]; // Серо-синий

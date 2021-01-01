@@ -23,6 +23,8 @@ use cat_engine::{
     Colour,
     // structs
     graphics::{Graphics2D,Graphics},
+
+    glium::Surface,
 };
 
 const head_margin:f32=50f32; // Расстояние между заголовком и кнопками
@@ -151,14 +153,14 @@ impl Menu{
         None
     }
 
-    pub fn draw(&self,graphics:&mut Graphics){
+    pub fn draw<S:Surface>(&self,graphics:&mut Graphics<S>){
         self.header.draw(graphics);
         for button in &self.buttons{
             button.draw(graphics)
         }
     }
 
-    pub fn draw_shift(&self,shift:[f32;2],graphics:&mut Graphics){
+    pub fn draw_shift<S:Surface>(&self,shift:[f32;2],graphics:&mut Graphics<S>){
         self.header.draw_shift(shift,graphics);
         for button in &self.buttons{
             button.draw_shift(shift,graphics)

@@ -4,10 +4,16 @@ use crate::{
     mouse_cursor_icon_index,
     wallpaper_index,
     wallpaper_movement_scale,
+    swipe_screen_index,
+    swipe_updates,
     // statics
     game_settings,
     // enums
     Game,
+};
+
+use super::{
+    Settings,
 };
 
 use lib::{
@@ -37,6 +43,8 @@ use cat_engine::{
     graphics::{Graphics2D,DependentObject},
     texture::{ImageObject,ImageBase,Texture},
     image::RgbaImage,
+
+    audio::AudioWrapper,
 };
 
 
@@ -149,7 +157,59 @@ impl MainMenu{
         }
     }
 
-    pub fn run(&mut self,window:&mut Window,graphics:&mut Graphics2D)->Game{
+    pub fn open(&mut self,window:&mut Window,graphics:&mut Graphics2D)->Game{
+        let mut result=Game::Next;
+
+        let mut frames=0u8;
+
+        let mut shift=0f32;
+
+        let dshift=unsafe{window_width/swipe_updates as f32};
+
+        window.run(|window,event|{
+            match event{
+                WindowEvent::CloseRequested=>result=Game::Exit,
+                WindowEvent::Update=>{
+                    frames+=1;
+                    if frames==swipe_updates{
+                        window.stop_events();
+                    }
+                    else{
+                        shift-=dshift;
+                    }
+                }
+
+                WindowEvent::RedrawRequested=>{
+                    let [dx,dy]=unsafe{mouse_cursor.center_radius()};
+                    let next_page_shift=unsafe{window_width+shift};
+
+                    let wallpaper_shift=[
+                        dx/wallpaper_movement_scale+next_page_shift,
+                        dy/wallpaper_movement_scale
+                    ];
+
+                    let menu_shift=[
+                        dx/menu_movement_scale+next_page_shift,
+                        dy/menu_movement_scale
+                    ];
+
+
+                    window.draw(&graphics,|graphics|{
+                        graphics.draw_shift_textured_object(swipe_screen_index,[shift,0f32]);
+
+                        graphics.draw_shift_textured_object(wallpaper_index,wallpaper_shift).unwrap();
+                        self.menu.draw_shift(menu_shift,graphics);
+                    });
+                }
+
+                _=>{}
+            }
+        });
+
+        result
+    }
+
+    pub fn run(&mut self,window:&mut Window,graphics:&mut Graphics2D,audio:&mut AudioWrapper)->Game{
         let mut result=Game::Next;
 
         let mut frames=0u16;
@@ -295,6 +355,7 @@ impl MainMenu{
                             x-=menu_shift[0];
                             y-=menu_shift[1];
                             if let Some(button)=self.menu.pressed(x,y){
+                                audio.play_track("button_pressed",1u32);
                                 // Получение индекса кнопки
                                 let button_index=self.menu.button_index(button);
                                 // Изменение цвета кнопки
@@ -306,52 +367,62 @@ impl MainMenu{
 
                 WindowEvent::MouseReleased(button)=>{
                     if let MouseButton::Left=button{
-                        if let Some(pressed_button)=self.menu.pressed_button(){
-                            let [mut x,mut y]=unsafe{mouse_cursor.position()};
+                        if !self.enter_name{
+                            if let Some(pressed_button)=self.menu.pressed_button(){
+                                //audio.play_track("button_pressed",1u32);
 
-                            let [dx,dy]=unsafe{mouse_cursor.center_radius()};
-                            let menu_shift=[
-                                dx/menu_movement_scale,
-                                dy/menu_movement_scale
-                            ];
+                                let [mut x,mut y]=unsafe{mouse_cursor.position()};
 
-                            x-=menu_shift[0];
-                            y-=menu_shift[1];
+                                let [dx,dy]=unsafe{mouse_cursor.center_radius()};
+                                let menu_shift=[
+                                    dx/menu_movement_scale,
+                                    dy/menu_movement_scale
+                                ];
 
-                            // Получение индекса кнопки
-                            let button_index=self.menu.button_index(pressed_button);
-                            // Изменение цвета кнопки
-                            *graphics.get_simple_object_colour(button_index)=Light_blue;
+                                x-=menu_shift[0];
+                                y-=menu_shift[1];
 
-                            if let Some(mut button)=self.menu.released(x,y){
-                                if unsafe{!game_settings.continue_game}{
-                                    button+=1;
-                                }
+                                // Получение индекса кнопки
+                                let button_index=self.menu.button_index(pressed_button);
+                                // Изменение цвета кнопки
+                                *graphics.get_simple_object_colour(button_index)=Light_blue;
 
-                                match button{
-                                    // Продолжить игру
-                                    0=>{
-                                        window.stop_events();
+                                if let Some(mut button)=self.menu.released(x,y){
+                                    if unsafe{!game_settings.continue_game}{
+                                        button+=1;
                                     }
 
-                                    // Начать новую игру
-                                    1=>{
-                                        // Открытие диалога для ввода имени пользователя
-                                        self.enter_name=true;
-                                    }
+                                    match button{
+                                        // Продолжить игру
+                                        0=>{
+                                            window.stop_events();
+                                        }
 
-                                    // Настройки
-                                    2=>{
-                                        window.stop_events();
-                                    }
+                                        // Начать новую игру
+                                        1=>{
+                                            // Открытие диалога для ввода имени пользователя
+                                            self.enter_name=true;
+                                        }
 
-                                    // Выход
-                                    3=>{
-                                        window.stop_events();
-                                        result=Game::Exit;
-                                    }
+                                        // Настройки
+                                        2=>{
+                                            match Settings::new(window,graphics).run(window,graphics){
+                                                Game::Exit=>{
+                                                    result=Game::Exit;
+                                                    window.stop_events();
+                                                }
+                                                _=>{}
+                                            }
+                                        }
 
-                                    _=>{}
+                                        // Выход
+                                        3=>{
+                                            window.stop_events();
+                                            result=Game::Exit;
+                                        }
+
+                                        _=>{}
+                                    }
                                 }
                             }
                         }

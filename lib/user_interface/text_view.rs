@@ -19,6 +19,8 @@ use cat_engine::{
         Graphics2D,
         Graphics,
     },
+
+    glium::Surface,
 };
 
 #[derive(Clone)]
@@ -51,11 +53,11 @@ impl TextView{
         self.index
     }
 
-    pub fn draw(&self,graphics:&mut Graphics){
+    pub fn draw<S:Surface>(&self,graphics:&mut Graphics<S>){
         graphics.draw_text_object(self.index).unwrap();
     }
 
-    pub fn draw_shift(&self,shift:[f32;2],graphics:&mut Graphics){
+    pub fn draw_shift<S:Surface>(&self,shift:[f32;2],graphics:&mut Graphics<S>){
         graphics.draw_shift_text_object(self.index,shift).unwrap();
     }
 }

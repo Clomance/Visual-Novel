@@ -10,7 +10,7 @@ name = "lib"
 path = "lib/lib.rs"
 
 [dependencies.cat_engine]
-version = "0.6.3"
+version = "0.6.4"
 features = ["audio","auto_hide"]
 
 [profile.dev]

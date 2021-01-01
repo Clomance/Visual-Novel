@@ -91,9 +91,14 @@ const mouse_cursor_icon_index:usize=0;
 
 const wallpaper_index:usize=1;
 
+/// Картинка для переходов.
+const swipe_screen_index:usize=2;
+const swipe_updates:u8=50;
+
 // Пути ресурсов
 const audio_tracks_paths:&[&'static str]=&[
     "./resources/audio/audio.mp3",
+    "./resources/audio/button_pressed.mp3",
 ];
 
 const fonts_paths:&[&'static str]=&[
@@ -110,6 +115,7 @@ const decoration_image_paths:&[&'static str]=&[
 // Названия для аудио треков
 const audio_tracks_names:&[&'static str]=&[
     "main_theme",
+    "button_pressed",
 ];
 
 
@@ -134,7 +140,7 @@ fn main(){
     // Настройка и создание окна и загрузка функций OpenGL
     let (mut window,mut graphics)=match Window::new(|mut monitors,window_settings|{
         // Установка полноэкранного режима для нужного экрана
-        let monitor=unsafe{game_settings.monitor};
+        let monitor=1;//unsafe{game_settings.monitor};
         let monitor=if monitor<monitors.len(){
             monitors.remove(monitor)
         }
@@ -169,9 +175,9 @@ fn main(){
         window_settings.pixel_fmt_req.hardware_accelerated=None;
 
 
-        window_settings.graphics_base_settings.texture.vertex_buffer_size=20usize;
+        window_settings.graphics_base_settings.texture.vertex_buffer_size=40usize;
         window_settings.graphics_base_settings.texture.vertex_buffer_offset=0usize;
-        window_settings.graphics_base_settings.texture.object_buffer_size=5usize;
+        window_settings.graphics_base_settings.texture.object_buffer_size=10usize;
 
 
         window_settings.graphics_base_settings.simple.vertex_buffer_size=100usize;
@@ -229,20 +235,21 @@ fn main(){
         let _wallpaper=graphics.add_textured_object(&image_base,wallpaper_texture_index).unwrap();
     }
 
+    image_base.set_rect(unsafe{[0f32,0f32,window_width,window_height]});
+    {
+        let swipe_screen_texture=Texture::empty(
+            unsafe{[window_width as u32,window_height as u32]},window.display()
+        ).unwrap();
+        let swipe_screen_texture_index=graphics.add_texture(swipe_screen_texture);
+        let _swipe_screen_index=graphics.add_textured_object(&image_base,swipe_screen_texture_index).unwrap();
+    }
+
     // Данные для начальной загрузки
     let mut main_data=LoadingMainData::new();
 
     // Создание и запуск страницы загрузки
     if let Game::Exit=LoadingScreen::new(&window,&mut graphics).run(&mut window,&mut graphics,&mut main_data){
         return
-    }
-
-    // Кэширование шрифтов
-    let scale=Scale::new(0.1f32,0.1f32);
-    for font in main_data.fonts{
-        let glyph_cache=GlyphCache::new_alphabet(font.face(),alphabet,scale,window.display());
-        let cached_font=CachedFont::raw(font,glyph_cache);
-        graphics.add_font(cached_font);
     }
 
     // Загрузка треков в хранилище
@@ -258,7 +265,11 @@ fn main(){
     // Цикл игры
     'game:loop{
         // Главное меню
-        match MainMenu::new(&window,&mut graphics,&images[0..2]).run(&mut window,&mut graphics){
+        match{
+            let mut menu=MainMenu::new(&window,&mut graphics,&images[0..2]);
+            menu.open(&mut window,&mut graphics);
+            menu.run(&mut window,&mut graphics,&mut audio)
+        }{
             Game::Exit=>break 'game,
             _=>{}
         }
@@ -267,7 +278,7 @@ fn main(){
 
 /// Данные при начальной загрузке.
 pub struct LoadingMainData{
-    pub fonts:Vec<FontOwner>,
+    pub fonts:Option<Vec<FontOwner>>,
     pub audio:Vec<ChanneledTrack>,
     pub textures:Vec<RgbaImage>,
 }
@@ -275,7 +286,7 @@ pub struct LoadingMainData{
 impl LoadingMainData{
     pub fn new()->LoadingMainData{
         Self{
-            fonts:Vec::new(),
+            fonts:None,
             audio:Vec::new(),
             textures:Vec::new(),
         }
