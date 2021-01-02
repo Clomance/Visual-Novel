@@ -6,6 +6,7 @@ use game_settings::GameSettings;
 
 mod pages;
 use pages::{
+    SwipeDirection,
     LoadingScreen,
     MainMenu
 };
@@ -21,6 +22,8 @@ use cat_engine::{
     window_width,
     window_height,
     mouse_cursor,
+    // functions
+    default_draw_parameters,
     // enums
     WindowEvent,
     MouseButton,
@@ -30,15 +33,15 @@ use cat_engine::{
     WindowPage,
     // types
     Colour,
-    // structs and else
-    MouseScrollDelta,
-    ModifiersState,
+    // structs
     Window,
+    // modules
     graphics::{
         Graphics,
         DrawType,
         ObjectType,
         DependentObject,
+        Graphics2D,
         //ColourFilter
     },
     text::{
@@ -50,6 +53,7 @@ use cat_engine::{
         FontOwner
     },
     glium::{
+        glutin::window::CursorIcon,
         DrawParameters,
         Blend,
         BlendingFunction,
@@ -57,6 +61,7 @@ use cat_engine::{
         glutin::window::Icon,
         glutin::dpi::Size,
         DrawError,
+        framebuffer::SimpleFrameBuffer,
     },
     texture::{
         ImageBase,
@@ -93,12 +98,15 @@ const wallpaper_index:usize=1;
 
 /// Картинка для переходов.
 const swipe_screen_index:usize=2;
-const swipe_updates:u8=50;
+const swipe_updates:u8=23;
 
 // Пути ресурсов
+const cursor_icon:&'static str="./resources/images/mouse_icon.png";
+
 const audio_tracks_paths:&[&'static str]=&[
     "./resources/audio/audio.mp3",
     "./resources/audio/button_pressed.mp3",
+    "./resources/audio/screenshot.mp3",
 ];
 
 const fonts_paths:&[&'static str]=&[
@@ -116,6 +124,7 @@ const decoration_image_paths:&[&'static str]=&[
 const audio_tracks_names:&[&'static str]=&[
     "main_theme",
     "button_pressed",
+    "screenshot"
 ];
 
 
@@ -167,7 +176,6 @@ fn main(){
         window_settings.window_attributes.always_on_top=true;
         window_settings.window_attributes.window_icon=Some(icon);
 
-
         window_settings.vsync=true;
         window_settings.debug=false;
 
@@ -187,12 +195,16 @@ fn main(){
         window_settings.graphics_base_settings.text.glyph_texture_size=[512u32;2];
     }){
         Ok(window)=>window,
+        #[cfg(debug_assertions)]
         Err(e)=>{
             #[cfg(debug_assertions)]
             println!("{:?}",e);
             return
         }
+        #[cfg(not(debug_assertions))]
+        Err(_)=>return,
     };
+
     // Установка видимости курсора
     window.display().gl_window().window().set_cursor_visible(false);
 
@@ -212,7 +224,7 @@ fn main(){
     );
     { // Загрузка иконки курсора мыши
         
-        let mouse_texture=Texture::from_path("./resources/images/mouse_icon.png",window.display()).unwrap();
+        let mouse_texture=Texture::from_path(cursor_icon,window.display()).unwrap();
         let mouse_texture_index=graphics.add_texture(mouse_texture);
         let _mouse_cursor_icon=graphics.add_textured_object(&image_base,mouse_texture_index).unwrap();
     }
@@ -248,7 +260,7 @@ fn main(){
     let mut main_data=LoadingMainData::new();
 
     // Создание и запуск страницы загрузки
-    if let Game::Exit=LoadingScreen::new(&window,&mut graphics).run(&mut window,&mut graphics,&mut main_data){
+    if let Game::Exit=LoadingScreen::new(&window,&mut graphics).run(&mut window,&mut graphics,&audio,&mut main_data){
         return
     }
 
@@ -267,7 +279,7 @@ fn main(){
         // Главное меню
         match{
             let mut menu=MainMenu::new(&window,&mut graphics,&images[0..2]);
-            menu.open(&mut window,&mut graphics);
+            menu.open(&mut window,SwipeDirection::Left,&mut graphics);
             menu.run(&mut window,&mut graphics,&mut audio)
         }{
             Game::Exit=>break 'game,
@@ -316,6 +328,30 @@ fn load_image<P:AsRef<Path>>(path:P,size:Option<[u32;2]>)->RgbaImage{
     else{
         image.into_rgba8()
     }
+}
+
+fn get_swipe_texture<'a,'b>(graphics:&'a mut Graphics2D)->&'b Texture{
+    unsafe{
+        let r=graphics.get_textured_object_texture(swipe_screen_index) as *mut Texture;
+        &*r
+    }
+}
+
+fn draw_on_texture<F:FnOnce(&mut Graphics<SimpleFrameBuffer>)>(
+    texture:&Texture,
+    window:&Window,
+    graphics:&Graphics2D,
+    f:F
+){
+    let mut frame_buffer=SimpleFrameBuffer::new(window.display(),&texture.0).unwrap();
+
+    let mut frame_buffer_graphics=Graphics{
+        graphics2d:graphics,
+        draw_parameters:default_draw_parameters(),
+        frame:&mut frame_buffer,
+    };
+    
+    f(&mut frame_buffer_graphics);
 }
 
 // Загрузка фонов

@@ -10,10 +10,18 @@ use crate::{
     game_settings,
     // enums
     Game,
+    // functions
+    get_swipe_texture,
+    draw_on_texture
 };
 
 use super::{
+    // structs
     Settings,
+    // consts
+    button_pressed,
+    // enums
+    SwipeDirection,
 };
 
 use lib::{
@@ -48,12 +56,7 @@ use cat_engine::{
 };
 
 
-const button_pressed:Colour=[
-    Light_blue[0]-0.05,
-    Light_blue[1]-0.05,
-    Light_blue[2]-0.05,
-    Light_blue[3],
-];
+
 const menu_movement_scale:f32=10f32;
 
 const leaf_movement_scale:f32=12f32;
@@ -157,14 +160,60 @@ impl MainMenu{
         }
     }
 
-    pub fn open(&mut self,window:&mut Window,graphics:&mut Graphics2D)->Game{
+    pub fn open(&mut self,window:&mut Window,swipe_direction:SwipeDirection,graphics:&mut Graphics2D)->Game{
         let mut result=Game::Next;
 
         let mut frames=0u8;
 
-        let mut shift=0f32;
+        let mut current_page_shift=[0f32;2];
 
-        let dshift=unsafe{window_width/swipe_updates as f32};
+        let (
+            mut next_page_shift,
+            dshift
+        )=unsafe{
+            match swipe_direction{
+                SwipeDirection::Up=>(
+                    [
+                        0f32,
+                        window_height
+                    ],
+                    [
+                        0f32,
+                        -window_height/swipe_updates as f32
+                    ]
+                ),
+                SwipeDirection::Down=>(
+                    [
+                        0f32,
+                        -window_height
+                    ],
+                    [
+                        0f32,
+                        window_height/swipe_updates as f32
+                    ]
+                ),
+                SwipeDirection::Left=>(
+                    [
+                        window_width,
+                        0f32
+                    ],
+                    [
+                        -window_width/swipe_updates as f32,
+                        0f32
+                    ]
+                ),
+                SwipeDirection::Right=>(
+                    [
+                        -window_width,
+                        0f32
+                    ],
+                    [
+                        window_width/swipe_updates as f32,
+                        0f32
+                    ]
+                )
+            }
+        };
 
         window.run(|window,event|{
             match event{
@@ -175,29 +224,45 @@ impl MainMenu{
                         window.stop_events();
                     }
                     else{
-                        shift-=dshift;
+                        current_page_shift[0]+=dshift[0];
+                        current_page_shift[1]+=dshift[1];
+
+                        next_page_shift[0]+=dshift[0];
+                        next_page_shift[1]+=dshift[1];
                     }
                 }
 
                 WindowEvent::RedrawRequested=>{
                     let [dx,dy]=unsafe{mouse_cursor.center_radius()};
-                    let next_page_shift=unsafe{window_width+shift};
 
                     let wallpaper_shift=[
-                        dx/wallpaper_movement_scale+next_page_shift,
-                        dy/wallpaper_movement_scale
+                        dx/wallpaper_movement_scale+next_page_shift[0],
+                        dy/wallpaper_movement_scale+next_page_shift[1]
                     ];
 
                     let menu_shift=[
-                        dx/menu_movement_scale+next_page_shift,
-                        dy/menu_movement_scale
+                        dx/menu_movement_scale+next_page_shift[0],
+                        dy/menu_movement_scale+next_page_shift[1]
                     ];
 
+                    let leaf_shift=[
+                        dx/leaf_movement_scale+next_page_shift[0],
+                        dy/leaf_movement_scale+next_page_shift[1]
+                    ];
 
                     window.draw(&graphics,|graphics|{
-                        graphics.draw_shift_textured_object(swipe_screen_index,[shift,0f32]);
-
+                        graphics.draw_shift_textured_object(swipe_screen_index,current_page_shift);
                         graphics.draw_shift_textured_object(wallpaper_index,wallpaper_shift).unwrap();
+
+
+                        for leaf in &self.leaves{
+                            let leaf=[
+                                leaf.x+leaf_shift[0],
+                                leaf.y+leaf_shift[1]
+                            ];
+                            graphics.draw_shift_textured_object(self.leaf,leaf).unwrap();
+                        }
+
                         self.menu.draw_shift(menu_shift,graphics);
                     });
                 }
@@ -209,7 +274,7 @@ impl MainMenu{
         result
     }
 
-    pub fn run(&mut self,window:&mut Window,graphics:&mut Graphics2D,audio:&mut AudioWrapper)->Game{
+    pub fn run(&mut self,window:&mut Window,graphics:&mut Graphics2D,audio:&AudioWrapper)->Game{
         let mut result=Game::Next;
 
         let mut frames=0u16;
@@ -369,16 +434,17 @@ impl MainMenu{
                     if let MouseButton::Left=button{
                         if !self.enter_name{
                             if let Some(pressed_button)=self.menu.pressed_button(){
-                                //audio.play_track("button_pressed",1u32);
-
+                                // Текущее положение курсора
                                 let [mut x,mut y]=unsafe{mouse_cursor.position()};
-
+                                // Расстояние от курсора до центра экрана
                                 let [dx,dy]=unsafe{mouse_cursor.center_radius()};
+                                // Сдвиг меню
                                 let menu_shift=[
                                     dx/menu_movement_scale,
                                     dy/menu_movement_scale
                                 ];
-
+                                // Корректировка положения курсора
+                                // относительно сдвинутого меню
                                 x-=menu_shift[0];
                                 y-=menu_shift[1];
 
@@ -406,12 +472,20 @@ impl MainMenu{
 
                                         // Настройки
                                         2=>{
-                                            match Settings::new(window,graphics).run(window,graphics){
+                                            self.render_to_texture(window,graphics);
+
+                                            match{
+                                                let mut settings=Settings::new(window,graphics);
+                                                settings.open(window,graphics);
+                                                settings.run(window,graphics,audio)
+                                            }{
                                                 Game::Exit=>{
                                                     result=Game::Exit;
                                                     window.stop_events();
                                                 }
-                                                _=>{}
+                                                _=>{
+                                                    self.open(window,SwipeDirection::Right,graphics);
+                                                }
                                             }
                                         }
 
@@ -446,6 +520,7 @@ impl MainMenu{
                     }
 
                     KeyboardButton::F5=>unsafe{
+                        audio.play_track("screenshot",1u32);
                         let path=format!("./screenshots/screenshot{}.png",game_settings.screenshot);
                         game_settings.screenshot+=1;
                         window.save_screenshot(path);
@@ -459,10 +534,49 @@ impl MainMenu{
             }
         });
 
+        self.render_to_texture(window,graphics);
+
         // Удаление всех простых объектов
         graphics.remove_all_simple_objects();
         // Удаление всех текстовых объектов
         graphics.remove_all_text_objects();
         result
+    }
+
+    fn render_to_texture(&self,window:&Window,graphics:&mut Graphics2D){
+        // Расстояние от курсора до центра экрана
+        let [dx,dy]=unsafe{mouse_cursor.center_radius()};
+
+        let swipe_screen_texture=get_swipe_texture(graphics);
+
+        let wallpaper_shift=[
+            dx/wallpaper_movement_scale,
+            dy/wallpaper_movement_scale
+        ];
+
+        let menu_shift=[
+            dx/menu_movement_scale,
+            dy/menu_movement_scale
+        ];
+
+        let leaf_shift=[
+            dx/leaf_movement_scale,
+            dy/leaf_movement_scale
+        ];
+
+        draw_on_texture(&swipe_screen_texture,window,graphics,|graphics|{
+            graphics.draw_shift_textured_object(wallpaper_index,wallpaper_shift).unwrap();
+
+            for leaf in &self.leaves{
+                let leaf=[
+                    leaf.x+leaf_shift[0],
+                    leaf.y+leaf_shift[1]
+                ];
+                graphics.draw_shift_textured_object(self.leaf,leaf).unwrap();
+            }
+
+            // Отрисовка меню
+            self.menu.draw_shift(menu_shift,graphics);
+        });
     }
 }

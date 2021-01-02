@@ -4,11 +4,18 @@ use crate::{
     mouse_cursor_icon_index,
     wallpaper_index,
     wallpaper_movement_scale,
+    swipe_updates,
+    swipe_screen_index,
     // statics
     game_settings,
     // enums
     Game,
+    // functions
+    get_swipe_texture,
+    draw_on_texture,
 };
+
+use super::button_pressed;
 
 use lib::{
     colours::{White,Gray,Dark_gray,Light_blue},
@@ -35,16 +42,10 @@ use cat_engine::{
     graphics::{Graphics2D,DependentObject},
     texture::{ImageObject,ImageBase,Texture},
     image::RgbaImage,
+    audio::AudioWrapper,
 };
 
 pub const page_colour:Colour=Dark_gray;
-
-const button_pressed:Colour=[
-    Light_blue[0]-0.05,
-    Light_blue[1]-0.05,
-    Light_blue[2]-0.05,
-    Light_blue[3],
-];
 
 pub struct Settings{
     button_pressed:Option<usize>,
@@ -79,7 +80,49 @@ impl Settings{
         }
     }
 
-    pub fn run(&mut self,window:&mut Window,graphics:&mut Graphics2D)->Game{
+    pub fn open(&mut self,window:&mut Window,graphics:&mut Graphics2D)->Game{
+        let mut result=Game::Next;
+
+        let mut frames=0u8;
+
+        let mut shift=0f32;
+
+        let dshift=unsafe{window_width/swipe_updates as f32};
+
+        window.run(|window,event|{
+            match event{
+                WindowEvent::CloseRequested=>result=Game::Exit,
+                WindowEvent::Update=>{
+                    frames+=1;
+                    if frames==swipe_updates{
+                        window.stop_events();
+                    }
+                    else{
+                        shift-=dshift;
+                    }
+                }
+
+                WindowEvent::RedrawRequested=>{
+                    let next_page_shift=unsafe{window_width+shift};
+
+                    window.draw(&graphics,|graphics|{
+                        graphics.clear_colour(page_colour);
+
+                        graphics.draw_shift_textured_object(swipe_screen_index,[shift,0f32]);
+
+                        self.reset_game_progress.draw_shift([next_page_shift,0f32],graphics);
+                        self.escape.draw_shift([next_page_shift,0f32],graphics);
+                    });
+                }
+
+                _=>{}
+            }
+        });
+
+        result
+    }
+
+    pub fn run(&mut self,window:&mut Window,graphics:&mut Graphics2D,audio:&AudioWrapper)->Game{
         let mut result=Game::Next;
 
         window.run(|window,event|{
@@ -107,10 +150,13 @@ impl Settings{
                         self.button_pressed=None;
 
                         if self.reset_game_progress.pressed(x,y){
+                            audio.play_track("button_pressed",1u32);
+                            *graphics.get_simple_object_colour(self.reset_game_progress.background_index())=button_pressed;
                             self.button_pressed=Some(self.reset_game_progress.background_index());
                         }
-
-                        if self.escape.pressed(x,y){
+                        else if self.escape.pressed(x,y){
+                            audio.play_track("button_pressed",1u32);
+                            *graphics.get_simple_object_colour(self.escape.background_index())=button_pressed;
                             self.button_pressed=Some(self.escape.background_index());
                         }
                     }
@@ -118,10 +164,25 @@ impl Settings{
 
                 WindowEvent::MouseReleased(button)=>{
                     if let MouseButton::Left=button{
-                        let [x,y]=unsafe{mouse_cursor.position()};
+                        if let Some(button)=self.button_pressed{
+                            let [x,y]=unsafe{mouse_cursor.position()};
+                            *graphics.get_simple_object_colour(button)=Light_blue;
 
-                        self.reset_game_progress.released(x,y);
-                        self.escape.released(x,y);
+                            if button==self.escape.background_index(){
+                                if self.escape.released(x,y){
+                                    // escape action
+                                    window.stop_events();
+                                }
+                            }
+                            else{
+                                if self.reset_game_progress.released(x,y){
+                                    // reset action
+                                    unsafe{
+                                        game_settings.continue_game=false;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -131,6 +192,7 @@ impl Settings{
                     }
 
                     KeyboardButton::F5=>unsafe{
+                        audio.play_track("screenshot",1u32);
                         let path=format!("./screenshots/screenshot{}.png",game_settings.screenshot);
                         game_settings.screenshot+=1;
                         window.save_screenshot(path);
@@ -144,6 +206,8 @@ impl Settings{
             }
         });
 
+        self.render_to_texture(window,graphics);
+
         // Удаление всех простых объектов
         graphics.remove_last_simple_object();
         graphics.remove_last_simple_object();
@@ -151,5 +215,16 @@ impl Settings{
         graphics.remove_last_text_object();
         graphics.remove_last_text_object();
         result
+    }
+
+    fn render_to_texture(&self,window:&Window,graphics:&mut Graphics2D){
+        let swipe_screen_texture=get_swipe_texture(graphics);
+
+        draw_on_texture(&swipe_screen_texture,window,graphics,|graphics|{
+            graphics.clear_colour(page_colour);
+
+            self.reset_game_progress.draw(graphics);
+            self.escape.draw(graphics);
+        });
     }
 }
