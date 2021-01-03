@@ -18,6 +18,7 @@ use crate::{
     load_image,
     draw_on_texture,
     get_swipe_texture,
+    make_screenshot,
 };
 
 use lib::{
@@ -311,12 +312,7 @@ impl LoadingScreen{
                     }).unwrap();
                 }
 
-                WindowEvent::KeyboardPressed(KeyboardButton::F5)=>unsafe{
-                    audio.play_track("screenshot",1u32);
-                    let path=format!("screenshots/screenshot{}.png",game_settings.screenshot);
-                    game_settings.screenshot+=1;
-                    window.save_screenshot(path);
-                }
+                WindowEvent::KeyboardPressed(KeyboardButton::F5)=>make_screenshot(window,audio),
 
                 _=>{}
             }

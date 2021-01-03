@@ -13,6 +13,7 @@ use crate::{
     // functions
     get_swipe_texture,
     draw_on_texture,
+    make_screenshot,
 };
 
 use super::button_pressed;
@@ -191,12 +192,8 @@ impl Settings{
                         window.stop_events();
                     }
 
-                    KeyboardButton::F5=>unsafe{
-                        audio.play_track("screenshot",1u32);
-                        let path=format!("./screenshots/screenshot{}.png",game_settings.screenshot);
-                        game_settings.screenshot+=1;
-                        window.save_screenshot(path);
-                    }
+                    KeyboardButton::F5=>make_screenshot(window,audio),
+
                     _=>{}
                 }
 

@@ -158,7 +158,8 @@ fn main(){
             monitors.remove(0)
         };
 
-        //let size=monitor.size();
+        // Размер монитора
+        let size=monitor.size();
 
         let fullscreen=cat_engine::glium::glutin::window::Fullscreen::Borderless(Some(monitor));
 
@@ -168,7 +169,9 @@ fn main(){
 
         window_settings.general.updates_per_second=50;
 
-        //window_settings.window_attributes.inner_size=Some(Size::Physical(size));
+        // Установка размера окна (требуется на некоторых версиях Linux)
+        window_settings.window_attributes.inner_size=Some(Size::Physical(size));
+
         window_settings.window_attributes.title=game_name.to_string();
         window_settings.window_attributes.fullscreen=Some(fullscreen);
         window_settings.window_attributes.resizable=false;
@@ -352,6 +355,15 @@ fn draw_on_texture<F:FnOnce(&mut Graphics<SimpleFrameBuffer>)>(
     };
     
     f(&mut frame_buffer_graphics);
+}
+
+fn make_screenshot(window:&Window,audio:&AudioWrapper){
+    unsafe{
+        audio.play_track("screenshot",1u32);
+        let path=format!("screenshots/screenshot{}.png",game_settings.screenshot);
+        game_settings.screenshot+=1;
+        window.save_screenshot(path);
+    }
 }
 
 // Загрузка фонов
