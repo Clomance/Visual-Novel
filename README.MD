@@ -31,3 +31,9 @@ Controls:
 ### Current problems
  - Game window stays unfocused after switching to it using `win + tab`.
  - Buttons move abruptly if cursor is moved slowly in the main menu. 
+
+### Cross-compile errors
+ - 32 bit: error on X86_32
+ - IOS: cannot find value `kAudioDevicePropertyBufferFrameSize` in crate `sys`
+ - Linux arch, aarch64: Unable to locate package alsa-lib-devel.aarch64
+ - Windows aarch64: minimp3/minimp3.h(187): fatal error C1189: #error:  MINIMP3_ONLY_SIMD used, but SSE/NEON not enabled
